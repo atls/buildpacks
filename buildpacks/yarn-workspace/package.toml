@@ -1,0 +1,11 @@
+[buildpack]
+uri = "."
+
+[[dependencies]]
+uri = "docker://docker.io/atlantislab/buildpack-yarn-install:0.0.3"
+
+[[dependencies]]
+uri = "docker://docker.io/atlantislab/buildpack-yarn-cache:0.0.3"
+
+[[dependencies]]
+uri = "docker://docker.io/atlantislab/buildpack-yarn-workspace-start:0.0.3"

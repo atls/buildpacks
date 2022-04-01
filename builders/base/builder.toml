@@ -1,0 +1,6 @@
+[[order]]
+
+[stack]
+id = "tech.atlantislab.stacks.node"
+run-image = "atlantislab/stack-node:run"
+build-image = "atlantislab/stack-node:build"
