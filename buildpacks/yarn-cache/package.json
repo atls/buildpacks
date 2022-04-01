@@ -1,0 +1,23 @@
+{
+  "name": "@atls/buildpack-yarn-cache",
+  "version": "0.0.1",
+  "private": true,
+  "license": "BSD-3-Clause",
+  "main": "src/index.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prebuild": "yarn clean",
+    "build": "yarn service build",
+    "clean": "rm -r -f dist"
+  },
+  "dependencies": {
+    "@atls/libcnb": "workspace:0.0.1",
+    "@yarnpkg/core": "^3.2.0-rc.8",
+    "@yarnpkg/fslib": "^2.6.1-rc.3",
+    "execa": "^5.1.1",
+    "tempy": "^1.0.1",
+    "yaml": "^1.10.2"
+  }
+}
