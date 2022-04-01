@@ -2640,7 +2640,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/shell", "npm:3.2.0"],\
             ["chalk", "npm:3.0.0"],\
             ["ci-info", "npm:3.2.0"],\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["semver", "npm:7.3.5"],\
             ["tslib", "npm:1.14.1"],\
             ["typanion", "npm:3.7.1"],\
@@ -2670,7 +2670,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["camelcase", "npm:5.3.1"],\
             ["chalk", "npm:3.0.0"],\
             ["ci-info", "npm:3.2.0"],\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["cross-spawn", "npm:7.0.3"],\
             ["diff", "npm:4.0.2"],\
             ["globby", "npm:11.0.1"],\
@@ -2811,7 +2811,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/core", "npm:3.2.0"],\
             ["@yarnpkg/fslib", "npm:2.6.1"],\
             ["@yarnpkg/json-proxy", "npm:2.1.1"],\
-            ["clipanion", "virtual:a084f6d65880dbfbcf247b3725307d4bee4792caac8ec5bb3e01daf19da6628e559c180867f301970594c729b8c9756664b148b84e9c3f12283facca235c0db3#npm:3.1.0"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["tslib", "npm:1.14.1"]\
           ],\
           "packagePeers": [\
@@ -2845,7 +2845,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/parsers", "npm:2.5.0"],\
             ["@yarnpkg/plugin-git", "virtual:2a9b16e798f5767351d5da85864f6b7c333d8e6d7e152467a14e89ac3a8c496ca490ef271fc74f65a5d202441f3ee5b6fb1846d5c0729fcd4702adb0b3f3178a#npm:2.6.0"],\
             ["ci-info", "npm:3.2.0"],\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["enquirer", "npm:2.3.6"],\
             ["lodash", "npm:4.17.19"],\
             ["micromatch", "npm:4.0.2"],\
@@ -2904,7 +2904,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@types/yarnpkg__core", null],\
             ["@yarnpkg/core", "npm:3.2.0"],\
             ["@yarnpkg/fslib", "npm:2.6.1"],\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["git-url-parse", "npm:11.1.2"],\
             ["lodash", "npm:4.17.19"],\
             ["semver", "npm:7.3.5"],\
@@ -2986,7 +2986,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/cli", "virtual:4a4d5b26a19c88ec7f8b974f494be5586f332f2135a51d164f040cbef776f4a99805beacdb65c1726f6ec68403939d8ecee4d66454be5485d567fa91ae3823b4#npm:3.2.0"],\
             ["@yarnpkg/core", "npm:3.2.0"],\
             ["@yarnpkg/fslib", "npm:2.6.1"],\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["lodash", "npm:4.17.19"],\
             ["tslib", "npm:1.14.1"]\
           ],\
@@ -3046,7 +3046,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/plugin-pnp", "virtual:2a9b16e798f5767351d5da85864f6b7c333d8e6d7e152467a14e89ac3a8c496ca490ef271fc74f65a5d202441f3ee5b6fb1846d5c0729fcd4702adb0b3f3178a#npm:3.2.0"],\
             ["@yarnpkg/pnp", "npm:3.2.0"],\
             ["@zkochan/cmd-shim", "npm:5.2.1"],\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["micromatch", "npm:4.0.2"],\
             ["tslib", "npm:1.14.1"]\
           ],\
@@ -3111,7 +3111,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/fslib", "npm:2.6.1"],\
             ["@yarnpkg/plugin-npm", "virtual:2a9b16e798f5767351d5da85864f6b7c333d8e6d7e152467a14e89ac3a8c496ca490ef271fc74f65a5d202441f3ee5b6fb1846d5c0729fcd4702adb0b3f3178a#npm:2.7.0"],\
             ["@yarnpkg/plugin-pack", "virtual:2a9b16e798f5767351d5da85864f6b7c333d8e6d7e152467a14e89ac3a8c496ca490ef271fc74f65a5d202441f3ee5b6fb1846d5c0729fcd4702adb0b3f3178a#npm:3.1.1"],\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["enquirer", "npm:2.3.6"],\
             ["semver", "npm:7.3.5"],\
             ["tslib", "npm:1.14.1"],\
@@ -3147,7 +3147,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/cli", "virtual:4a4d5b26a19c88ec7f8b974f494be5586f332f2135a51d164f040cbef776f4a99805beacdb65c1726f6ec68403939d8ecee4d66454be5485d567fa91ae3823b4#npm:3.2.0"],\
             ["@yarnpkg/core", "npm:3.2.0"],\
             ["@yarnpkg/fslib", "npm:2.6.1"],\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["micromatch", "npm:4.0.2"],\
             ["tar-stream", "npm:2.2.0"],\
             ["tslib", "npm:1.14.1"]\
@@ -3179,7 +3179,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/core", "npm:3.2.0"],\
             ["@yarnpkg/fslib", "npm:2.6.1"],\
             ["@yarnpkg/libzip", "npm:2.2.4"],\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["tslib", "npm:1.14.1"]\
           ],\
           "packagePeers": [\
@@ -3211,7 +3211,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/fslib", "npm:2.6.1"],\
             ["@yarnpkg/plugin-stage", "virtual:9a02e91fa5157c3916da36e487be93d7c8307be5e669743bbd20570cb419bd6bb2a8d965f8ace1a2d4fa28ef933a93d4815bf052d0a235477079a6a7d7f2ae0b#npm:3.1.1"],\
             ["@yarnpkg/pnp", "npm:3.2.0"],\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["micromatch", "npm:4.0.2"],\
             ["semver", "npm:7.3.5"],\
             ["tslib", "npm:1.14.1"]\
@@ -3244,7 +3244,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/fslib", "npm:2.6.1"],\
             ["@yarnpkg/plugin-pnp", "virtual:2a9b16e798f5767351d5da85864f6b7c333d8e6d7e152467a14e89ac3a8c496ca490ef271fc74f65a5d202441f3ee5b6fb1846d5c0729fcd4702adb0b3f3178a#npm:3.2.0"],\
             ["@yarnpkg/plugin-stage", "virtual:9a02e91fa5157c3916da36e487be93d7c8307be5e669743bbd20570cb419bd6bb2a8d965f8ace1a2d4fa28ef933a93d4815bf052d0a235477079a6a7d7f2ae0b#npm:3.1.1"],\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["p-limit", "npm:2.3.0"],\
             ["tslib", "npm:1.14.1"]\
           ],\
@@ -3274,7 +3274,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/cli", "virtual:4a4d5b26a19c88ec7f8b974f494be5586f332f2135a51d164f040cbef776f4a99805beacdb65c1726f6ec68403939d8ecee4d66454be5485d567fa91ae3823b4#npm:3.2.0"],\
             ["@yarnpkg/core", "npm:3.2.0"],\
             ["@yarnpkg/fslib", "npm:2.6.1"],\
-            ["clipanion", "virtual:a084f6d65880dbfbcf247b3725307d4bee4792caac8ec5bb3e01daf19da6628e559c180867f301970594c729b8c9756664b148b84e9c3f12283facca235c0db3#npm:3.1.0"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["tslib", "npm:1.14.1"]\
           ],\
           "packagePeers": [\
@@ -3305,7 +3305,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/fslib", "npm:2.6.1"],\
             ["@yarnpkg/parsers", "npm:2.5.0"],\
             ["chalk", "npm:3.0.0"],\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["cross-spawn", "npm:7.0.3"],\
             ["fast-glob", "npm:3.2.5"],\
             ["micromatch", "npm:4.0.2"],\
@@ -4220,36 +4220,17 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
         }]\
       ]],\
       ["clipanion", [\
-        ["npm:3.1.0", {\
-          "packageLocation": "./.yarn/cache/clipanion-npm-3.1.0-ced87dbbea-bf350082e8.zip/node_modules/clipanion/",\
+        ["npm:3.2.0-rc.4", {\
+          "packageLocation": "./.yarn/cache/clipanion-npm-3.2.0-rc.4-8470d16306-c9d8ba9e16.zip/node_modules/clipanion/",\
           "packageDependencies": [\
-            ["clipanion", "npm:3.1.0"]\
+            ["clipanion", "npm:3.2.0-rc.4"]\
           ],\
           "linkType": "SOFT"\
         }],\
-        ["npm:3.2.0-rc.10", {\
-          "packageLocation": "./.yarn/cache/clipanion-npm-3.2.0-rc.10-b702c05bd9-8e45be1282.zip/node_modules/clipanion/",\
+        ["virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4", {\
+          "packageLocation": "./.yarn/__virtual__/clipanion-virtual-d849869806/0/cache/clipanion-npm-3.2.0-rc.4-8470d16306-c9d8ba9e16.zip/node_modules/clipanion/",\
           "packageDependencies": [\
-            ["clipanion", "npm:3.2.0-rc.10"]\
-          ],\
-          "linkType": "SOFT"\
-        }],\
-        ["virtual:a084f6d65880dbfbcf247b3725307d4bee4792caac8ec5bb3e01daf19da6628e559c180867f301970594c729b8c9756664b148b84e9c3f12283facca235c0db3#npm:3.1.0", {\
-          "packageLocation": "./.yarn/__virtual__/clipanion-virtual-9695476a89/0/cache/clipanion-npm-3.1.0-ced87dbbea-bf350082e8.zip/node_modules/clipanion/",\
-          "packageDependencies": [\
-            ["clipanion", "virtual:a084f6d65880dbfbcf247b3725307d4bee4792caac8ec5bb3e01daf19da6628e559c180867f301970594c729b8c9756664b148b84e9c3f12283facca235c0db3#npm:3.1.0"],\
-            ["@types/typanion", null],\
-            ["typanion", "npm:3.7.1"]\
-          ],\
-          "packagePeers": [\
-            "@types/typanion"\
-          ],\
-          "linkType": "HARD"\
-        }],\
-        ["virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10", {\
-          "packageLocation": "./.yarn/__virtual__/clipanion-virtual-78c9428343/0/cache/clipanion-npm-3.2.0-rc.10-b702c05bd9-8e45be1282.zip/node_modules/clipanion/",\
-          "packageDependencies": [\
-            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.10"],\
+            ["clipanion", "virtual:aa6dbc485c96a4f23035a31f44481412ab7479eee841cf5f30d392dce33e0547ef7dbed86b365514f32c7fc4d2d00670c7483fbe76a30ee4eead454cfc70e090#npm:3.2.0-rc.4"],\
             ["@types/typanion", null],\
             ["typanion", "npm:3.7.1"]\
           ],\
