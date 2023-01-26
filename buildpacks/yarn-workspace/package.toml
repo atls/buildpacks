@@ -2,10 +2,10 @@
 uri = "."
 
 [[dependencies]]
-uri = "docker://docker.io/atlantislab/buildpack-yarn-install:0.0.3"
+uri = "docker://docker.io/atlantislab/buildpack-yarn-install:0.0.4"
 
 [[dependencies]]
-uri = "docker://docker.io/atlantislab/buildpack-yarn-cache:0.0.3"
+uri = "docker://docker.io/atlantislab/buildpack-yarn-cache:0.0.4"
 
 [[dependencies]]
-uri = "docker://docker.io/atlantislab/buildpack-yarn-workspace-start:0.0.3"
+uri = "docker://docker.io/atlantislab/buildpack-yarn-workspace-start:0.0.4"
