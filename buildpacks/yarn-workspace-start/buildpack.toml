@@ -7,7 +7,6 @@ name = "Yarn Workspace Start Buildpack"
 
 [metadata]
 include_files = ["dist", "bin/build", "bin/detect", "buildpack.toml"]
-pre_package = "yarn build"
 
 [[stacks]]
 id = "tech.atlantislab.stacks.node"

@@ -28,6 +28,7 @@ export class YarnCacheBuilder implements Builder {
           ppath.join(cacheLayer.path as PortablePath, file),
           ppath.join(yarnCachePath, file)
         )
+        await xfs.removePromise(ppath.join(cacheLayer.path as PortablePath, file))
       }
 
       cacheLayer.setMetadata('locksum', yarnLockCheckSum.toString())
@@ -46,6 +47,8 @@ export class YarnCacheBuilder implements Builder {
       YAML.stringify({
         ...yarnrcContent,
         cacheFolder: ppath.relative(applicationDir, cacheLayer.path as PortablePath),
+        enableGlobalCache: true,
+        globalFolder: ppath.relative(applicationDir, cacheLayer.path as PortablePath),
       })
     )
 
