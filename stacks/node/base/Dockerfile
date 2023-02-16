@@ -1,4 +1,4 @@
-FROM node:16.13.1-buster-slim
+FROM node:18.13.0-buster-slim
 
 ARG cnb_uid=1001
 ARG cnb_gid=1001

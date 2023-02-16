@@ -56,9 +56,11 @@ export class Layer {
         metadata?: { [key: string]: any }
       }
 
-      this.build = metadataFile.types.build
-      this.cache = metadataFile.types.cache
-      this.launch = metadataFile.types.launch
+      if (metadataFile.types) {
+        this.build = metadataFile.types.build
+        this.cache = metadataFile.types.cache
+        this.launch = metadataFile.types.launch
+      }
       this.metadata = metadataFile.metadata || {}
     }
 
