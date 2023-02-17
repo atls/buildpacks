@@ -47,8 +47,7 @@ export class YarnCacheBuilder implements Builder {
       YAML.stringify({
         ...yarnrcContent,
         cacheFolder: ppath.relative(applicationDir, cacheLayer.path as PortablePath),
-        enableGlobalCache: true,
-        globalFolder: ppath.relative(applicationDir, cacheLayer.path as PortablePath),
+        enableGlobalCache: false,
       })
     )
 
