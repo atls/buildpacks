@@ -1,5 +1,5 @@
 ARG base_image
-FROM ${base_image}
+FROM --platform=linux/amd64 ${base_image}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential python3 libstdc++6 libpq-dev ca-certificates \
