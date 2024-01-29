@@ -8,16 +8,16 @@
     "libcnb/*"
   ],
   "resolutions": {
-    "clipanion": "3.2.0-rc.4"
+    "clipanion": "4.0.0-rc.2"
   },
   "devDependencies": {
     "@atls/code-service": "0.0.25",
     "@atls/config-jest": "0.0.11",
     "@atls/schematics": "0.0.21",
     "@jest/core": "^27.4.5",
-    "@types/eslint": "8.4.10",
+    "@types/eslint": "8.56.2",
     "@types/jest": "27.5.2",
-    "@types/node": "18.19.10",
+    "@types/node": "20.11.10",
     "eslint": "8.56.0",
     "typescript": "5.2.2"
   },
@@ -27,6 +27,5 @@
     "schematic": "project",
     "type": "libraries",
     "migration": 0
-  },
-  "typecheckSkipLibCheck": true
+  }
 }
