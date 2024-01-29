@@ -3,7 +3,10 @@ import { readdir }  from 'fs/promises'
 import { join }     from 'path'
 
 export class Platform {
-  constructor(public readonly path: string, public readonly env: Map<string, string> = new Map()) {}
+  constructor(
+    public readonly path: string,
+    public readonly env: Map<string, string> = new Map()
+  ) {}
 
   static async fromPath(path: string) {
     const env: Map<string, string> = new Map()
