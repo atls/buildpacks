@@ -14,13 +14,13 @@
     "postpack": "rm -rf dist"
   },
   "dependencies": {
-    "@iarna/toml": "^2.2.5",
-    "execa": "^5.1.1"
+    "@iarna/toml": "2.2.5",
+    "execa": "5.1.1"
   },
   "devDependencies": {
-    "@babel/types": "^7.16.0",
+    "@babel/types": "7.24.0",
     "@types/execa": "2.0.0",
-    "@types/node": "20.11.10"
+    "@types/node": "20"
   },
   "publishConfig": {
     "main": "dist/index.js",
