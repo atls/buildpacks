@@ -14,10 +14,13 @@
   },
   "dependencies": {
     "@atls/libcnb": "workspace:0.0.1",
-    "@yarnpkg/core": "4.0.2",
-    "@yarnpkg/fslib": "3.0.1",
-    "execa": "^5.1.1",
-    "tempy": "^1.0.1",
-    "yaml": "^1.10.2"
+    "@yarnpkg/core": "4.0.3",
+    "@yarnpkg/fslib": "3.0.2",
+    "execa": "5.1.1",
+    "tempy": "1.0.1",
+    "yaml": "1.10.2"
+  },
+  "devDependencies": {
+    "@types/node": "20"
   }
 }
