@@ -1,5 +1,4 @@
-import path            from 'path'
-
+import { basename }       from 'path'
 import { Builder }     from './build'
 import { Detector }    from './detect'
 import { ExitHandler } from './exit.handler'
@@ -7,7 +6,7 @@ import { build }       from './build'
 import { detect }      from './detect'
 
 export const run = async (detector: Detector, builder?: Builder) => {
-  const phase = path.basename(process.argv[1])
+  const phase = basename(process.argv[1])
 
   if (!['detect', 'build'].includes(phase)) {
     ExitHandler.error(new Error(`Unsupported phase ${phase}`))
