@@ -1,24 +1,9 @@
 name: Checks
 
-on: [pull_request]
+on:
+  pull_request:
 
 jobs:
-  run:
-    name: Run
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.11'
-
-      - name: Install
-        run: yarn install
-
-      - name: Run
-        run: yarn checks run
-        env:
-          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+  check:
+    uses: atls/shared/.github/workflows/checks.yaml@master
+    permissions: write-all
