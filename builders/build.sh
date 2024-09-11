@@ -3,4 +3,4 @@ set -e
 
 BUILDER_DIR="${1:-base}"
 
-pack builder create "atlantislab/builder-${BUILDER_DIR}:buster-20.11" --config "./${BUILDER_DIR}/builder.toml"
+pack builder create "atlantislab/builder-${BUILDER_DIR}:bookworm-20.17" --config "./${BUILDER_DIR}/builder.toml"
