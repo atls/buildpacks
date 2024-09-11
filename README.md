@@ -15,9 +15,10 @@
 
 Делаем билдер:
 
-1. `/builders/build:sh` - поправить тег на `:buster-XX.XX`, подставив версию ноды до минорной. ВАЖНО: тег всегда меняем кроме случаев когда идет исправление созданного образа. Добавляя новый тег вы создаете новый образ под новым тегом вместе перезаписывания старого.
-2. `/builders/build.sh`
-3. Проверяем версию ноды через `docker inspect X` где Х - ID созданного образа
-4. `docker image push atlantislab/builder-base:buster-XX.XX`
-5. Проверяем в [Docker Hub](https://hub.docker.com/r/atlantislab/builder-base/tags) - должен появится ваш образ
-[//]: # (VERSIONS)
+1. Запустить контейнер `atlantis/stacknode:run`
+2. Запустить контейнер `atlantis/stacknode:build`
+3. `/builders/build:sh` - поправить тег на `:buster-XX.XX`, подставив версию ноды до минорной. ВАЖНО: тег всегда меняем кроме случаев когда идет исправление созданного образа. Добавляя новый тег вы создаете новый образ под новым тегом вместе перезаписывания старого.
+4. `/builders/build.sh`
+5. Проверяем версию ноды через `docker inspect X` где Х - ID созданного образа
+6. `docker image push atlantislab/builder-base:buster-XX.XX`
+7. Проверяем в [Docker Hub](https://hub.docker.com/r/atlantislab/builder-base/tags) - должен появится ваш образ
