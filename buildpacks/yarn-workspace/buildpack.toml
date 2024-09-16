@@ -1,25 +1,24 @@
-api = "0.6"
+api = "0.10"
 
 [buildpack]
 id = "tech.atlantislab.buildpacks.yarn-workspace"
-version = "0.0.5"
+version = "0.1.0"
 name = "Yarn Workspace Buildpack"
 
 [metadata]
 include_files = ["buildpack.toml"]
 
 [[order]]
-
 [[order.group]]
 id = "tech.atlantislab.buildpacks.yarn-install"
 optional = true
-version = "0.0.5"
+version = "0.1.0"
 
 [[order.group]]
 id = "tech.atlantislab.buildpacks.yarn-cache"
 optional = true
-version = "0.0.5"
+version = "0.1.0"
 
 [[order.group]]
 id = "tech.atlantislab.buildpacks.yarn-workspace-start"
-version = "0.0.5"
+version = "0.1.0"
