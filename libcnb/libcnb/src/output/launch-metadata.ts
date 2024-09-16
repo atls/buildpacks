@@ -23,7 +23,7 @@ export class LaunchMetadata {
     return new LaunchMetadata(
       (data.labels || []).map((label) => new Label(label.key, label.value)),
       (data.processes || []).map(
-        (processe) => new Process(processe.type, processe.command, processe.args, processe.direct)
+        (process) => new Process(process.type, process.command, process.args)
       ),
       (data.slices || []).map((slice) => new Slice(slice.path)),
       (data.bom || []).map((bom) => new BOMEntry(bom.name, bom.metadata))
