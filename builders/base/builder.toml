@@ -1,5 +1,16 @@
 [[order]]
 
+[build]
+image = "atlantislab/stack-node:build"
+
+[run]
+[[run.images]]
+image = "atlantislab/stack-node:run"
+
+[[targets]]
+os = "linux"
+arch = "amd64"
+
 [stack]
 id = "tech.atlantislab.stacks.node"
 run-image = "atlantislab/stack-node:run"
