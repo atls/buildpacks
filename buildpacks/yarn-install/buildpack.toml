@@ -2,7 +2,7 @@ api = "0.10"
 
 [buildpack]
 id = "tech.atlantislab.buildpacks.yarn-install"
-version = "0.1.0"
+version = "0.1.1"
 name = "Yarn Install Buildpack"
 
 [metadata]
@@ -12,3 +12,7 @@ pre_package = "yarn build"
 [[targets]]
 os = "linux"
 arch = "amd64"
+
+[[targets]]
+os = "linux"
+arch = "arm64"

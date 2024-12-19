@@ -2,7 +2,7 @@ api = "0.10"
 
 [buildpack]
 id = "tech.atlantislab.buildpacks.yarn-workspace-start"
-version = "0.1.0"
+version = "0.1.1"
 name = "Yarn Workspace Start Buildpack"
 
 [metadata]
@@ -11,3 +11,7 @@ include_files = ["dist", "bin/build", "bin/detect", "buildpack.toml"]
 [[targets]]
 os = "linux"
 arch = "amd64"
+
+[[targets]]
+os = "linux"
+arch = "arm64"
