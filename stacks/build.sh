@@ -16,16 +16,16 @@ BUILD_IMAGE=${REPO_PREFIX}-${TAG}:build
 
 # Сборка базового образа, если директория base существует
 if [[ -d "${IMAGE_DIR}/base" ]]; then
-  docker build --platform=linux/amd64 -t "${BASE_IMAGE}" "${IMAGE_DIR}/base"
+  docker build --platform=linux/amd64 -t "${BASE_IMAGE}" "${IMAGE_DIR}/base" --build-arg "stack_id=${STACK_ID}"
 fi
 
 # Сборка build-образа
 echo "BUILDING ${BUILD_IMAGE}..."
-docker build --platform=linux/amd64 --build-arg "base_image=${BASE_IMAGE}" --build-arg "stack_id=${STACK_ID}" -t "${BUILD_IMAGE}"  "${IMAGE_DIR}/build"
+docker build --platform=linux/amd64 --build-arg "base_image=${BASE_IMAGE}" -t "${BUILD_IMAGE}" "${IMAGE_DIR}/build"
 
 # Сборка run-образа
 echo "BUILDING ${RUN_IMAGE}..."
-docker build --platform=linux/amd64 --build-arg "base_image=${BASE_IMAGE}" --build-arg "stack_id=${STACK_ID}" -t "${RUN_IMAGE}" "${IMAGE_DIR}/run"
+docker build --platform=linux/amd64 --build-arg "base_image=${BASE_IMAGE}" -t "${RUN_IMAGE}" "${IMAGE_DIR}/run"
 
 # Вывод информации о собранных образах
 echo
