@@ -5,3 +5,5 @@ RUN apt-get update && \
   apt-get install -y --no-install-recommends build-essential python3 libstdc++6 libpq-dev && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
+
+USER ${CNB_USER_ID}:${CNB_GROUP_ID}

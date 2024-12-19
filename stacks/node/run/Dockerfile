@@ -6,3 +6,5 @@ RUN apt-get update && \
   apt-get install -y --no-install-recommends curl && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
+
+USER ${CNB_USER_ID}:${CNB_GROUP_ID}
