@@ -11,6 +11,10 @@ image = "atlantislab/stack-node:run"
 os = "linux"
 arch = "amd64"
 
+[[targets]]
+os = "linux"
+arch = "arm64"
+
 [stack]
 id = "tech.atlantislab.stacks.node"
 run-image = "atlantislab/stack-node:run"
