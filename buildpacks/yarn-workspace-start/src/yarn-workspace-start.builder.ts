@@ -21,7 +21,12 @@ export class YarnWorkspaceStartBuilder implements Builder {
 
     nodeOptionsLayer.launchEnv.append(
       'NODE_OPTIONS',
-      ['--require', join(ctx.applicationDir, '.pnp.cjs')].join(' '),
+      [
+        '--require',
+        join(ctx.applicationDir, '.pnp.cjs'),
+        '--loader',
+        join(ctx.applicationDir, '.pnp.loader.mjs'),
+      ].join(' '),
       ' '
     )
 
