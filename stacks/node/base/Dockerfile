@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 node:20.17.0-bookworm-slim
+FROM --platform=linux/amd64 node:20-bookworm-slim
 
 ARG cnb_uid=1001
 ARG cnb_gid=1001
