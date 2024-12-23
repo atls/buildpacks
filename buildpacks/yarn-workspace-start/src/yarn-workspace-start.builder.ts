@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { writeFile }    from 'node:fs/promises'
 import { chmod }        from 'node:fs/promises'
 import { join }         from 'node:path'
+import { access }         from 'node:fs/promises'
 
 import { Builder }      from '@atls/libcnb'
 import { BuildContext } from '@atls/libcnb'
@@ -19,14 +20,23 @@ export class YarnWorkspaceStartBuilder implements Builder {
 
     const nodeOptionsLayer = await ctx.layers.get('node-options', true, true, true)
 
+    const nodeOptions: Array<string> = []
+
+    try {
+      await access(join(ctx.applicationDir, '.pnp.cjs'))
+      nodeOptions.push('--require', join(ctx.applicationDir, '.pnp.cjs'))
+    } catch {}
+
+    try {
+      await access(join(ctx.applicationDir, '.pnp.loader.mjs'))
+      nodeOptions.push('--import', join(ctx.applicationDir, '.pnp.loader.mjs'))
+    } catch {}
+
+    console.debug('NODE_OPTIONS', nodeOptions)
+
     nodeOptionsLayer.launchEnv.append(
       'NODE_OPTIONS',
-      [
-        '--require',
-        join(ctx.applicationDir, '.pnp.cjs'),
-        '--loader',
-        join(ctx.applicationDir, '.pnp.loader.mjs'),
-      ].join(' '),
+      nodeOptions.join(' '),
       ' '
     )
 

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+# 1. GET ARGS
+output_dir=$CNB_OUTPUT_DIR
+
+# 2. GENERATE run.Dockerfile
+cat >>"${output_dir}/run.Dockerfile" <<EOL
+ARG base_image
+FROM \${base_image}
+
+USER root
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends htop && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
+
+ARG user_id
+USER \${user_id}
+EOL
