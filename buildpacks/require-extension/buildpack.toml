@@ -1,0 +1,17 @@
+api = "0.10"
+
+[buildpack]
+id = "tech.atlantislab.buildpacks.require-extension"
+version = "0.1.1"
+name = "Extensions requirer"
+
+[metadata]
+include_files = ["bin/build", "bin/detect", "buildpack.toml"]
+
+[[targets]]
+os = "linux"
+arch = "amd64"
+
+[[targets]]
+os = "linux"
+arch = "arm64"

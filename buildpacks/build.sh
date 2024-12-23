@@ -3,6 +3,8 @@ set -e
 
 cwd=$PWD
 
+cd "${cwd}/require-extension" && pack buildpack package atlantislab/buildpack-require-extension:0.1.1 --config ./package.toml --publish
+
 yarn workspace @atls/buildpack-yarn-install build
 cd "${cwd}/yarn-install" && pack buildpack package atlantislab/buildpack-yarn-install:0.1.1 --config ./package.toml --publish
 

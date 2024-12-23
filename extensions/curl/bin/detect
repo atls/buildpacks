@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+# 1. GET ARGS
+plan_path=$CNB_BUILD_PLAN_PATH
+echo "curl extension plan_path: $plan_path"
+
+# 2. DECLARE DEPENDENCIES (OPTIONAL)
+cat >> "${plan_path}" <<EOL
+# Extension provides this dependency
+[[provides]]
+name = "curl"
+EOL

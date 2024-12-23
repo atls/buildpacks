@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+plan_path=$2
+echo "Plan path: $plan_path"
+
+echo "BP_REQUIRE: $BP_REQUIRE"
+
+echo "BP_REQUIRE array: ${BP_REQUIRE}"
+
+# 2. DECLARE DEPENDENCIES (OPTIONAL)
+if [[ "${BP_REQUIRE}" == *"curl"* ]]; then
+  cat >>"${plan_path}" <<EOL
+[[requires]]
+name = "curl"
+EOL
+fi
+
+if [[ "${BP_REQUIRE}" == *"htop"* ]]; then
+  cat >>"${plan_path}" <<EOL
+[[requires]]
+name = "htop"
+EOL
+fi

@@ -22,3 +22,8 @@ version = "0.1.1"
 [[order.group]]
 id = "tech.atlantislab.buildpacks.yarn-workspace-start"
 version = "0.1.1"
+
+[[order.group]]
+id = "tech.atlantislab.buildpacks.require-extension"
+version = "0.1.1"
+

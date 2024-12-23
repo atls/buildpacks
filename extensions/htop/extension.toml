@@ -1,0 +1,16 @@
+api = "0.10"
+
+[extension]
+id = "tech.atlantislab.extensions.htop"
+version = "0.0.1"
+name = "htop extension"
+homepage = "https://github.com/atls/buildpacks"
+description = "Installs htop on the runtime base image"
+
+[[targets]]
+os = "linux"
+arch = "amd64"
+
+[[targets]]
+os = "linux"
+arch = "arm64"
