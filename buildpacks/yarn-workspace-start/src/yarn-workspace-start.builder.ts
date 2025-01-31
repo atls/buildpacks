@@ -15,7 +15,7 @@ export class YarnWorkspaceStartBuilder implements Builder {
 
     const command = pkgjson.scripts.start
 
-    await writeFile('/workspace/run.sh', `#!/usr/bin/env bash\n${command}`)
+    await writeFile('/workspace/run.sh', `#!/usr/bin/env bash\numask 0002\n${command}`)
     await chmod('/workspace/run.sh', '755')
 
     const nodeOptionsLayer = await ctx.layers.get('node-options', true, true, true)
