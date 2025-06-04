@@ -22,3 +22,10 @@ if [[ "${BP_REQUIRE}" == *"htop"* ]]; then
 name = "htop"
 EOL
 fi
+
+if [[ "${BP_REQUIRE}" == *"graphql-hive"* ]]; then
+  cat >>"${plan_path}" <<EOL
+[[requires]]
+name = "graphql-hive"
+EOL
+fi

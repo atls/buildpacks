@@ -23,12 +23,19 @@ uri = "docker://docker.io/atlantislab/buildpack-extension-curl:0.0.1"
 id = "tech.atlantislab.extensions.htop"
 uri = "docker://docker.io/atlantislab/buildpack-extension-htop:0.0.1"
 
+[[extensions]]
+id = "tech.atlantislab.extensions.graphql-hive"
+uri = "docker://docker.io/atlantislab/buildpack-extension-graphql-hive:0.0.1"
+
 [[order-extensions]]
 [[order-extensions.group]]
 id = "tech.atlantislab.extensions.curl"
 
 [[order-extensions.group]]
 id = "tech.atlantislab.extensions.htop"
+
+[[order-extensions.group]]
+id = "tech.atlantislab.extensions.graphql-hive"
 
 # Deprecated
 [stack]
