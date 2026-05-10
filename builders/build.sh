@@ -2,5 +2,6 @@
 set -e
 
 BUILDER_DIR="${1:-base}"
+DIR=$(cd "$(dirname "$0")" && pwd)
 
-pack builder create "atlantislab/builder-${BUILDER_DIR}:22" --verbose --config "./${BUILDER_DIR}/builder.toml" --publish
+pack builder create "atlantislab/builder-${BUILDER_DIR}:24" --verbose --config "${DIR}/${BUILDER_DIR}/builder.toml" --publish

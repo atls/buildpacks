@@ -1,4 +1,4 @@
-FROM node:22-slim
+FROM node:24-slim
 
 ARG cnb_uid=1001
 ARG cnb_gid=1001

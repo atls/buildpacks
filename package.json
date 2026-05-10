@@ -16,7 +16,7 @@
     "@jest/core": "29.7.0",
     "@types/eslint": "8",
     "@types/jest": "29",
-    "@types/node": "20",
+    "@types/node": "24",
     "eslint": "8.57.0",
     "typescript": "5.2.2"
   },

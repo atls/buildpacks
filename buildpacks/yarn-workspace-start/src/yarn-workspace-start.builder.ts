@@ -9,30 +9,32 @@ import { BuildContext } from '@atls/libcnb'
 import { BuildResult }  from '@atls/libcnb'
 import { Process }      from '@atls/libcnb'
 
+const RUN_SCRIPT_PATH = '/workspace/run.sh'
+const PNP_CJS = '.pnp.cjs'
+const PNP_ESM_LOADER = '.pnp.loader.mjs'
+
 export class YarnWorkspaceStartBuilder implements Builder {
   async build(ctx: BuildContext): Promise<BuildResult> {
     const pkgjson = JSON.parse(readFileSync(join(ctx.applicationDir, 'package.json'), 'utf-8'))
 
     const command = pkgjson.scripts.start
 
-    await writeFile('/workspace/run.sh', `#!/usr/bin/env bash\numask 0002\n${command}`)
-    await chmod('/workspace/run.sh', '755')
+    await writeFile(RUN_SCRIPT_PATH, `#!/usr/bin/env bash\numask 0002\n${command}`)
+    await chmod(RUN_SCRIPT_PATH, '755')
 
     const nodeOptionsLayer = await ctx.layers.get('node-options', true, true, true)
 
-    const nodeOptions: Array<string> = []
+    const nodeOptions: Array<string> = ['--enable-source-maps']
 
     try {
-      await access(join(ctx.applicationDir, '.pnp.cjs'))
-      nodeOptions.push('--require', join(ctx.applicationDir, '.pnp.cjs'))
+      await access(join(ctx.applicationDir, PNP_CJS))
+      nodeOptions.push('--require', join(ctx.applicationDir, PNP_CJS))
     } catch {}
 
     try {
-      await access(join(ctx.applicationDir, '.pnp.loader.mjs'))
-      nodeOptions.push('--import', join(ctx.applicationDir, '.pnp.loader.mjs'))
+      await access(join(ctx.applicationDir, PNP_ESM_LOADER))
+      nodeOptions.push('--loader', join(ctx.applicationDir, PNP_ESM_LOADER))
     } catch {}
-
-    console.debug('NODE_OPTIONS', nodeOptions)
 
     nodeOptionsLayer.launchEnv.append(
       'NODE_OPTIONS',
