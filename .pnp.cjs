@@ -51,7 +51,7 @@ const RAW_RUNTIME_STATE =
           ["@jest/core", "virtual:7618f6ad4e0388e74cf2ca367fb81bdd928500796eac7e9c98a77538e257ec4f2b1a0a630357b583838239427f6b3131254ff1bd642d5e66b19563fff192599d#npm:29.7.0"],\
           ["@types/eslint", "npm:8.56.7"],\
           ["@types/jest", "npm:29.5.12"],\
-          ["@types/node", "npm:24.12.3"],\
+          ["@types/node", "npm:20.12.3"],\
           ["eslint", "npm:8.57.0"],\
           ["typescript", "patch:typescript@npm%3A5.2.2#optional!builtin<compat/typescript>::version=5.2.2&hash=f3b441"]\
         ],\
@@ -263,7 +263,7 @@ const RAW_RUNTIME_STATE =
         "packageDependencies": [\
           ["@atls/buildpack-yarn-cache", "workspace:buildpacks/yarn-cache"],\
           ["@atls/libcnb", "workspace:libcnb/libcnb"],\
-          ["@types/node", "npm:24.12.3"],\
+          ["@types/node", "npm:20.12.3"],\
           ["@yarnpkg/core", "npm:4.0.3"],\
           ["@yarnpkg/fslib", "npm:3.0.2"],\
           ["execa", "npm:5.1.1"],\
@@ -279,7 +279,7 @@ const RAW_RUNTIME_STATE =
         "packageDependencies": [\
           ["@atls/buildpack-yarn-install", "workspace:buildpacks/yarn-install"],\
           ["@atls/libcnb", "workspace:libcnb/libcnb"],\
-          ["@types/node", "npm:24.12.3"],\
+          ["@types/node", "npm:20.12.3"],\
           ["@yarnpkg/core", "npm:4.0.3"],\
           ["@yarnpkg/fslib", "npm:3.0.2"],\
           ["execa", "npm:5.1.1"]\
@@ -293,7 +293,7 @@ const RAW_RUNTIME_STATE =
         "packageDependencies": [\
           ["@atls/buildpack-yarn-workspace-start", "workspace:buildpacks/yarn-workspace-start"],\
           ["@atls/libcnb", "workspace:libcnb/libcnb"],\
-          ["@types/node", "npm:24.12.3"],\
+          ["@types/node", "npm:20.12.3"],\
           ["@yarnpkg/core", "npm:4.0.3"],\
           ["@yarnpkg/fslib", "npm:3.0.2"],\
           ["execa", "npm:5.1.1"]\
@@ -369,7 +369,7 @@ const RAW_RUNTIME_STATE =
           ["@babel/types", "npm:7.24.0"],\
           ["@iarna/toml", "npm:2.2.5"],\
           ["@types/execa", "npm:2.0.0"],\
-          ["@types/node", "npm:24.12.3"],\
+          ["@types/node", "npm:20.12.3"],\
           ["execa", "npm:5.1.1"]\
         ],\
         "linkType": "SOFT"\
@@ -2305,14 +2305,6 @@ const RAW_RUNTIME_STATE =
           ["undici-types", "npm:5.26.5"]\
         ],\
         "linkType": "HARD"\
-      }],\
-      ["npm:24.12.3", {\
-        "packageLocation": "../.yarn/berry/cache/@types-node-npm-24.12.3-5cb92d2dfa-10.zip/node_modules/@types/node/",\
-        "packageDependencies": [\
-          ["@types/node", "npm:24.12.3"],\
-          ["undici-types", "npm:7.16.0"]\
-        ],\
-        "linkType": "HARD"\
       }]\
     ]],\
     ["@types/responselike", [\
@@ -4064,7 +4056,7 @@ const RAW_RUNTIME_STATE =
           ["@jest/core", "virtual:7618f6ad4e0388e74cf2ca367fb81bdd928500796eac7e9c98a77538e257ec4f2b1a0a630357b583838239427f6b3131254ff1bd642d5e66b19563fff192599d#npm:29.7.0"],\
           ["@types/eslint", "npm:8.56.7"],\
           ["@types/jest", "npm:29.5.12"],\
-          ["@types/node", "npm:24.12.3"],\
+          ["@types/node", "npm:20.12.3"],\
           ["eslint", "npm:8.57.0"],\
           ["typescript", "patch:typescript@npm%3A5.2.2#optional!builtin<compat/typescript>::version=5.2.2&hash=f3b441"]\
         ],\
@@ -8640,13 +8632,6 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "../.yarn/berry/cache/undici-types-npm-5.26.5-de4f7c7bb9-10.zip/node_modules/undici-types/",\
         "packageDependencies": [\
           ["undici-types", "npm:5.26.5"]\
-        ],\
-        "linkType": "HARD"\
-      }],\
-      ["npm:7.16.0", {\
-        "packageLocation": "../.yarn/berry/cache/undici-types-npm-7.16.0-0e23b08124-10.zip/node_modules/undici-types/",\
-        "packageDependencies": [\
-          ["undici-types", "npm:7.16.0"]\
         ],\
         "linkType": "HARD"\
       }]\

@@ -187,7 +187,7 @@ __metadata:
   resolution: "@atls/buildpack-yarn-cache@workspace:buildpacks/yarn-cache"
   dependencies:
     "@atls/libcnb": "workspace:0.0.1"
-    "@types/node": "npm:24"
+    "@types/node": "npm:20.12.3"
     "@yarnpkg/core": "npm:4.0.3"
     "@yarnpkg/fslib": "npm:3.0.2"
     execa: "npm:5.1.1"
@@ -201,7 +201,7 @@ __metadata:
   resolution: "@atls/buildpack-yarn-install@workspace:buildpacks/yarn-install"
   dependencies:
     "@atls/libcnb": "workspace:0.0.1"
-    "@types/node": "npm:24"
+    "@types/node": "npm:20.12.3"
     "@yarnpkg/core": "npm:4.0.3"
     "@yarnpkg/fslib": "npm:3.0.2"
     execa: "npm:5.1.1"
@@ -213,7 +213,7 @@ __metadata:
   resolution: "@atls/buildpack-yarn-workspace-start@workspace:buildpacks/yarn-workspace-start"
   dependencies:
     "@atls/libcnb": "workspace:*"
-    "@types/node": "npm:24"
+    "@types/node": "npm:20.12.3"
     "@yarnpkg/core": "npm:4.0.3"
     "@yarnpkg/fslib": "npm:3.0.2"
     execa: "npm:5.1.1"
@@ -281,7 +281,7 @@ __metadata:
     "@babel/types": "npm:7.24.0"
     "@iarna/toml": "npm:2.2.5"
     "@types/execa": "npm:2.0.0"
-    "@types/node": "npm:24"
+    "@types/node": "npm:20.12.3"
     execa: "npm:5.1.1"
   languageName: unknown
   linkType: soft
@@ -1685,21 +1685,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*":
+"@types/node@npm:*, @types/node@npm:20.12.3":
   version: 20.12.3
   resolution: "@types/node@npm:20.12.3"
   dependencies:
     undici-types: "npm:~5.26.4"
   checksum: 10/3f3c5c6ba118a18aa997c51cdc3c66259d69021f87475a99ed6c913a6956e22de49748e09843bf6447a7a63ae474e61945a6dbcca93e23b2359fc0b6f9914f7a
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:24":
-  version: 24.12.3
-  resolution: "@types/node@npm:24.12.3"
-  dependencies:
-    undici-types: "npm:~7.16.0"
-  checksum: 10/a7441f1505fee5c049b0c64c70707b5081cdeb945537fd9249a4304d636c27213ee9973bfd68cec5e5326e0cab5506d2a45e60d6528882bc8096c6e1195b661a
   languageName: node
   linkType: hard
 
@@ -2884,7 +2875,7 @@ __metadata:
     "@jest/core": "npm:29.7.0"
     "@types/eslint": "npm:8"
     "@types/jest": "npm:29"
-    "@types/node": "npm:24"
+    "@types/node": "npm:20.12.3"
     eslint: "npm:8.57.0"
     typescript: "npm:5.2.2"
   languageName: unknown
@@ -6821,13 +6812,6 @@ __metadata:
   version: 5.26.5
   resolution: "undici-types@npm:5.26.5"
   checksum: 10/0097779d94bc0fd26f0418b3a05472410408877279141ded2bd449167be1aed7ea5b76f756562cb3586a07f251b90799bab22d9019ceba49c037c76445f7cddd
-  languageName: node
-  linkType: hard
-
-"undici-types@npm:~7.16.0":
-  version: 7.16.0
-  resolution: "undici-types@npm:7.16.0"
-  checksum: 10/db43439f69c2d94cc29f75cbfe9de86df87061d6b0c577ebe9bb3255f49b22c50162a7d7eb413b0458b6510b8ca299ac7cff38c3a29fbd31af9f504bcf7fbc0d
   languageName: node
   linkType: hard
 

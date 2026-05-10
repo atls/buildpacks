@@ -13,6 +13,16 @@ const RUN_SCRIPT_PATH = '/workspace/run.sh'
 const PNP_CJS = '.pnp.cjs'
 const PNP_ESM_LOADER = '.pnp.loader.mjs'
 
+const fileExists = async (path: string): Promise<boolean> => {
+  try {
+    await access(path)
+
+    return true
+  } catch {
+    return false
+  }
+}
+
 export class YarnWorkspaceStartBuilder implements Builder {
   async build(ctx: BuildContext): Promise<BuildResult> {
     const pkgjson = JSON.parse(readFileSync(join(ctx.applicationDir, 'package.json'), 'utf-8'))
@@ -26,15 +36,13 @@ export class YarnWorkspaceStartBuilder implements Builder {
 
     const nodeOptions: Array<string> = ['--enable-source-maps']
 
-    try {
-      await access(join(ctx.applicationDir, PNP_CJS))
+    if (await fileExists(join(ctx.applicationDir, PNP_CJS))) {
       nodeOptions.push('--require', join(ctx.applicationDir, PNP_CJS))
-    } catch {}
+    }
 
-    try {
-      await access(join(ctx.applicationDir, PNP_ESM_LOADER))
+    if (await fileExists(join(ctx.applicationDir, PNP_ESM_LOADER))) {
       nodeOptions.push('--loader', join(ctx.applicationDir, PNP_ESM_LOADER))
-    } catch {}
+    }
 
     nodeOptionsLayer.launchEnv.append(
       'NODE_OPTIONS',
