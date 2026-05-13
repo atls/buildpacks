@@ -56,6 +56,9 @@ jobs:
           corepack enable
           yarn install --immutable
 
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v4.0.0
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v4.0.0
 
