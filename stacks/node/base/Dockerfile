@@ -1,4 +1,5 @@
-FROM node:24-slim
+ARG node_image=node:24-slim
+FROM ${node_image}
 
 ARG cnb_uid=1001
 ARG cnb_gid=1001

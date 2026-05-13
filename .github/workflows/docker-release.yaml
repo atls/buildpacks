@@ -1,0 +1,209 @@
+name: Docker release
+
+on:
+  workflow_dispatch:
+    inputs:
+      node_image:
+        description: Node base image for stack-node:base
+        required: true
+        default: node:24-slim
+        type: string
+      expected_node_major:
+        description: Expected Node.js major version in released images
+        required: true
+        default: '24'
+        type: string
+      builder_tag:
+        description: builder-base tag to publish
+        required: true
+        default: '24'
+        type: string
+
+env:
+  DOCKER_NAMESPACE: atlantislab
+  STACK_ID: tech.atlantislab.stacks.node
+  STACK_IMAGE: atlantislab/stack-node
+  BUILDER_IMAGE: atlantislab/builder-base
+  PACK_VERSION: 0.40.4
+  TARGET_LINUX_AMD64: linux/amd64
+  TARGET_LINUX_ARM64: linux/arm64
+  PLATFORMS: linux/amd64,linux/arm64
+
+concurrency:
+  group: docker-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release Docker artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ inputs.expected_node_major }}
+          cache: yarn
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+
+          corepack enable
+          yarn install --immutable
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4.0.0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push stack base image
+        uses: docker/build-push-action@v7.1.0
+        with:
+          context: stacks/node/base
+          build-args: |
+            node_image=${{ inputs.node_image }}
+            stack_id=${{ env.STACK_ID }}
+          platforms: ${{ env.PLATFORMS }}
+          pull: true
+          push: true
+          tags: ${{ env.STACK_IMAGE }}:base
+
+      - name: Build and push stack build image
+        uses: docker/build-push-action@v7.1.0
+        with:
+          context: stacks/node/build
+          build-args: |
+            base_image=${{ env.STACK_IMAGE }}:base
+          platforms: ${{ env.PLATFORMS }}
+          pull: true
+          push: true
+          tags: ${{ env.STACK_IMAGE }}:build
+
+      - name: Build and push stack run image
+        uses: docker/build-push-action@v7.1.0
+        with:
+          context: stacks/node/run
+          build-args: |
+            base_image=${{ env.STACK_IMAGE }}:base
+          platforms: ${{ env.PLATFORMS }}
+          pull: true
+          push: true
+          tags: ${{ env.STACK_IMAGE }}:run
+
+      - name: Install pack
+        run: |
+          set -euo pipefail
+
+          archive="pack-v${PACK_VERSION}-linux.tgz"
+          cd /tmp
+          curl -sSLO "https://github.com/buildpacks/pack/releases/download/v${PACK_VERSION}/${archive}"
+          curl -sSLO "https://github.com/buildpacks/pack/releases/download/v${PACK_VERSION}/${archive}.sha256"
+          sha256sum --check "${archive}.sha256"
+          sudo tar -C /usr/local/bin -xzf "${archive}" pack
+          pack version
+
+      - name: Package and publish extensions
+        run: |
+          set -euo pipefail
+
+          package_extension() {
+            local image="$1"
+            local directory="$2"
+
+            pushd "${directory}"
+            pack extension package "${image}" \
+              --target "${TARGET_LINUX_AMD64}" \
+              --target "${TARGET_LINUX_ARM64}" \
+              --publish
+            popd
+          }
+
+          package_extension "${DOCKER_NAMESPACE}/buildpack-extension-curl:0.0.1" extensions/curl
+          package_extension "${DOCKER_NAMESPACE}/buildpack-extension-htop:0.0.1" extensions/htop
+          package_extension "${DOCKER_NAMESPACE}/buildpack-extension-graphql-hive:0.0.1" extensions/graphql-hive
+
+      - name: Build buildpack workspaces
+        run: |
+          set -euo pipefail
+
+          yarn workspace @atls/buildpack-yarn-install build
+          yarn workspace @atls/buildpack-yarn-cache build
+          yarn workspace @atls/buildpack-yarn-workspace-start build
+
+      - name: Package and publish buildpacks
+        run: |
+          set -euo pipefail
+
+          package_buildpack() {
+            local image="$1"
+            local directory="$2"
+
+            pushd "${directory}"
+            pack buildpack package "${image}" \
+              --config ./package.toml \
+              --target "${TARGET_LINUX_AMD64}" \
+              --target "${TARGET_LINUX_ARM64}" \
+              --publish
+            popd
+          }
+
+          package_buildpack "${DOCKER_NAMESPACE}/buildpack-require-extension:0.1.1" buildpacks/require-extension
+          package_buildpack "${DOCKER_NAMESPACE}/buildpack-yarn-install:0.1.1" buildpacks/yarn-install
+          package_buildpack "${DOCKER_NAMESPACE}/buildpack-yarn-cache:0.1.1" buildpacks/yarn-cache
+          package_buildpack "${DOCKER_NAMESPACE}/buildpack-yarn-workspace-start:0.1.1" buildpacks/yarn-workspace-start
+          package_buildpack "${DOCKER_NAMESPACE}/buildpack-yarn-workspace:0.1.1" buildpacks/yarn-workspace
+
+      - name: Create and publish builder
+        run: |
+          pack builder create "${BUILDER_IMAGE}:${{ inputs.builder_tag }}" \
+            --verbose \
+            --config builders/base/builder.toml \
+            --publish
+
+      - name: Verify published artifacts
+        run: |
+          set -euo pipefail
+
+          require_platforms() {
+            local image="$1"
+            local report
+            report="$(mktemp)"
+
+            docker buildx imagetools inspect "${image}" | tee "${report}"
+            grep -q "${TARGET_LINUX_AMD64}" "${report}"
+            grep -q "${TARGET_LINUX_ARM64}" "${report}"
+          }
+
+          require_node_major() {
+            local image="$1"
+            local entrypoint="${2:-}"
+            local version
+
+            if [[ -n "${entrypoint}" ]]; then
+              version="$(docker run --rm --pull always --entrypoint "${entrypoint}" "${image}" --version)"
+            else
+              version="$(docker run --rm --pull always "${image}" node --version)"
+            fi
+
+            [[ "${version}" =~ ^v${{ inputs.expected_node_major }}\. ]]
+          }
+
+          require_platforms "${STACK_IMAGE}:base"
+          require_platforms "${STACK_IMAGE}:build"
+          require_platforms "${STACK_IMAGE}:run"
+          require_platforms "${BUILDER_IMAGE}:${{ inputs.builder_tag }}"
+          require_platforms "${DOCKER_NAMESPACE}/buildpack-yarn-workspace:0.1.1"
+          require_platforms "${DOCKER_NAMESPACE}/buildpack-extension-curl:0.0.1"
+
+          require_node_major "${STACK_IMAGE}:build"
+          require_node_major "${STACK_IMAGE}:run"
+          require_node_major "${BUILDER_IMAGE}:${{ inputs.builder_tag }}" node
