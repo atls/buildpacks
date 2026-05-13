@@ -34,7 +34,7 @@ export class YarnCacheBuilder implements Builder {
       cacheLayer.setMetadata('locksum', yarnLockCheckSum.toString())
     }
 
-    await xfs.rmdirPromise(yarnCachePath, { recursive: true })
+    await xfs.removePromise(yarnCachePath)
 
     const yarnrc = await xfs.readFilePromise(
       ppath.join(applicationDir, '.yarnrc.yml' as PortablePath)

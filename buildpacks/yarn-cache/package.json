@@ -21,6 +21,6 @@
     "yaml": "1.10.2"
   },
   "devDependencies": {
-    "@types/node": "20"
+    "@types/node": "20.12.3"
   }
 }
