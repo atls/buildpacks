@@ -1,25 +1,26 @@
 name: Docker release
 
 on:
-  workflow_dispatch:
-    inputs:
-      node_image:
-        description: Node base image for stack-node:base
-        required: true
-        default: node:24-slim
-        type: string
-      expected_node_major:
-        description: Expected Node.js major version in released images
-        required: true
-        default: '24'
-        type: string
-      builder_tag:
-        description: builder-base tag to publish
-        required: true
-        default: '24'
-        type: string
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
+    paths:
+      - '.github/workflows/docker-release.yaml'
+      - '.yarn/**'
+      - 'builders/**'
+      - 'buildpacks/**'
+      - 'extensions/**'
+      - 'libcnb/**'
+      - 'package.json'
+      - 'stacks/**'
+      - 'yarn.lock'
 
 env:
+  BUILDER_TAG: '24'
+  EXPECTED_NODE_MAJOR: '24'
+  NODE_IMAGE: node:24-slim
   STACK_ID: tech.atlantislab.stacks.node
   PACK_VERSION: 0.40.4
   PLATFORMS: linux/amd64,linux/arm64
@@ -29,17 +30,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  validate-inputs:
-    name: Validate release inputs
+  validate-release:
+    name: Validate release
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      BUILDER_TAG: ${{ inputs.builder_tag }}
-      EXPECTED_NODE_MAJOR: ${{ inputs.expected_node_major }}
-      NODE_IMAGE: ${{ inputs.node_image }}
     steps:
-      - name: Validate dispatcher inputs
+      - name: Validate release configuration
         run: |
           [[ "${BUILDER_TAG}" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]
           [[ "${EXPECTED_NODE_MAJOR}" =~ ^[0-9]+$ ]]
@@ -50,7 +48,7 @@ jobs:
 
   build-stack-base:
     name: Build stack base
-    needs: validate-inputs
+    needs: validate-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -75,7 +73,7 @@ jobs:
         with:
           context: stacks/node/base
           build-args: |
-            node_image=${{ inputs.node_image }}
+            node_image=${{ env.NODE_IMAGE }}
             stack_id=${{ env.STACK_ID }}
           platforms: ${{ env.PLATFORMS }}
           pull: true
@@ -124,7 +122,7 @@ jobs:
 
   publish-extensions:
     name: Publish extension ${{ matrix.name }}
-    needs: validate-inputs
+    needs: validate-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -162,7 +160,7 @@ jobs:
 
   publish-buildpack-components:
     name: Publish buildpack ${{ matrix.name }}
-    needs: validate-inputs
+    needs: validate-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -189,7 +187,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ inputs.expected_node_major }}
+          node-version: ${{ env.EXPECTED_NODE_MAJOR }}
           cache: yarn
 
       - name: Install dependencies
@@ -261,9 +259,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Publish atlantislab/builder-base:${{ inputs.builder_tag }}
-        env:
-          BUILDER_TAG: ${{ inputs.builder_tag }}
+      - name: Publish atlantislab/builder-base:${{ env.BUILDER_TAG }}
         run: pack builder create "atlantislab/builder-base:${BUILDER_TAG}" --verbose --config builders/base/builder.toml --publish
 
   verify-manifests:
@@ -279,7 +275,7 @@ jobs:
           - atlantislab/stack-node:base
           - atlantislab/stack-node:build
           - atlantislab/stack-node:run
-          - atlantislab/builder-base:${{ inputs.builder_tag }}
+          - atlantislab/builder-base:24
           - atlantislab/buildpack-yarn-workspace:0.1.1
           - atlantislab/buildpack-extension-curl:0.0.1
     steps:
@@ -317,11 +313,11 @@ jobs:
             platform: linux/arm64
             entrypoint: ''
             command: node --version
-          - image: atlantislab/builder-base:${{ inputs.builder_tag }}
+          - image: atlantislab/builder-base:24
             platform: linux/amd64
             entrypoint: node
             command: --version
-          - image: atlantislab/builder-base:${{ inputs.builder_tag }}
+          - image: atlantislab/builder-base:24
             platform: linux/arm64
             entrypoint: node
             command: --version
@@ -333,7 +329,7 @@ jobs:
         env:
           COMMAND: ${{ matrix.command }}
           ENTRYPOINT: ${{ matrix.entrypoint }}
-          EXPECTED_NODE_MAJOR: ${{ inputs.expected_node_major }}
+          EXPECTED_NODE_MAJOR: ${{ env.EXPECTED_NODE_MAJOR }}
           IMAGE: ${{ matrix.image }}
           PLATFORM: ${{ matrix.platform }}
         run: |
