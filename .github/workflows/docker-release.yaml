@@ -1,0 +1,325 @@
+name: Docker release
+
+on:
+  workflow_dispatch:
+    inputs:
+      node_image:
+        description: Node base image for stack-node:base
+        required: true
+        default: node:24-slim
+        type: string
+      expected_node_major:
+        description: Expected Node.js major version in released images
+        required: true
+        default: '24'
+        type: string
+      builder_tag:
+        description: builder-base tag to publish
+        required: true
+        default: '24'
+        type: string
+
+env:
+  STACK_ID: tech.atlantislab.stacks.node
+  PACK_VERSION: 0.40.4
+  PLATFORMS: linux/amd64,linux/arm64
+
+concurrency:
+  group: docker-release
+  cancel-in-progress: false
+
+jobs:
+  validate-inputs:
+    name: Validate release inputs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      BUILDER_TAG: ${{ inputs.builder_tag }}
+      EXPECTED_NODE_MAJOR: ${{ inputs.expected_node_major }}
+      NODE_IMAGE: ${{ inputs.node_image }}
+    steps:
+      - name: Validate dispatcher inputs
+        run: |
+          [[ "${BUILDER_TAG}" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]
+          [[ "${EXPECTED_NODE_MAJOR}" =~ ^[0-9]+$ ]]
+          [[ "${NODE_IMAGE}" =~ ^[A-Za-z0-9][A-Za-z0-9._:/@-]+$ ]]
+
+      - name: Verify Node.js major before publishing
+        run: docker run --rm --pull always "${NODE_IMAGE}" node --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
+
+  build-stack-base:
+    name: Build stack base
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v4.0.0
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4.0.0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish atlantislab/stack-node:base
+        uses: docker/build-push-action@v7.1.0
+        with:
+          context: stacks/node/base
+          build-args: |
+            node_image=${{ inputs.node_image }}
+            stack_id=${{ env.STACK_ID }}
+          platforms: ${{ env.PLATFORMS }}
+          pull: true
+          push: true
+          tags: atlantislab/stack-node:base
+
+  build-stack:
+    name: Build stack ${{ matrix.tag }}
+    needs: build-stack-base
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tag: build
+            context: stacks/node/build
+          - tag: run
+            context: stacks/node/run
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v4.0.0
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4.0.0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish atlantislab/stack-node:${{ matrix.tag }}
+        uses: docker/build-push-action@v7.1.0
+        with:
+          context: ${{ matrix.context }}
+          build-args: base_image=atlantislab/stack-node:base
+          platforms: ${{ env.PLATFORMS }}
+          pull: true
+          push: true
+          tags: atlantislab/stack-node:${{ matrix.tag }}
+
+  publish-extensions:
+    name: Publish extension ${{ matrix.name }}
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: curl
+            directory: extensions/curl
+            image: atlantislab/buildpack-extension-curl:0.0.1
+          - name: htop
+            directory: extensions/htop
+            image: atlantislab/buildpack-extension-htop:0.0.1
+          - name: graphql-hive
+            directory: extensions/graphql-hive
+            image: atlantislab/buildpack-extension-graphql-hive:0.0.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pack
+        uses: buildpacks/github-actions/setup-pack@v5.12.1
+        with:
+          pack-version: ${{ env.PACK_VERSION }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish ${{ matrix.image }}
+        working-directory: ${{ matrix.directory }}
+        run: pack extension package ${{ matrix.image }} --target linux/amd64 --target linux/arm64 --publish
+
+  publish-buildpack-components:
+    name: Publish buildpack ${{ matrix.name }}
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: require-extension
+            directory: buildpacks/require-extension
+            image: atlantislab/buildpack-require-extension:0.1.1
+          - name: yarn-install
+            directory: buildpacks/yarn-install
+            image: atlantislab/buildpack-yarn-install:0.1.1
+          - name: yarn-cache
+            directory: buildpacks/yarn-cache
+            image: atlantislab/buildpack-yarn-cache:0.1.1
+          - name: yarn-workspace-start
+            directory: buildpacks/yarn-workspace-start
+            image: atlantislab/buildpack-yarn-workspace-start:0.1.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ inputs.expected_node_major }}
+          cache: yarn
+
+      - name: Install dependencies
+        run: |
+          corepack enable
+          yarn install --immutable
+
+      - name: Setup pack
+        uses: buildpacks/github-actions/setup-pack@v5.12.1
+        with:
+          pack-version: ${{ env.PACK_VERSION }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish ${{ matrix.image }}
+        working-directory: ${{ matrix.directory }}
+        run: pack buildpack package ${{ matrix.image }} --config ./package.toml --target linux/amd64 --target linux/arm64 --publish
+
+  publish-buildpack-group:
+    name: Publish buildpack group
+    needs: publish-buildpack-components
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pack
+        uses: buildpacks/github-actions/setup-pack@v5.12.1
+        with:
+          pack-version: ${{ env.PACK_VERSION }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish atlantislab/buildpack-yarn-workspace:0.1.1
+        working-directory: buildpacks/yarn-workspace
+        run: pack buildpack package atlantislab/buildpack-yarn-workspace:0.1.1 --config ./package.toml --target linux/amd64 --target linux/arm64 --publish
+
+  publish-builder:
+    name: Publish builder
+    needs:
+      - build-stack
+      - publish-extensions
+      - publish-buildpack-group
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pack
+        uses: buildpacks/github-actions/setup-pack@v5.12.1
+        with:
+          pack-version: ${{ env.PACK_VERSION }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish atlantislab/builder-base:${{ inputs.builder_tag }}
+        env:
+          BUILDER_TAG: ${{ inputs.builder_tag }}
+        run: pack builder create "atlantislab/builder-base:${BUILDER_TAG}" --verbose --config builders/base/builder.toml --publish
+
+  verify-manifests:
+    name: Verify manifest ${{ matrix.image }}
+    needs: publish-builder
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - atlantislab/stack-node:base
+          - atlantislab/stack-node:build
+          - atlantislab/stack-node:run
+          - atlantislab/builder-base:${{ inputs.builder_tag }}
+          - atlantislab/buildpack-yarn-workspace:0.1.1
+          - atlantislab/buildpack-extension-curl:0.0.1
+    steps:
+      - name: Verify linux/amd64 and linux/arm64
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
+          grep -q linux/amd64 manifest.txt
+          grep -q linux/arm64 manifest.txt
+
+  verify-node:
+    name: Verify Node.js ${{ matrix.image }}
+    needs: publish-builder
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: atlantislab/stack-node:build
+            entrypoint: ''
+            command: node --version
+          - image: atlantislab/stack-node:run
+            entrypoint: ''
+            command: node --version
+          - image: atlantislab/builder-base:${{ inputs.builder_tag }}
+            entrypoint: node
+            command: --version
+    steps:
+      - name: Verify Node.js major
+        env:
+          COMMAND: ${{ matrix.command }}
+          ENTRYPOINT: ${{ matrix.entrypoint }}
+          EXPECTED_NODE_MAJOR: ${{ inputs.expected_node_major }}
+          IMAGE: ${{ matrix.image }}
+        run: |
+          if [[ -n "${ENTRYPOINT}" ]]; then
+            docker run --rm --pull always --entrypoint "${ENTRYPOINT}" "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
+          else
+            docker run --rm --pull always "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
+          fi

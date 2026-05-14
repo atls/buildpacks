@@ -6,24 +6,21 @@
 
 Текущий production baseline: `Node.js 24 LTS`.
 
-Для всех операций необходим аккаунт Docker с доступом к `atlantislab`.
+Docker-релиз выполняется только через GitHub Actions workflow `Docker release`.
+Для публикации workflow использует Docker Hub secrets `DOCKERHUB_USERNAME` и `DOCKERHUB_TOKEN`.
 
-1. `/stacks/node/.../Dockerfile` - поправить версию ноды на актуальную LTS
-2. `/stacks/build.sh`
-3. Проверяем версию ноды через `docker inspect X` где Х - ID созданного образа
-4. `/stacks/push.sh`
+1. В `.github/workflows/docker-release.yaml` проверить `node_image`, `expected_node_major` и `builder_tag`.
+2. Запустить workflow `Docker release` через `workflow_dispatch`.
+3. Дождаться прохождения встроенной проверки опубликованных образов.
+4. Проверить наличие нового тега в [Docker Hub](https://hub.docker.com/r/atlantislab/builder-base/tags).
 
-На текущем этапе в Docker Hub запушены все образы из `/stacks`
+Workflow публикует:
 
-Делаем билдер:
-
-1. Собрать или подтянуть `atlantislab/stack-node:run`
-2. Собрать или подтянуть `atlantislab/stack-node:build`
-3. `/builders/build.sh` и `/builders/build-local.sh` - поправить тег билдера на актуальную major-версию Node. ВАЖНО: тег всегда меняем кроме случаев когда идет исправление созданного образа. Добавляя новый тег вы создаете новый образ под новым тегом вместе перезаписывания старого.
-4. `/builders/build.sh`
-5. Проверяем версию ноды через `docker inspect X` где Х - ID созданного образа
-6. `docker image push atlantislab/builder-base:24`
-7. Проверяем в [Docker Hub](https://hub.docker.com/r/atlantislab/builder-base/tags) - должен появится ваш образ
+1. `atlantislab/stack-node:base`
+2. `atlantislab/stack-node:build`
+3. `atlantislab/stack-node:run`
+4. `atlantislab/buildpack-*`
+5. `atlantislab/builder-base:<builder_tag>`
 
 ## Runtime запуск Yarn PnP ESM workspace
 
