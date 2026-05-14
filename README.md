@@ -22,8 +22,6 @@ Workflow публикует:
 4. `atlantislab/buildpack-*`
 5. `atlantislab/builder-base:<builder_tag>`
 
-Локальные shell-скрипты в `stacks`, `extensions`, `buildpacks` и `builders` не являются релизным контрактом.
-
 ## Runtime запуск Yarn PnP ESM workspace
 
 `buildpack-yarn-workspace-start` формирует launch layer с `NODE_OPTIONS` для workspace без `node_modules`.
