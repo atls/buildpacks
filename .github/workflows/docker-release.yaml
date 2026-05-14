@@ -272,7 +272,6 @@ jobs:
           - atlantislab/stack-node:base
           - atlantislab/stack-node:build
           - atlantislab/stack-node:run
-          - atlantislab/builder-base:24
           - atlantislab/buildpack-yarn-workspace:0.1.1
           - atlantislab/buildpack-extension-curl:0.0.1
     steps:
@@ -281,6 +280,19 @@ jobs:
           IMAGE: ${{ matrix.image }}
         run: |
           docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
+          grep -q linux/amd64 manifest.txt
+          grep -q linux/arm64 manifest.txt
+
+  verify-builder-manifest:
+    name: Verify builder manifest
+    needs: publish-builder
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Verify linux/amd64 and linux/arm64
+        run: |
+          docker buildx imagetools inspect "atlantislab/builder-base:${BUILDER_TAG}" | tee manifest.txt
           grep -q linux/amd64 manifest.txt
           grep -q linux/arm64 manifest.txt
 
@@ -310,14 +322,6 @@ jobs:
             platform: linux/arm64
             entrypoint: ''
             command: node --version
-          - image: atlantislab/builder-base:24
-            platform: linux/amd64
-            entrypoint: node
-            command: --version
-          - image: atlantislab/builder-base:24
-            platform: linux/arm64
-            entrypoint: node
-            command: --version
     steps:
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v4.0.0
@@ -335,3 +339,24 @@ jobs:
           else
             docker run --rm --pull always --platform "${PLATFORM}" "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
           fi
+
+  verify-builder-node:
+    name: Verify Node.js builder ${{ matrix.platform }}
+    needs: publish-builder
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+    steps:
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v4.0.0
+
+      - name: Verify Node.js major
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: docker run --rm --pull always --platform "${PLATFORM}" --entrypoint node "atlantislab/builder-base:${BUILDER_TAG}" --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
