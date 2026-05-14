@@ -1,9 +1,7 @@
 name: Docker release
 
 on:
-  pull_request:
-    types:
-      - closed
+  push:
     branches:
       - master
     paths:
@@ -32,7 +30,6 @@ concurrency:
 jobs:
   validate-release:
     name: Validate release
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: read
