@@ -7,12 +7,14 @@ on:
     paths:
       - '.github/workflows/docker-release.yaml'
       - '.yarn/**'
+      - '.yarnrc.yml'
       - 'builders/**'
       - 'buildpacks/**'
       - 'extensions/**'
       - 'libcnb/**'
       - 'package.json'
       - 'stacks/**'
+      - 'tsconfig.json'
       - 'yarn.lock'
 
 env:
