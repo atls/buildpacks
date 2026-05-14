@@ -16,9 +16,6 @@ on:
       - 'yarn.lock'
 
 env:
-  BUILDER_TAG: '24'
-  EXPECTED_NODE_MAJOR: '24'
-  NODE_IMAGE: node:24-slim
   STACK_ID: tech.atlantislab.stacks.node
   PACK_VERSION: 0.40.4
   PLATFORMS: linux/amd64,linux/arm64
@@ -33,15 +30,31 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      builder-tag: ${{ steps.release-config.outputs.builder-tag }}
+      node-image: ${{ steps.release-config.outputs.node-image }}
+      node-major: ${{ steps.release-config.outputs.node-major }}
     steps:
-      - name: Validate release configuration
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Resolve release configuration
+        id: release-config
         run: |
-          [[ "${BUILDER_TAG}" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]
-          [[ "${EXPECTED_NODE_MAJOR}" =~ ^[0-9]+$ ]]
-          [[ "${NODE_IMAGE}" =~ ^[A-Za-z0-9][A-Za-z0-9._:/@-]+$ ]]
+          node_image="$(awk -F= '$1 == "ARG node_image" { print $2; exit }' stacks/node/base/Dockerfile)"
+          [[ "${node_image}" =~ ^node:([0-9]+)-slim$ ]]
+
+          node_major="${BASH_REMATCH[1]}"
+
+          echo "builder-tag=${node_major}" >> "${GITHUB_OUTPUT}"
+          echo "node-image=${node_image}" >> "${GITHUB_OUTPUT}"
+          echo "node-major=${node_major}" >> "${GITHUB_OUTPUT}"
 
       - name: Verify Node.js major before publishing
-        run: docker run --rm --pull always "${NODE_IMAGE}" node --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
+        env:
+          NODE_IMAGE: ${{ steps.release-config.outputs.node-image }}
+          NODE_MAJOR: ${{ steps.release-config.outputs.node-major }}
+        run: docker run --rm --pull always "${NODE_IMAGE}" node --version | grep "^v${NODE_MAJOR}\\."
 
   build-stack-base:
     name: Build stack base
@@ -70,7 +83,7 @@ jobs:
         with:
           context: stacks/node/base
           build-args: |
-            node_image=${{ env.NODE_IMAGE }}
+            node_image=${{ needs.validate-release.outputs.node-image }}
             stack_id=${{ env.STACK_ID }}
           platforms: ${{ env.PLATFORMS }}
           pull: true
@@ -184,7 +197,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ env.EXPECTED_NODE_MAJOR }}
+          node-version: ${{ needs.validate-release.outputs.node-major }}
           cache: yarn
 
       - name: Install dependencies
@@ -238,6 +251,7 @@ jobs:
       - build-stack
       - publish-extensions
       - publish-buildpack-group
+      - validate-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -256,7 +270,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Publish atlantislab/builder-base:${{ env.BUILDER_TAG }}
+      - name: Publish builder
+        env:
+          BUILDER_TAG: ${{ needs.validate-release.outputs.builder-tag }}
         run: pack builder create "atlantislab/builder-base:${BUILDER_TAG}" --verbose --config builders/base/builder.toml --publish
 
   verify-manifests:
@@ -285,12 +301,16 @@ jobs:
 
   verify-builder-manifest:
     name: Verify builder manifest
-    needs: publish-builder
+    needs:
+      - publish-builder
+      - validate-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - name: Verify linux/amd64 and linux/arm64
+        env:
+          BUILDER_TAG: ${{ needs.validate-release.outputs.builder-tag }}
         run: |
           docker buildx imagetools inspect "atlantislab/builder-base:${BUILDER_TAG}" | tee manifest.txt
           grep -q linux/amd64 manifest.txt
@@ -298,7 +318,9 @@ jobs:
 
   verify-node:
     name: Verify Node.js ${{ matrix.image }} ${{ matrix.platform }}
-    needs: publish-builder
+    needs:
+      - publish-builder
+      - validate-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -330,7 +352,7 @@ jobs:
         env:
           COMMAND: ${{ matrix.command }}
           ENTRYPOINT: ${{ matrix.entrypoint }}
-          EXPECTED_NODE_MAJOR: ${{ env.EXPECTED_NODE_MAJOR }}
+          EXPECTED_NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
           IMAGE: ${{ matrix.image }}
           PLATFORM: ${{ matrix.platform }}
         run: |
@@ -342,7 +364,9 @@ jobs:
 
   verify-builder-node:
     name: Verify Node.js builder ${{ matrix.platform }}
-    needs: publish-builder
+    needs:
+      - publish-builder
+      - validate-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -358,5 +382,7 @@ jobs:
 
       - name: Verify Node.js major
         env:
+          BUILDER_TAG: ${{ needs.validate-release.outputs.builder-tag }}
+          EXPECTED_NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
           PLATFORM: ${{ matrix.platform }}
         run: docker run --rm --pull always --platform "${PLATFORM}" --entrypoint node "atlantislab/builder-base:${BUILDER_TAG}" --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
