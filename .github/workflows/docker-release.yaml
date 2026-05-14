@@ -292,7 +292,7 @@ jobs:
           grep -q linux/arm64 manifest.txt
 
   verify-node:
-    name: Verify Node.js ${{ matrix.image }}
+    name: Verify Node.js ${{ matrix.image }} ${{ matrix.platform }}
     needs: publish-builder
     runs-on: ubuntu-latest
     permissions:
@@ -302,24 +302,43 @@ jobs:
       matrix:
         include:
           - image: atlantislab/stack-node:build
+            platform: linux/amd64
+            entrypoint: ''
+            command: node --version
+          - image: atlantislab/stack-node:build
+            platform: linux/arm64
             entrypoint: ''
             command: node --version
           - image: atlantislab/stack-node:run
+            platform: linux/amd64
+            entrypoint: ''
+            command: node --version
+          - image: atlantislab/stack-node:run
+            platform: linux/arm64
             entrypoint: ''
             command: node --version
           - image: atlantislab/builder-base:${{ inputs.builder_tag }}
+            platform: linux/amd64
+            entrypoint: node
+            command: --version
+          - image: atlantislab/builder-base:${{ inputs.builder_tag }}
+            platform: linux/arm64
             entrypoint: node
             command: --version
     steps:
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v4.0.0
+
       - name: Verify Node.js major
         env:
           COMMAND: ${{ matrix.command }}
           ENTRYPOINT: ${{ matrix.entrypoint }}
           EXPECTED_NODE_MAJOR: ${{ inputs.expected_node_major }}
           IMAGE: ${{ matrix.image }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
           if [[ -n "${ENTRYPOINT}" ]]; then
-            docker run --rm --pull always --entrypoint "${ENTRYPOINT}" "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
+            docker run --rm --pull always --platform "${PLATFORM}" --entrypoint "${ENTRYPOINT}" "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
           else
-            docker run --rm --pull always "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
+            docker run --rm --pull always --platform "${PLATFORM}" "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
           fi
