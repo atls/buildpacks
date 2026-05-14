@@ -90,11 +90,15 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           pull: true
           push: true
-          tags: atlantislab/stack-node:base
+          tags: |
+            atlantislab/stack-node:base-${{ needs.validate-release.outputs.node-major }}
+            atlantislab/stack-node:base
 
   build-stack:
-    name: Build stack ${{ matrix.tag }}
-    needs: build-stack-base
+    name: Build stack ${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }}
+    needs:
+      - build-stack-base
+      - validate-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -126,11 +130,13 @@ jobs:
         uses: docker/build-push-action@v7.1.0
         with:
           context: ${{ matrix.context }}
-          build-args: base_image=atlantislab/stack-node:base
+          build-args: base_image=atlantislab/stack-node:base-${{ needs.validate-release.outputs.node-major }}
           platforms: ${{ env.PLATFORMS }}
           pull: true
           push: true
-          tags: atlantislab/stack-node:${{ matrix.tag }}
+          tags: |
+            atlantislab/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }}
+            atlantislab/stack-node:${{ matrix.tag }}
 
   publish-extensions:
     name: Publish extension ${{ matrix.name }}
@@ -169,6 +175,14 @@ jobs:
       - name: Publish ${{ matrix.image }}
         working-directory: ${{ matrix.directory }}
         run: pack extension package ${{ matrix.image }} --target linux/amd64 --target linux/arm64 --publish
+
+      - name: Verify linux/amd64 and linux/arm64
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
+          grep -q linux/amd64 manifest.txt
+          grep -q linux/arm64 manifest.txt
 
   publish-buildpack-components:
     name: Publish buildpack ${{ matrix.name }}
@@ -222,6 +236,14 @@ jobs:
         working-directory: ${{ matrix.directory }}
         run: pack buildpack package ${{ matrix.image }} --config ./package.toml --target linux/amd64 --target linux/arm64 --publish
 
+      - name: Verify linux/amd64 and linux/arm64
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
+          grep -q linux/amd64 manifest.txt
+          grep -q linux/arm64 manifest.txt
+
   publish-buildpack-group:
     name: Publish buildpack group
     needs: publish-buildpack-components
@@ -247,6 +269,39 @@ jobs:
         working-directory: buildpacks/yarn-workspace
         run: pack buildpack package atlantislab/buildpack-yarn-workspace:0.1.1 --config ./package.toml --target linux/amd64 --target linux/arm64 --publish
 
+      - name: Verify linux/amd64 and linux/arm64
+        env:
+          IMAGE: atlantislab/buildpack-yarn-workspace:0.1.1
+        run: |
+          docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
+          grep -q linux/amd64 manifest.txt
+          grep -q linux/arm64 manifest.txt
+
+  verify-stack-manifests:
+    name: Verify stack manifests
+    needs:
+      - build-stack
+      - validate-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Verify linux/amd64 and linux/arm64
+        env:
+          NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
+        run: |
+          images=(
+            "atlantislab/stack-node:base-${NODE_MAJOR}"
+            "atlantislab/stack-node:build-${NODE_MAJOR}"
+            "atlantislab/stack-node:run-${NODE_MAJOR}"
+          )
+
+          for image in "${images[@]}"; do
+            docker buildx imagetools inspect "${image}" | tee manifest.txt
+            grep -q linux/amd64 manifest.txt
+            grep -q linux/arm64 manifest.txt
+          done
+
   publish-builder:
     name: Publish builder
     needs:
@@ -254,6 +309,7 @@ jobs:
       - publish-extensions
       - publish-buildpack-group
       - validate-release
+      - verify-stack-manifests
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -275,31 +331,17 @@ jobs:
       - name: Publish builder
         env:
           BUILDER_TAG: ${{ needs.validate-release.outputs.builder-tag }}
-        run: pack builder create "atlantislab/builder-base:${BUILDER_TAG}" --verbose --config builders/base/builder.toml --publish
-
-  verify-manifests:
-    name: Verify manifest ${{ matrix.image }}
-    needs: publish-builder
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        image:
-          - atlantislab/stack-node:base
-          - atlantislab/stack-node:build
-          - atlantislab/stack-node:run
-          - atlantislab/buildpack-yarn-workspace:0.1.1
-          - atlantislab/buildpack-extension-curl:0.0.1
-    steps:
-      - name: Verify linux/amd64 and linux/arm64
-        env:
-          IMAGE: ${{ matrix.image }}
+          NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
         run: |
-          docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
-          grep -q linux/amd64 manifest.txt
-          grep -q linux/arm64 manifest.txt
+          builder_config="${RUNNER_TEMP}/builder.toml"
+          cp builders/base/builder.toml "${builder_config}"
+
+          sed -i \
+            -e "s#atlantislab/stack-node:build#atlantislab/stack-node:build-${NODE_MAJOR}#g" \
+            -e "s#atlantislab/stack-node:run#atlantislab/stack-node:run-${NODE_MAJOR}#g" \
+            "${builder_config}"
+
+          pack builder create "atlantislab/builder-base:${BUILDER_TAG}" --verbose --config "${builder_config}" --publish
 
   verify-builder-manifest:
     name: Verify builder manifest
@@ -319,7 +361,7 @@ jobs:
           grep -q linux/arm64 manifest.txt
 
   verify-node:
-    name: Verify Node.js ${{ matrix.image }} ${{ matrix.platform }}
+    name: Verify Node.js stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }} ${{ matrix.platform }}
     needs:
       - publish-builder
       - validate-release
@@ -330,19 +372,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: atlantislab/stack-node:build
+          - tag: build
             platform: linux/amd64
             entrypoint: ''
             command: node --version
-          - image: atlantislab/stack-node:build
+          - tag: build
             platform: linux/arm64
             entrypoint: ''
             command: node --version
-          - image: atlantislab/stack-node:run
+          - tag: run
             platform: linux/amd64
             entrypoint: ''
             command: node --version
-          - image: atlantislab/stack-node:run
+          - tag: run
             platform: linux/arm64
             entrypoint: ''
             command: node --version
@@ -355,7 +397,7 @@ jobs:
           COMMAND: ${{ matrix.command }}
           ENTRYPOINT: ${{ matrix.entrypoint }}
           EXPECTED_NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
-          IMAGE: ${{ matrix.image }}
+          IMAGE: atlantislab/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }}
           PLATFORM: ${{ matrix.platform }}
         run: |
           if [[ -n "${ENTRYPOINT}" ]]; then

@@ -16,11 +16,12 @@ Docker-релиз выполняется через GitHub Actions workflow `Doc
 
 Workflow публикует:
 
-1. `atlantislab/stack-node:base`
-2. `atlantislab/stack-node:build`
-3. `atlantislab/stack-node:run`
-4. `atlantislab/buildpack-*`
-5. `atlantislab/builder-base:<Node major>`
+1. `atlantislab/stack-node:base-<Node major>`
+2. `atlantislab/stack-node:build-<Node major>`
+3. `atlantislab/stack-node:run-<Node major>`
+4. `atlantislab/stack-node:base`, `atlantislab/stack-node:build`, `atlantislab/stack-node:run` как moving aliases текущего baseline
+5. `atlantislab/buildpack-*`
+6. `atlantislab/builder-base:<Node major>`, собранный из stack tags того же Node major
 
 ## Runtime запуск Yarn PnP ESM workspace
 
