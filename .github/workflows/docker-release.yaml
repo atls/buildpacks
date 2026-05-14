@@ -29,8 +29,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate-inputs:
+    name: Validate release inputs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      BUILDER_TAG: ${{ inputs.builder_tag }}
+      EXPECTED_NODE_MAJOR: ${{ inputs.expected_node_major }}
+      NODE_IMAGE: ${{ inputs.node_image }}
+    steps:
+      - name: Validate dispatcher inputs
+        run: |
+          [[ "${BUILDER_TAG}" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]
+          [[ "${EXPECTED_NODE_MAJOR}" =~ ^[0-9]+$ ]]
+          [[ "${NODE_IMAGE}" =~ ^[A-Za-z0-9][A-Za-z0-9._:/@-]+$ ]]
+
   build-stack-base:
     name: Build stack base
+    needs: validate-inputs
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -104,6 +121,7 @@ jobs:
 
   publish-extensions:
     name: Publish extension ${{ matrix.name }}
+    needs: validate-inputs
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -141,6 +159,7 @@ jobs:
 
   publish-buildpack-components:
     name: Publish buildpack ${{ matrix.name }}
+    needs: validate-inputs
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -240,7 +259,9 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Publish atlantislab/builder-base:${{ inputs.builder_tag }}
-        run: pack builder create atlantislab/builder-base:${{ inputs.builder_tag }} --verbose --config builders/base/builder.toml --publish
+        env:
+          BUILDER_TAG: ${{ inputs.builder_tag }}
+        run: pack builder create "atlantislab/builder-base:${BUILDER_TAG}" --verbose --config builders/base/builder.toml --publish
 
   verify-manifests:
     name: Verify manifest ${{ matrix.image }}
@@ -260,8 +281,10 @@ jobs:
           - atlantislab/buildpack-extension-curl:0.0.1
     steps:
       - name: Verify linux/amd64 and linux/arm64
+        env:
+          IMAGE: ${{ matrix.image }}
         run: |
-          docker buildx imagetools inspect ${{ matrix.image }} | tee manifest.txt
+          docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
           grep -q linux/amd64 manifest.txt
           grep -q linux/arm64 manifest.txt
 
@@ -282,8 +305,18 @@ jobs:
             entrypoint: ''
             command: node --version
           - image: atlantislab/builder-base:${{ inputs.builder_tag }}
-            entrypoint: --entrypoint node
+            entrypoint: node
             command: --version
     steps:
       - name: Verify Node.js major
-        run: docker run --rm --pull always ${{ matrix.entrypoint }} ${{ matrix.image }} ${{ matrix.command }} | grep '^v${{ inputs.expected_node_major }}\.'
+        env:
+          COMMAND: ${{ matrix.command }}
+          ENTRYPOINT: ${{ matrix.entrypoint }}
+          EXPECTED_NODE_MAJOR: ${{ inputs.expected_node_major }}
+          IMAGE: ${{ matrix.image }}
+        run: |
+          if [[ -n "${ENTRYPOINT}" ]]; then
+            docker run --rm --pull always --entrypoint "${ENTRYPOINT}" "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
+          else
+            docker run --rm --pull always "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
+          fi
