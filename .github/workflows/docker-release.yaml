@@ -45,6 +45,9 @@ jobs:
           [[ "${EXPECTED_NODE_MAJOR}" =~ ^[0-9]+$ ]]
           [[ "${NODE_IMAGE}" =~ ^[A-Za-z0-9][A-Za-z0-9._:/@-]+$ ]]
 
+      - name: Verify Node.js major before publishing
+        run: docker run --rm --pull always "${NODE_IMAGE}" node --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
+
   build-stack-base:
     name: Build stack base
     needs: validate-inputs
