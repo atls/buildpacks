@@ -6,12 +6,12 @@
 
 Текущий production baseline: `Node.js 24 LTS`.
 
-Docker-релиз выполняется только через GitHub Actions workflow `Docker release`.
+Docker-релиз выполняется через GitHub Actions workflow `Docker release` после merge в `master`.
 Для публикации workflow использует Docker Hub secrets `DOCKERHUB_USERNAME` и `DOCKERHUB_TOKEN`.
 
-1. В `.github/workflows/docker-release.yaml` проверить `node_image`, `expected_node_major` и `builder_tag`.
-2. Запустить workflow `Docker release` через `workflow_dispatch`.
-3. Дождаться прохождения встроенной проверки опубликованных образов.
+1. В `.github/workflows/docker-release.yaml` обновить `NODE_IMAGE`, `EXPECTED_NODE_MAJOR` и `BUILDER_TAG`.
+2. Вмержить PR с релизными изменениями в `master`.
+3. Дождаться прохождения workflow `Docker release`.
 4. Проверить наличие нового тега в [Docker Hub](https://hub.docker.com/r/atlantislab/builder-base/tags).
 
 Workflow публикует:
@@ -20,7 +20,7 @@ Workflow публикует:
 2. `atlantislab/stack-node:build`
 3. `atlantislab/stack-node:run`
 4. `atlantislab/buildpack-*`
-5. `atlantislab/builder-base:<builder_tag>`
+5. `atlantislab/builder-base:<BUILDER_TAG>`
 
 ## Runtime запуск Yarn PnP ESM workspace
 
