@@ -1,5 +1,8 @@
 [[order]]
 
+[lifecycle]
+version = "0.21.9"
+
 [build]
 image = "atlantislab/stack-node:build"
 
