@@ -4,6 +4,8 @@ FROM ${node_image}
 ARG cnb_uid=1001
 ARG cnb_gid=1001
 ARG stack_id=tech.atlantislab.stacks.node
+ARG corepack_version=0.35.0
+ARG yarn_version=4.1.1
 
 # Create user and group
 RUN groupadd cnb --gid ${cnb_gid} && \
@@ -13,6 +15,10 @@ RUN apt-get update && \
   apt-get install -y --no-install-recommends ca-certificates && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g corepack@${corepack_version} && \
+  corepack enable && \
+  corepack prepare yarn@${yarn_version} --activate
 
 LABEL io.buildpacks.base.distro.name=Debian
 LABEL io.buildpacks.base.distro.version=trixie
