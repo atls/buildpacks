@@ -48,9 +48,11 @@ jobs:
 
           node_major="${BASH_REMATCH[1]}"
 
-          echo "builder-tag=${node_major}" >> "${GITHUB_OUTPUT}"
-          echo "node-image=${node_image}" >> "${GITHUB_OUTPUT}"
-          echo "node-major=${node_major}" >> "${GITHUB_OUTPUT}"
+          {
+            echo "builder-tag=${node_major}"
+            echo "node-image=${node_image}"
+            echo "node-major=${node_major}"
+          } >> "${GITHUB_OUTPUT}"
 
       - name: Verify Node.js major before publishing
         env:
@@ -400,10 +402,12 @@ jobs:
           IMAGE: atlantislab/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }}
           PLATFORM: ${{ matrix.platform }}
         run: |
+          read -r -a command <<< "${COMMAND}"
+
           if [[ -n "${ENTRYPOINT}" ]]; then
-            docker run --rm --pull always --platform "${PLATFORM}" --entrypoint "${ENTRYPOINT}" "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
+            docker run --rm --pull always --platform "${PLATFORM}" --entrypoint "${ENTRYPOINT}" "${IMAGE}" "${command[@]}" | grep "^v${EXPECTED_NODE_MAJOR}\\."
           else
-            docker run --rm --pull always --platform "${PLATFORM}" "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
+            docker run --rm --pull always --platform "${PLATFORM}" "${IMAGE}" "${command[@]}" | grep "^v${EXPECTED_NODE_MAJOR}\\."
           fi
 
   verify-builder-node:
@@ -430,3 +434,52 @@ jobs:
           EXPECTED_NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
           PLATFORM: ${{ matrix.platform }}
         run: docker run --rm --pull always --platform "${PLATFORM}" --entrypoint node "atlantislab/builder-base:${BUILDER_TAG}" --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
+
+  scan-release-images:
+    name: Scan ${{ matrix.image }} ${{ matrix.platform }}
+    needs:
+      - validate-release
+      - verify-builder-manifest
+      - verify-stack-manifests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+        image:
+          - atlantislab/builder-base:${{ needs.validate-release.outputs.builder-tag }}
+          - atlantislab/stack-node:base-${{ needs.validate-release.outputs.node-major }}
+          - atlantislab/stack-node:build-${{ needs.validate-release.outputs.node-major }}
+          - atlantislab/stack-node:run-${{ needs.validate-release.outputs.node-major }}
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Report high and medium fixed vulnerabilities
+        uses: docker/scout-action@v1.20.4
+        with:
+          command: cves
+          image: registry://${{ matrix.image }}
+          platform: ${{ matrix.platform }}
+          only-fixed: true
+          only-severities: high,medium
+          summary: true
+          exit-code: false
+
+      - name: Gate critical fixed vulnerabilities
+        uses: docker/scout-action@v1.20.4
+        with:
+          command: cves
+          image: registry://${{ matrix.image }}
+          platform: ${{ matrix.platform }}
+          only-fixed: true
+          only-severities: critical
+          summary: true
+          exit-code: true
