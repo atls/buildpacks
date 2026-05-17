@@ -1,4 +1,4 @@
-ARG node_image=node:24-slim
+ARG node_image=node:26-slim
 FROM ${node_image}
 
 ARG cnb_uid=1001
@@ -15,7 +15,7 @@ RUN apt-get update && \
   rm -rf /var/lib/apt/lists/*
 
 LABEL io.buildpacks.base.distro.name=Debian
-LABEL io.buildpacks.base.distro.version=bookworm
+LABEL io.buildpacks.base.distro.version=trixie
 LABEL io.buildpacks.stack.id=${stack_id}
 
 # Set required CNB information
