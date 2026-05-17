@@ -7,6 +7,8 @@ ARG stack_id=tech.atlantislab.stacks.node
 ARG corepack_version=0.35.0
 ARG yarn_version=4.1.1
 
+ENV COREPACK_HOME=/opt/corepack
+
 # Create user and group
 RUN groupadd cnb --gid ${cnb_gid} && \
   useradd --uid ${cnb_uid} --gid ${cnb_gid} -m -s /bin/bash cnb
@@ -16,9 +18,11 @@ RUN apt-get update && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g corepack@${corepack_version} && \
+RUN mkdir -p ${COREPACK_HOME} && \
+  npm install -g corepack@${corepack_version} && \
   corepack enable && \
-  corepack prepare yarn@${yarn_version} --activate
+  corepack prepare yarn@${yarn_version} --activate && \
+  chown -R ${cnb_uid}:${cnb_gid} ${COREPACK_HOME}
 
 LABEL io.buildpacks.base.distro.name=Debian
 LABEL io.buildpacks.base.distro.version=trixie
