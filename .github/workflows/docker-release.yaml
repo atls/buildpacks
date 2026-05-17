@@ -36,6 +36,7 @@ jobs:
       builder-tag: ${{ steps.release-config.outputs.builder-tag }}
       node-image: ${{ steps.release-config.outputs.node-image }}
       node-major: ${{ steps.release-config.outputs.node-major }}
+      release-tag: ${{ steps.release-config.outputs.release-tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -47,10 +48,14 @@ jobs:
           [[ "${node_image}" =~ ^node:([0-9]+)-slim$ ]]
 
           node_major="${BASH_REMATCH[1]}"
+          release_tag="${node_major}-${GITHUB_SHA::12}"
 
-          echo "builder-tag=${node_major}" >> "${GITHUB_OUTPUT}"
-          echo "node-image=${node_image}" >> "${GITHUB_OUTPUT}"
-          echo "node-major=${node_major}" >> "${GITHUB_OUTPUT}"
+          {
+            echo "builder-tag=${node_major}"
+            echo "node-image=${node_image}"
+            echo "node-major=${node_major}"
+            echo "release-tag=${release_tag}"
+          } >> "${GITHUB_OUTPUT}"
 
       - name: Verify Node.js major before publishing
         env:
@@ -80,7 +85,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Publish atlantislab/stack-node:base
+      - name: Publish atlantislab/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
         uses: docker/build-push-action@v7.1.0
         with:
           context: stacks/node/base
@@ -90,9 +95,7 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           pull: true
           push: true
-          tags: |
-            atlantislab/stack-node:base-${{ needs.validate-release.outputs.node-major }}
-            atlantislab/stack-node:base
+          tags: atlantislab/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
 
   build-stack:
     name: Build stack ${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }}
@@ -126,17 +129,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Publish atlantislab/stack-node:${{ matrix.tag }}
+      - name: Publish atlantislab/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.release-tag }}
         uses: docker/build-push-action@v7.1.0
         with:
           context: ${{ matrix.context }}
-          build-args: base_image=atlantislab/stack-node:base-${{ needs.validate-release.outputs.node-major }}
+          build-args: base_image=atlantislab/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
           platforms: ${{ env.PLATFORMS }}
           pull: true
           push: true
-          tags: |
-            atlantislab/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }}
-            atlantislab/stack-node:${{ matrix.tag }}
+          tags: atlantislab/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.release-tag }}
 
   publish-extensions:
     name: Publish extension ${{ matrix.name }}
@@ -288,12 +289,12 @@ jobs:
     steps:
       - name: Verify linux/amd64 and linux/arm64
         env:
-          NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
+          RELEASE_TAG: ${{ needs.validate-release.outputs.release-tag }}
         run: |
           images=(
-            "atlantislab/stack-node:base-${NODE_MAJOR}"
-            "atlantislab/stack-node:build-${NODE_MAJOR}"
-            "atlantislab/stack-node:run-${NODE_MAJOR}"
+            "atlantislab/stack-node:base-${RELEASE_TAG}"
+            "atlantislab/stack-node:build-${RELEASE_TAG}"
+            "atlantislab/stack-node:run-${RELEASE_TAG}"
           )
 
           for image in "${images[@]}"; do
@@ -330,18 +331,17 @@ jobs:
 
       - name: Publish builder
         env:
-          BUILDER_TAG: ${{ needs.validate-release.outputs.builder-tag }}
-          NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
+          RELEASE_TAG: ${{ needs.validate-release.outputs.release-tag }}
         run: |
           builder_config="${RUNNER_TEMP}/builder.toml"
           cp builders/base/builder.toml "${builder_config}"
 
           sed -i \
-            -e "s#atlantislab/stack-node:build#atlantislab/stack-node:build-${NODE_MAJOR}#g" \
-            -e "s#atlantislab/stack-node:run#atlantislab/stack-node:run-${NODE_MAJOR}#g" \
+            -e "s#atlantislab/stack-node:build#atlantislab/stack-node:build-${RELEASE_TAG}#g" \
+            -e "s#atlantislab/stack-node:run#atlantislab/stack-node:run-${RELEASE_TAG}#g" \
             "${builder_config}"
 
-          pack builder create "atlantislab/builder-base:${BUILDER_TAG}" --verbose --config "${builder_config}" --publish
+          pack builder create "atlantislab/builder-base:${RELEASE_TAG}" --verbose --config "${builder_config}" --publish
 
   verify-builder-manifest:
     name: Verify builder manifest
@@ -354,16 +354,16 @@ jobs:
     steps:
       - name: Verify linux/amd64 and linux/arm64
         env:
-          BUILDER_TAG: ${{ needs.validate-release.outputs.builder-tag }}
+          RELEASE_TAG: ${{ needs.validate-release.outputs.release-tag }}
         run: |
-          docker buildx imagetools inspect "atlantislab/builder-base:${BUILDER_TAG}" | tee manifest.txt
+          docker buildx imagetools inspect "atlantislab/builder-base:${RELEASE_TAG}" | tee manifest.txt
           grep -q linux/amd64 manifest.txt
           grep -q linux/arm64 manifest.txt
 
   verify-node:
     name: Verify Node.js stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }} ${{ matrix.platform }}
     needs:
-      - publish-builder
+      - promote-release-images
       - validate-release
     runs-on: ubuntu-latest
     permissions:
@@ -400,16 +400,18 @@ jobs:
           IMAGE: atlantislab/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }}
           PLATFORM: ${{ matrix.platform }}
         run: |
+          read -r -a command <<< "${COMMAND}"
+
           if [[ -n "${ENTRYPOINT}" ]]; then
-            docker run --rm --pull always --platform "${PLATFORM}" --entrypoint "${ENTRYPOINT}" "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
+            docker run --rm --pull always --platform "${PLATFORM}" --entrypoint "${ENTRYPOINT}" "${IMAGE}" "${command[@]}" | grep "^v${EXPECTED_NODE_MAJOR}\\."
           else
-            docker run --rm --pull always --platform "${PLATFORM}" "${IMAGE}" ${COMMAND} | grep "^v${EXPECTED_NODE_MAJOR}\\."
+            docker run --rm --pull always --platform "${PLATFORM}" "${IMAGE}" "${command[@]}" | grep "^v${EXPECTED_NODE_MAJOR}\\."
           fi
 
   verify-builder-node:
     name: Verify Node.js builder ${{ matrix.platform }}
     needs:
-      - publish-builder
+      - promote-release-images
       - validate-release
     runs-on: ubuntu-latest
     permissions:
@@ -430,3 +432,95 @@ jobs:
           EXPECTED_NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
           PLATFORM: ${{ matrix.platform }}
         run: docker run --rm --pull always --platform "${PLATFORM}" --entrypoint node "atlantislab/builder-base:${BUILDER_TAG}" --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
+
+  scan-release-images:
+    name: Scan ${{ matrix.image }} ${{ matrix.platform }}
+    needs:
+      - validate-release
+      - verify-builder-manifest
+      - verify-stack-manifests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+        image:
+          - atlantislab/builder-base:${{ needs.validate-release.outputs.release-tag }}
+          - atlantislab/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
+          - atlantislab/stack-node:build-${{ needs.validate-release.outputs.release-tag }}
+          - atlantislab/stack-node:run-${{ needs.validate-release.outputs.release-tag }}
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Report high and medium fixed vulnerabilities
+        uses: docker/scout-action@v1.20.4
+        with:
+          command: cves
+          image: registry://${{ matrix.image }}
+          platform: ${{ matrix.platform }}
+          only-fixed: true
+          only-severities: high,medium
+          summary: true
+          exit-code: false
+
+      - name: Gate critical fixed vulnerabilities
+        uses: docker/scout-action@v1.20.4
+        with:
+          command: cves
+          image: registry://${{ matrix.image }}
+          platform: ${{ matrix.platform }}
+          only-fixed: true
+          only-severities: critical
+          summary: true
+          exit-code: true
+
+  promote-release-images:
+    name: Promote release images
+    needs:
+      - scan-release-images
+      - validate-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4.0.0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Promote stack and builder tags
+        env:
+          BUILDER_TAG: ${{ needs.validate-release.outputs.builder-tag }}
+          NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
+          RELEASE_TAG: ${{ needs.validate-release.outputs.release-tag }}
+        run: |
+          docker buildx imagetools create \
+            --tag "atlantislab/stack-node:base-${NODE_MAJOR}" \
+            --tag "atlantislab/stack-node:base" \
+            "atlantislab/stack-node:base-${RELEASE_TAG}"
+
+          docker buildx imagetools create \
+            --tag "atlantislab/stack-node:build-${NODE_MAJOR}" \
+            --tag "atlantislab/stack-node:build" \
+            "atlantislab/stack-node:build-${RELEASE_TAG}"
+
+          docker buildx imagetools create \
+            --tag "atlantislab/stack-node:run-${NODE_MAJOR}" \
+            --tag "atlantislab/stack-node:run" \
+            "atlantislab/stack-node:run-${RELEASE_TAG}"
+
+          docker buildx imagetools create \
+            --tag "atlantislab/builder-base:${BUILDER_TAG}" \
+            "atlantislab/builder-base:${RELEASE_TAG}"
