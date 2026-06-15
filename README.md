@@ -7,21 +7,21 @@
 Текущий production baseline берётся из `ARG node_image` в `stacks/node/base/Dockerfile`.
 
 Docker-релиз выполняется через GitHub Actions workflow `Docker release` после merge в `master`.
-Для публикации workflow использует Docker Hub secrets `DOCKERHUB_USERNAME` и `DOCKERHUB_TOKEN`.
+Для публикации workflow использует `GITHUB_TOKEN` с доступом `packages: write` и публикует образы в GitHub Container Registry.
 
 1. В `stacks/node/base/Dockerfile` обновить `ARG node_image`.
 2. Вмержить PR с релизными изменениями в `master`.
 3. Дождаться прохождения workflow `Docker release`.
-4. Проверить наличие нового тега в [Docker Hub](https://hub.docker.com/r/atlantislab/builder-base/tags).
+4. Проверить наличие нового тега в [GHCR](https://github.com/orgs/atls/packages/container/package/builder-base).
 
 Workflow публикует:
 
-1. `atlantislab/stack-node:base-<Node major>`
-2. `atlantislab/stack-node:build-<Node major>`
-3. `atlantislab/stack-node:run-<Node major>`
-4. `atlantislab/stack-node:base`, `atlantislab/stack-node:build`, `atlantislab/stack-node:run` как moving aliases текущего baseline
-5. `atlantislab/buildpack-*`
-6. `atlantislab/builder-base:<Node major>`, собранный из stack tags того же Node major
+1. `ghcr.io/atls/stack-node:base-<Node major>`
+2. `ghcr.io/atls/stack-node:build-<Node major>`
+3. `ghcr.io/atls/stack-node:run-<Node major>`
+4. `ghcr.io/atls/stack-node:base`, `ghcr.io/atls/stack-node:build`, `ghcr.io/atls/stack-node:run` как moving aliases текущего baseline
+5. `ghcr.io/atls/buildpack-*`
+6. `ghcr.io/atls/builder-base:<Node major>`, собранный из stack tags того же Node major
 
 ## Runtime запуск Yarn PnP ESM workspace
 

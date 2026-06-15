@@ -4,11 +4,11 @@
 version = "0.21.12"
 
 [build]
-image = "atlantislab/stack-node:build"
+image = "ghcr.io/atls/stack-node:build"
 
 [run]
 [[run.images]]
-image = "atlantislab/stack-node:run"
+image = "ghcr.io/atls/stack-node:run"
 
 [[targets]]
 os = "linux"
@@ -20,15 +20,15 @@ arch = "arm64"
 
 [[extensions]]
 id = "tech.atlantislab.extensions.curl"
-uri = "docker://docker.io/atlantislab/buildpack-extension-curl:0.0.1"
+uri = "docker://ghcr.io/atls/buildpack-extension-curl:0.0.1"
 
 [[extensions]]
 id = "tech.atlantislab.extensions.htop"
-uri = "docker://docker.io/atlantislab/buildpack-extension-htop:0.0.1"
+uri = "docker://ghcr.io/atls/buildpack-extension-htop:0.0.1"
 
 [[extensions]]
 id = "tech.atlantislab.extensions.graphql-hive"
-uri = "docker://docker.io/atlantislab/buildpack-extension-graphql-hive:0.0.1"
+uri = "docker://ghcr.io/atls/buildpack-extension-graphql-hive:0.0.1"
 
 [[order-extensions]]
 [[order-extensions.group]]
@@ -43,5 +43,5 @@ id = "tech.atlantislab.extensions.graphql-hive"
 # Deprecated
 [stack]
 id = "tech.atlantislab.stacks.node"
-run-image = "atlantislab/stack-node:run"
-build-image = "atlantislab/stack-node:build"
+run-image = "ghcr.io/atls/stack-node:run"
+build-image = "ghcr.io/atls/stack-node:build"

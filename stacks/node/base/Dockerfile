@@ -1,4 +1,4 @@
-ARG node_image=node:26-slim
+ARG node_image=public.ecr.aws/docker/library/node:26-slim
 FROM ${node_image}
 
 ARG cnb_uid=1001
