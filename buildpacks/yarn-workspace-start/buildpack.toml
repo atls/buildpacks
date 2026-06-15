@@ -2,7 +2,7 @@ api = "0.10"
 
 [buildpack]
 id = "tech.atlantislab.buildpacks.yarn-workspace-start"
-version = "0.1.1"
+version = "0.1.2"
 name = "Yarn Workspace Start Buildpack"
 
 [metadata]
