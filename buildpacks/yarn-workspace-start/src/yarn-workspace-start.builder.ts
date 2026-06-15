@@ -10,6 +10,7 @@ import { BuildResult }  from '@atls/libcnb'
 import { Process }      from '@atls/libcnb'
 
 const RUN_SCRIPT_PATH = '/workspace/run.sh'
+const START_IMAGE_SCRIPT = 'start-image'
 const PNP_CJS = '.pnp.cjs'
 const PNP_ESM_LOADER = '.pnp.loader.mjs'
 
@@ -24,13 +25,19 @@ const fileExists = async (path: string): Promise<boolean> => {
 }
 
 export class YarnWorkspaceStartBuilder implements Builder {
+  constructor(private readonly runScriptPath: string = RUN_SCRIPT_PATH) {}
+
   async build(ctx: BuildContext): Promise<BuildResult> {
     const pkgjson = JSON.parse(readFileSync(join(ctx.applicationDir, 'package.json'), 'utf-8'))
 
-    const command = pkgjson.scripts.start
+    const command = pkgjson.scripts?.[START_IMAGE_SCRIPT]
 
-    await writeFile(RUN_SCRIPT_PATH, `#!/usr/bin/env bash\numask 0002\n${command}`)
-    await chmod(RUN_SCRIPT_PATH, '755')
+    if (typeof command !== 'string' || command.trim().length === 0) {
+      throw new Error(`Missing required package.json script "${START_IMAGE_SCRIPT}" for launch command`)
+    }
+
+    await writeFile(this.runScriptPath, `#!/usr/bin/env bash\numask 0002\n${command}`)
+    await chmod(this.runScriptPath, '755')
 
     const nodeOptionsLayer = await ctx.layers.get('node-options', true, true, true)
 

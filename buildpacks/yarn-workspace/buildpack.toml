@@ -2,7 +2,7 @@ api = "0.10"
 
 [buildpack]
 id = "tech.atlantislab.buildpacks.yarn-workspace"
-version = "0.1.1"
+version = "0.1.2"
 name = "Yarn Workspace Buildpack"
 
 [metadata]
@@ -21,9 +21,8 @@ version = "0.1.1"
 
 [[order.group]]
 id = "tech.atlantislab.buildpacks.yarn-workspace-start"
-version = "0.1.1"
+version = "0.1.2"
 
 [[order.group]]
 id = "tech.atlantislab.buildpacks.require-extension"
 version = "0.1.1"
-
