@@ -244,9 +244,31 @@ jobs:
 
           echo "image=${IMAGE_REPOSITORY}:${version}" >> "${GITHUB_OUTPUT}"
 
+      - name: Prepare buildpack package
+        id: buildpack-package
+        env:
+          BUILDPACK_DIRECTORY: ${{ matrix.directory }}
+          BUILDPACK_NAME: ${{ matrix.name }}
+        run: |
+          package_config="${RUNNER_TEMP}/${BUILDPACK_NAME}-package.toml"
+          stage_dir="${RUNNER_TEMP}/${BUILDPACK_NAME}-buildpack"
+
+          ./scripts/prepare-buildpack-package.sh "${BUILDPACK_DIRECTORY}" "${stage_dir}" "${package_config}"
+
+          echo "config=${package_config}" >> "${GITHUB_OUTPUT}"
+
+      - name: Verify buildpack package content
+        env:
+          BUILDPACK_ARCHIVE: ${{ runner.temp }}/${{ matrix.name }}
+          BUILDPACK_DIRECTORY: ${{ matrix.directory }}
+          PACKAGE_CONFIG: ${{ steps.buildpack-package.outputs.config }}
+        run: |
+          pack buildpack package "${BUILDPACK_ARCHIVE}" --config "${PACKAGE_CONFIG}" --target linux/amd64 --target linux/arm64 --format file
+          ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-amd64.cnb" "${BUILDPACK_DIRECTORY}"
+          ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-arm64.cnb" "${BUILDPACK_DIRECTORY}"
+
       - name: Publish ${{ steps.buildpack-image.outputs.image }}
-        working-directory: ${{ matrix.directory }}
-        run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ./package.toml --target linux/amd64 --target linux/arm64 --publish
+        run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ${{ steps.buildpack-package.outputs.config }} --target linux/amd64 --target linux/arm64 --publish
 
       - name: Verify linux/amd64 and linux/arm64
         env:
@@ -286,9 +308,27 @@ jobs:
 
           echo "image=atlantislab/buildpack-yarn-workspace:${version}" >> "${GITHUB_OUTPUT}"
 
+      - name: Prepare buildpack package
+        id: buildpack-package
+        run: |
+          package_config="${RUNNER_TEMP}/yarn-workspace-package.toml"
+          stage_dir="${RUNNER_TEMP}/yarn-workspace-buildpack"
+
+          ./scripts/prepare-buildpack-package.sh buildpacks/yarn-workspace "${stage_dir}" "${package_config}"
+
+          echo "config=${package_config}" >> "${GITHUB_OUTPUT}"
+
+      - name: Verify buildpack package content
+        env:
+          BUILDPACK_ARCHIVE: ${{ runner.temp }}/yarn-workspace
+          PACKAGE_CONFIG: ${{ steps.buildpack-package.outputs.config }}
+        run: |
+          pack buildpack package "${BUILDPACK_ARCHIVE}" --config "${PACKAGE_CONFIG}" --target linux/amd64 --target linux/arm64 --format file
+          ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-amd64.cnb" buildpacks/yarn-workspace
+          ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-arm64.cnb" buildpacks/yarn-workspace
+
       - name: Publish ${{ steps.buildpack-image.outputs.image }}
-        working-directory: buildpacks/yarn-workspace
-        run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ./package.toml --target linux/amd64 --target linux/arm64 --publish
+        run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ${{ steps.buildpack-package.outputs.config }} --target linux/amd64 --target linux/arm64 --publish
 
       - name: Verify linux/amd64 and linux/arm64
         env:
