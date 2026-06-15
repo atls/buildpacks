@@ -4,13 +4,13 @@
 
 ## Порядок обновления версии `NodeJS` базового билдера
 
-Текущий production baseline берётся из `ARG node_image` в `stacks/node/base/Dockerfile`.
+Текущий production baseline берётся из `ARG node_version` в `stacks/node/base/Dockerfile`.
 
 Docker-релиз выполняется через GitHub Actions workflow `Docker release` после merge в `master`.
 Для публикации workflow использует `GITHUB_TOKEN` с доступом `packages: write` и публикует образы в GitHub Container Registry.
 Для Docker Scout scan workflow использует `DOCKERHUB_USERNAME` и `DOCKERHUB_TOKEN` только как Docker Scout credentials.
 
-1. В `stacks/node/base/Dockerfile` обновить `ARG node_image`.
+1. В `stacks/node/base/Dockerfile` обновить `ARG node_version`.
 2. Вмержить PR с релизными изменениями в `master`.
 3. Дождаться прохождения workflow `Docker release`.
 4. Проверить наличие нового тега в [GHCR](https://github.com/orgs/atls/packages/container/package/builder-base).

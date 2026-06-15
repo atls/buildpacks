@@ -35,8 +35,8 @@ jobs:
     permissions:
       contents: read
     outputs:
+      base-image: ${{ steps.release-config.outputs.base-image }}
       builder-tag: ${{ steps.release-config.outputs.builder-tag }}
-      node-image: ${{ steps.release-config.outputs.node-image }}
       node-major: ${{ steps.release-config.outputs.node-major }}
       release-tag: ${{ steps.release-config.outputs.release-tag }}
     steps:
@@ -46,27 +46,28 @@ jobs:
       - name: Resolve release configuration
         id: release-config
         run: |
-          node_image="$(awk -F= '$1 == "ARG node_image" { print $2; exit }' stacks/node/base/Dockerfile)"
-          if [[ ! "${node_image}" =~ (^|/)node:([0-9]+)-slim$ ]]; then
-            echo "::error::Unsupported node_image '${node_image}'. Expected an image ending with node:<major>-slim."
+          base_image="$(awk -F= '$1 == "ARG base_image" { print $2; exit }' stacks/node/base/Dockerfile)"
+          node_version="$(awk -F= '$1 == "ARG node_version" { print $2; exit }' stacks/node/base/Dockerfile)"
+          if [[ ! "${node_version}" =~ ^([0-9]+)$ ]]; then
+            echo "::error::Unsupported node_version '${node_version}'. Expected a Node.js major version."
             exit 1
           fi
+          [[ -n "${base_image}" ]]
 
-          node_major="${BASH_REMATCH[2]}"
+          node_major="${BASH_REMATCH[1]}"
           release_tag="${node_major}-${GITHUB_SHA::12}"
 
           {
+            echo "base-image=${base_image}"
             echo "builder-tag=${node_major}"
-            echo "node-image=${node_image}"
             echo "node-major=${node_major}"
             echo "release-tag=${release_tag}"
           } >> "${GITHUB_OUTPUT}"
 
-      - name: Verify Node.js major before publishing
+      - name: Verify base image manifest before publishing
         env:
-          NODE_IMAGE: ${{ steps.release-config.outputs.node-image }}
-          NODE_MAJOR: ${{ steps.release-config.outputs.node-major }}
-        run: docker run --rm --pull always "${NODE_IMAGE}" node --version | grep "^v${NODE_MAJOR}\\."
+          BASE_IMAGE: ${{ steps.release-config.outputs.base-image }}
+        run: docker buildx imagetools inspect "${BASE_IMAGE}" > /dev/null
 
   build-stack-base:
     name: Build stack base
@@ -97,7 +98,8 @@ jobs:
         with:
           context: stacks/node/base
           build-args: |
-            node_image=${{ needs.validate-release.outputs.node-image }}
+            base_image=${{ needs.validate-release.outputs.base-image }}
+            node_version=${{ needs.validate-release.outputs.node-major }}
             stack_id=${{ env.STACK_ID }}
           platforms: ${{ env.PLATFORMS }}
           pull: true
