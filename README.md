@@ -8,6 +8,7 @@
 
 Docker-релиз выполняется через GitHub Actions workflow `Docker release` после merge в `master`.
 Для публикации workflow использует `GITHUB_TOKEN` с доступом `packages: write` и публикует образы в GitHub Container Registry.
+Для Docker Scout scan workflow использует `DOCKERHUB_USERNAME` и `DOCKERHUB_TOKEN` только как Docker Scout credentials.
 
 1. В `stacks/node/base/Dockerfile` обновить `ARG node_image`.
 2. Вмержить PR с релизными изменениями в `master`.
