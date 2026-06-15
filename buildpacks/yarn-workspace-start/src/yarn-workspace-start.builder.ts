@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { writeFile }    from 'node:fs/promises'
 import { chmod }        from 'node:fs/promises'
 import { join }         from 'node:path'
+import { isAbsolute }   from 'node:path'
 import { access }         from 'node:fs/promises'
 
 import { Builder }      from '@atls/libcnb'
@@ -13,6 +14,7 @@ const RUN_SCRIPT_PATH = '/workspace/run.sh'
 const START_IMAGE_SCRIPT = 'start-image'
 const PNP_CJS = '.pnp.cjs'
 const PNP_ESM_LOADER = '.pnp.loader.mjs'
+const YARN_RC = '.yarnrc.yml'
 
 const fileExists = async (path: string): Promise<boolean> => {
   try {
@@ -22,6 +24,46 @@ const fileExists = async (path: string): Promise<boolean> => {
   } catch {
     return false
   }
+}
+
+const shellQuote = (value: string): string => `'${value.replace(/'/g, `'\\''`)}'`
+
+const parseYarnPath = (content: string): string | undefined => {
+  const match = content.match(/^\s*yarnPath:\s*(.+?)\s*$/m)
+
+  return match?.[1]?.replace(/^['"]|['"]$/g, '')
+}
+
+const resolveYarnPath = async (applicationDir: string): Promise<string | undefined> => {
+  const yarnRcPath = join(applicationDir, YARN_RC)
+
+  if (!(await fileExists(yarnRcPath))) {
+    return undefined
+  }
+
+  const yarnPath = parseYarnPath(readFileSync(yarnRcPath, 'utf-8'))
+
+  if (!yarnPath) {
+    return undefined
+  }
+
+  const resolvedPath = isAbsolute(yarnPath) ? yarnPath : join(applicationDir, yarnPath)
+
+  if (!(await fileExists(resolvedPath))) {
+    return undefined
+  }
+
+  return resolvedPath
+}
+
+const resolveLaunchCommand = async (applicationDir: string): Promise<string> => {
+  const yarnPath = await resolveYarnPath(applicationDir)
+
+  if (yarnPath) {
+    return `exec node ${shellQuote(yarnPath)} ${START_IMAGE_SCRIPT}`
+  }
+
+  return `exec yarn ${START_IMAGE_SCRIPT}`
 }
 
 export class YarnWorkspaceStartBuilder implements Builder {
@@ -36,7 +78,10 @@ export class YarnWorkspaceStartBuilder implements Builder {
       throw new Error(`Missing required package.json script "${START_IMAGE_SCRIPT}" for launch command`)
     }
 
-    await writeFile(this.runScriptPath, `#!/usr/bin/env bash\numask 0002\n${command}`)
+    await writeFile(
+      this.runScriptPath,
+      `#!/usr/bin/env bash\numask 0002\n${await resolveLaunchCommand(ctx.applicationDir)}`
+    )
     await chmod(this.runScriptPath, '755')
 
     const nodeOptionsLayer = await ctx.layers.get('node-options', true, true, true)
