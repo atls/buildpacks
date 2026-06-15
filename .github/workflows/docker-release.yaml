@@ -557,6 +557,7 @@ jobs:
       - verify-builder-manifest
       - verify-stack-manifests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       packages: read
