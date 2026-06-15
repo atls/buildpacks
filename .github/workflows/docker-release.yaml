@@ -18,6 +18,8 @@ on:
       - 'yarn.lock'
 
 env:
+  IMAGE_PREFIX: ghcr.io/atls
+  REGISTRY: ghcr.io
   STACK_ID: tech.atlantislab.stacks.node
   PACK_VERSION: 0.40.4
   PLATFORMS: linux/amd64,linux/arm64
@@ -45,9 +47,12 @@ jobs:
         id: release-config
         run: |
           node_image="$(awk -F= '$1 == "ARG node_image" { print $2; exit }' stacks/node/base/Dockerfile)"
-          [[ "${node_image}" =~ ^node:([0-9]+)-slim$ ]]
+          if [[ ! "${node_image}" =~ (^|/)node:([0-9]+)-slim$ ]]; then
+            echo "::error::Unsupported node_image '${node_image}'. Expected an image ending with node:<major>-slim."
+            exit 1
+          fi
 
-          node_major="${BASH_REMATCH[1]}"
+          node_major="${BASH_REMATCH[2]}"
           release_tag="${node_major}-${GITHUB_SHA::12}"
 
           {
@@ -69,6 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -79,13 +85,14 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v4.0.0
 
-      - name: Login to Docker Hub
+      - name: Login to GHCR
         uses: docker/login-action@v4.1.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish atlantislab/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
+      - name: Publish ghcr.io/atls/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
         uses: docker/build-push-action@v7.1.0
         with:
           context: stacks/node/base
@@ -95,7 +102,7 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           pull: true
           push: true
-          tags: atlantislab/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
+          tags: ${{ env.IMAGE_PREFIX }}/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
 
   build-stack:
     name: Build stack ${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }}
@@ -105,6 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
@@ -123,21 +131,22 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v4.0.0
 
-      - name: Login to Docker Hub
+      - name: Login to GHCR
         uses: docker/login-action@v4.1.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish atlantislab/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.release-tag }}
+      - name: Publish ghcr.io/atls/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.release-tag }}
         uses: docker/build-push-action@v7.1.0
         with:
           context: ${{ matrix.context }}
-          build-args: base_image=atlantislab/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
+          build-args: base_image=${{ env.IMAGE_PREFIX }}/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
           platforms: ${{ env.PLATFORMS }}
           pull: true
           push: true
-          tags: atlantislab/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.release-tag }}
+          tags: ${{ env.IMAGE_PREFIX }}/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.release-tag }}
 
   publish-extensions:
     name: Publish extension ${{ matrix.name }}
@@ -145,19 +154,20 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: curl
             directory: extensions/curl
-            image: atlantislab/buildpack-extension-curl:0.0.1
+            image: ghcr.io/atls/buildpack-extension-curl:0.0.1
           - name: htop
             directory: extensions/htop
-            image: atlantislab/buildpack-extension-htop:0.0.1
+            image: ghcr.io/atls/buildpack-extension-htop:0.0.1
           - name: graphql-hive
             directory: extensions/graphql-hive
-            image: atlantislab/buildpack-extension-graphql-hive:0.0.1
+            image: ghcr.io/atls/buildpack-extension-graphql-hive:0.0.1
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -167,11 +177,12 @@ jobs:
         with:
           pack-version: ${{ env.PACK_VERSION }}
 
-      - name: Login to Docker Hub
+      - name: Login to GHCR
         uses: docker/login-action@v4.1.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish ${{ matrix.image }}
         working-directory: ${{ matrix.directory }}
@@ -191,22 +202,23 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: require-extension
             directory: buildpacks/require-extension
-            image-repository: atlantislab/buildpack-require-extension
+            image-repository: ghcr.io/atls/buildpack-require-extension
           - name: yarn-install
             directory: buildpacks/yarn-install
-            image-repository: atlantislab/buildpack-yarn-install
+            image-repository: ghcr.io/atls/buildpack-yarn-install
           - name: yarn-cache
             directory: buildpacks/yarn-cache
-            image-repository: atlantislab/buildpack-yarn-cache
+            image-repository: ghcr.io/atls/buildpack-yarn-cache
           - name: yarn-workspace-start
             directory: buildpacks/yarn-workspace-start
-            image-repository: atlantislab/buildpack-yarn-workspace-start
+            image-repository: ghcr.io/atls/buildpack-yarn-workspace-start
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -227,11 +239,12 @@ jobs:
         with:
           pack-version: ${{ env.PACK_VERSION }}
 
-      - name: Login to Docker Hub
+      - name: Login to GHCR
         uses: docker/login-action@v4.1.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Resolve buildpack image
         id: buildpack-image
@@ -263,12 +276,12 @@ jobs:
           BUILDPACK_DIRECTORY: ${{ matrix.directory }}
           PACKAGE_CONFIG: ${{ steps.buildpack-package.outputs.config }}
         run: |
-          pack buildpack package "${BUILDPACK_ARCHIVE}" --config "${PACKAGE_CONFIG}" --target linux/amd64 --target linux/arm64 --format file
+          pack buildpack package "${BUILDPACK_ARCHIVE}" --config "${PACKAGE_CONFIG}" --target linux/amd64 --target linux/arm64 --format file --pull-policy if-not-present
           ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-amd64.cnb" "${BUILDPACK_DIRECTORY}"
           ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-arm64.cnb" "${BUILDPACK_DIRECTORY}"
 
       - name: Publish ${{ steps.buildpack-image.outputs.image }}
-        run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ${{ steps.buildpack-package.outputs.config }} --target linux/amd64 --target linux/arm64 --publish
+        run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ${{ steps.buildpack-package.outputs.config }} --target linux/amd64 --target linux/arm64 --publish --pull-policy if-not-present
 
       - name: Verify linux/amd64 and linux/arm64
         env:
@@ -284,6 +297,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -293,20 +307,23 @@ jobs:
         with:
           pack-version: ${{ env.PACK_VERSION }}
 
-      - name: Login to Docker Hub
+      - name: Login to GHCR
         uses: docker/login-action@v4.1.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Resolve buildpack group image
         id: buildpack-image
         working-directory: buildpacks/yarn-workspace
+        env:
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
         run: |
           version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' buildpack.toml)"
           [[ -n "${version}" ]]
 
-          echo "image=atlantislab/buildpack-yarn-workspace:${version}" >> "${GITHUB_OUTPUT}"
+          echo "image=${IMAGE_PREFIX}/buildpack-yarn-workspace:${version}" >> "${GITHUB_OUTPUT}"
 
       - name: Prepare buildpack package
         id: buildpack-package
@@ -323,12 +340,12 @@ jobs:
           BUILDPACK_ARCHIVE: ${{ runner.temp }}/yarn-workspace
           PACKAGE_CONFIG: ${{ steps.buildpack-package.outputs.config }}
         run: |
-          pack buildpack package "${BUILDPACK_ARCHIVE}" --config "${PACKAGE_CONFIG}" --target linux/amd64 --target linux/arm64 --format file
+          pack buildpack package "${BUILDPACK_ARCHIVE}" --config "${PACKAGE_CONFIG}" --target linux/amd64 --target linux/arm64 --format file --pull-policy if-not-present
           ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-amd64.cnb" buildpacks/yarn-workspace
           ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-arm64.cnb" buildpacks/yarn-workspace
 
       - name: Publish ${{ steps.buildpack-image.outputs.image }}
-        run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ${{ steps.buildpack-package.outputs.config }} --target linux/amd64 --target linux/arm64 --publish
+        run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ${{ steps.buildpack-package.outputs.config }} --target linux/amd64 --target linux/arm64 --publish --pull-policy if-not-present
 
       - name: Verify linux/amd64 and linux/arm64
         env:
@@ -346,15 +363,24 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: read
     steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v4.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Verify linux/amd64 and linux/arm64
         env:
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
           RELEASE_TAG: ${{ needs.validate-release.outputs.release-tag }}
         run: |
           images=(
-            "atlantislab/stack-node:base-${RELEASE_TAG}"
-            "atlantislab/stack-node:build-${RELEASE_TAG}"
-            "atlantislab/stack-node:run-${RELEASE_TAG}"
+            "${IMAGE_PREFIX}/stack-node:base-${RELEASE_TAG}"
+            "${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}"
+            "${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}"
           )
 
           for image in "${images[@]}"; do
@@ -374,6 +400,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -383,25 +410,27 @@ jobs:
         with:
           pack-version: ${{ env.PACK_VERSION }}
 
-      - name: Login to Docker Hub
+      - name: Login to GHCR
         uses: docker/login-action@v4.1.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish builder
         env:
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
           RELEASE_TAG: ${{ needs.validate-release.outputs.release-tag }}
         run: |
           builder_config="${RUNNER_TEMP}/builder.toml"
           cp builders/base/builder.toml "${builder_config}"
 
           sed -i \
-            -e "s#atlantislab/stack-node:build#atlantislab/stack-node:build-${RELEASE_TAG}#g" \
-            -e "s#atlantislab/stack-node:run#atlantislab/stack-node:run-${RELEASE_TAG}#g" \
+            -e "s#${IMAGE_PREFIX}/stack-node:build#${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}#g" \
+            -e "s#${IMAGE_PREFIX}/stack-node:run#${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}#g" \
             "${builder_config}"
 
-          pack builder create "atlantislab/builder-base:${RELEASE_TAG}" --verbose --config "${builder_config}" --publish
+          pack builder create "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}" --verbose --config "${builder_config}" --publish --pull-policy if-not-present
 
   verify-builder-manifest:
     name: Verify builder manifest
@@ -411,12 +440,21 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: read
     steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v4.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Verify linux/amd64 and linux/arm64
         env:
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
           RELEASE_TAG: ${{ needs.validate-release.outputs.release-tag }}
         run: |
-          docker buildx imagetools inspect "atlantislab/builder-base:${RELEASE_TAG}" | tee manifest.txt
+          docker buildx imagetools inspect "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}" | tee manifest.txt
           grep -q linux/amd64 manifest.txt
           grep -q linux/arm64 manifest.txt
 
@@ -428,6 +466,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
@@ -452,12 +491,19 @@ jobs:
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v4.0.0
 
+      - name: Login to GHCR
+        uses: docker/login-action@v4.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Verify Node.js major
         env:
           COMMAND: ${{ matrix.command }}
           ENTRYPOINT: ${{ matrix.entrypoint }}
           EXPECTED_NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
-          IMAGE: atlantislab/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }}
+          IMAGE: ${{ env.IMAGE_PREFIX }}/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }}
           PLATFORM: ${{ matrix.platform }}
         run: |
           read -r -a command <<< "${COMMAND}"
@@ -476,6 +522,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
@@ -486,12 +533,20 @@ jobs:
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v4.0.0
 
+      - name: Login to GHCR
+        uses: docker/login-action@v4.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Verify Node.js major
         env:
           BUILDER_TAG: ${{ needs.validate-release.outputs.builder-tag }}
           EXPECTED_NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
           PLATFORM: ${{ matrix.platform }}
-        run: docker run --rm --pull always --platform "${PLATFORM}" --entrypoint node "atlantislab/builder-base:${BUILDER_TAG}" --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
+        run: docker run --rm --pull always --platform "${PLATFORM}" --entrypoint node "${IMAGE_PREFIX}/builder-base:${BUILDER_TAG}" --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
 
   scan-release-images:
     name: Scan ${{ matrix.image }} ${{ matrix.platform }}
@@ -502,6 +557,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
@@ -509,16 +565,17 @@ jobs:
           - linux/amd64
           - linux/arm64
         image:
-          - atlantislab/builder-base:${{ needs.validate-release.outputs.release-tag }}
-          - atlantislab/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
-          - atlantislab/stack-node:build-${{ needs.validate-release.outputs.release-tag }}
-          - atlantislab/stack-node:run-${{ needs.validate-release.outputs.release-tag }}
+          - ghcr.io/atls/builder-base:${{ needs.validate-release.outputs.release-tag }}
+          - ghcr.io/atls/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
+          - ghcr.io/atls/stack-node:build-${{ needs.validate-release.outputs.release-tag }}
+          - ghcr.io/atls/stack-node:run-${{ needs.validate-release.outputs.release-tag }}
     steps:
-      - name: Login to Docker Hub
+      - name: Login to GHCR
         uses: docker/login-action@v4.1.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Report high and medium fixed vulnerabilities
         uses: docker/scout-action@v1.20.4
@@ -550,37 +607,40 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: write
     steps:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v4.0.0
 
-      - name: Login to Docker Hub
+      - name: Login to GHCR
         uses: docker/login-action@v4.1.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Promote stack and builder tags
         env:
           BUILDER_TAG: ${{ needs.validate-release.outputs.builder-tag }}
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
           NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
           RELEASE_TAG: ${{ needs.validate-release.outputs.release-tag }}
         run: |
           docker buildx imagetools create \
-            --tag "atlantislab/stack-node:base-${NODE_MAJOR}" \
-            --tag "atlantislab/stack-node:base" \
-            "atlantislab/stack-node:base-${RELEASE_TAG}"
+            --tag "${IMAGE_PREFIX}/stack-node:base-${NODE_MAJOR}" \
+            --tag "${IMAGE_PREFIX}/stack-node:base" \
+            "${IMAGE_PREFIX}/stack-node:base-${RELEASE_TAG}"
 
           docker buildx imagetools create \
-            --tag "atlantislab/stack-node:build-${NODE_MAJOR}" \
-            --tag "atlantislab/stack-node:build" \
-            "atlantislab/stack-node:build-${RELEASE_TAG}"
+            --tag "${IMAGE_PREFIX}/stack-node:build-${NODE_MAJOR}" \
+            --tag "${IMAGE_PREFIX}/stack-node:build" \
+            "${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}"
 
           docker buildx imagetools create \
-            --tag "atlantislab/stack-node:run-${NODE_MAJOR}" \
-            --tag "atlantislab/stack-node:run" \
-            "atlantislab/stack-node:run-${RELEASE_TAG}"
+            --tag "${IMAGE_PREFIX}/stack-node:run-${NODE_MAJOR}" \
+            --tag "${IMAGE_PREFIX}/stack-node:run" \
+            "${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}"
 
           docker buildx imagetools create \
-            --tag "atlantislab/builder-base:${BUILDER_TAG}" \
-            "atlantislab/builder-base:${RELEASE_TAG}"
+            --tag "${IMAGE_PREFIX}/builder-base:${BUILDER_TAG}" \
+            "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}"
