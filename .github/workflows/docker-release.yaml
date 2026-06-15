@@ -197,16 +197,16 @@ jobs:
         include:
           - name: require-extension
             directory: buildpacks/require-extension
-            image: atlantislab/buildpack-require-extension:0.1.1
+            image-repository: atlantislab/buildpack-require-extension
           - name: yarn-install
             directory: buildpacks/yarn-install
-            image: atlantislab/buildpack-yarn-install:0.1.1
+            image-repository: atlantislab/buildpack-yarn-install
           - name: yarn-cache
             directory: buildpacks/yarn-cache
-            image: atlantislab/buildpack-yarn-cache:0.1.1
+            image-repository: atlantislab/buildpack-yarn-cache
           - name: yarn-workspace-start
             directory: buildpacks/yarn-workspace-start
-            image: atlantislab/buildpack-yarn-workspace-start:0.1.1
+            image-repository: atlantislab/buildpack-yarn-workspace-start
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -233,13 +233,24 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Publish ${{ matrix.image }}
+      - name: Resolve buildpack image
+        id: buildpack-image
         working-directory: ${{ matrix.directory }}
-        run: pack buildpack package ${{ matrix.image }} --config ./package.toml --target linux/amd64 --target linux/arm64 --publish
+        env:
+          IMAGE_REPOSITORY: ${{ matrix.image-repository }}
+        run: |
+          version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' buildpack.toml)"
+          [[ -n "${version}" ]]
+
+          echo "image=${IMAGE_REPOSITORY}:${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Publish ${{ steps.buildpack-image.outputs.image }}
+        working-directory: ${{ matrix.directory }}
+        run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ./package.toml --target linux/amd64 --target linux/arm64 --publish
 
       - name: Verify linux/amd64 and linux/arm64
         env:
-          IMAGE: ${{ matrix.image }}
+          IMAGE: ${{ steps.buildpack-image.outputs.image }}
         run: |
           docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
           grep -q linux/amd64 manifest.txt
@@ -266,13 +277,22 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Publish atlantislab/buildpack-yarn-workspace:0.1.1
+      - name: Resolve buildpack group image
+        id: buildpack-image
         working-directory: buildpacks/yarn-workspace
-        run: pack buildpack package atlantislab/buildpack-yarn-workspace:0.1.1 --config ./package.toml --target linux/amd64 --target linux/arm64 --publish
+        run: |
+          version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' buildpack.toml)"
+          [[ -n "${version}" ]]
+
+          echo "image=atlantislab/buildpack-yarn-workspace:${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Publish ${{ steps.buildpack-image.outputs.image }}
+        working-directory: buildpacks/yarn-workspace
+        run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ./package.toml --target linux/amd64 --target linux/arm64 --publish
 
       - name: Verify linux/amd64 and linux/arm64
         env:
-          IMAGE: atlantislab/buildpack-yarn-workspace:0.1.1
+          IMAGE: ${{ steps.buildpack-image.outputs.image }}
         run: |
           docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
           grep -q linux/amd64 manifest.txt
