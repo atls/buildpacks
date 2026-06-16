@@ -2,27 +2,32 @@
 
 [<img src="https://img.shields.io/static/v1?style=for-the-badge&label=%40atls%2Fcode-service&message=0.0.25&labelColor=ECEEF5&color=D7DCEB">](https://npmjs.com/package/@atls/code-service) [<img src="https://img.shields.io/static/v1?style=for-the-badge&label=%40atls%2Fschematics&message=0.0.21&labelColor=ECEEF5&color=D7DCEB">](https://npmjs.com/package/@atls/schematics)
 
-## Порядок обновления версии `NodeJS` базового билдера
+## Порядок обновления версий `NodeJS` базового билдера
 
-Текущий production baseline берётся из `ARG node_version` в `stacks/node/base/Dockerfile`.
+Поддерживаемые Node lines для Docker-релиза задаются в `.github/docker-release-node-lines.json`.
+Поле `default` должно совпадать с `ARG node_version` в `stacks/node/base/Dockerfile`; этот default управляет moving aliases без Node major.
 
 Docker-релиз выполняется через GitHub Actions workflow `Docker release` после merge в `master`.
 Для публикации workflow использует `GITHUB_TOKEN` с доступом `packages: write` и публикует образы в GitHub Container Registry.
 Для Docker Scout scan workflow использует `DOCKERHUB_USERNAME` и `DOCKERHUB_TOKEN` только как Docker Scout credentials.
 
-1. В `stacks/node/base/Dockerfile` обновить `ARG node_version`.
-2. Вмержить PR с релизными изменениями в `master`.
-3. Дождаться прохождения workflow `Docker release`.
-4. Проверить наличие нового тега в [GHCR](https://github.com/orgs/atls/packages/container/package/builder-base).
+1. В `.github/docker-release-node-lines.json` добавить или удалить supported Node major.
+2. Если меняется default baseline, обновить `default` в `.github/docker-release-node-lines.json` и `ARG node_version` в `stacks/node/base/Dockerfile`.
+3. Вмержить PR с релизными изменениями в `master`.
+4. Дождаться прохождения workflow `Docker release`.
+5. Проверить наличие нового тега в [GHCR](https://github.com/orgs/atls/packages/container/package/builder-base).
 
 Workflow публикует:
 
-1. `ghcr.io/atls/stack-node:base-<Node major>`
-2. `ghcr.io/atls/stack-node:build-<Node major>`
-3. `ghcr.io/atls/stack-node:run-<Node major>`
-4. `ghcr.io/atls/stack-node:base`, `ghcr.io/atls/stack-node:build`, `ghcr.io/atls/stack-node:run` как moving aliases текущего baseline
-5. `ghcr.io/atls/buildpack-*`
-6. `ghcr.io/atls/builder-base:<Node major>`, собранный из stack tags того же Node major
+1. immutable stack tags `ghcr.io/atls/stack-node:base-<Node major>-<sha>`, `build-<Node major>-<sha>`, `run-<Node major>-<sha>`
+2. channel stack tags `ghcr.io/atls/stack-node:base-<Node major>`, `build-<Node major>`, `run-<Node major>` для каждой supported Node line
+3. default moving aliases `ghcr.io/atls/stack-node:base`, `build`, `run` только для Node major из `default`
+4. semver buildpack tags `ghcr.io/atls/buildpack-*:<version>`
+5. buildpack group channel tags `ghcr.io/atls/buildpack-yarn-workspace:<Node major>` для каждой supported Node line
+6. immutable builder tags `ghcr.io/atls/builder-base:<Node major>-<sha>`
+7. builder channel tags `ghcr.io/atls/builder-base:<Node major>`, собранные из stack tags той же Node line
+
+Semver buildpack tags остаются pin/rollback-артефактами. Node major channel tags можно использовать в потребителях, которым нужен актуальный проверенный buildpack под выбранную Node line без обновления patch-версии после каждого релиза.
 
 ## Runtime запуск Yarn PnP ESM workspace
 
