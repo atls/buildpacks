@@ -5,6 +5,7 @@ on:
     branches:
       - master
     paths:
+      - '.github/docker-release-node-lines.json'
       - '.github/workflows/docker-release.yaml'
       - '.yarn/**'
       - '.yarnrc.yml'
@@ -35,10 +36,10 @@ jobs:
     permissions:
       contents: read
     outputs:
-      base-image: ${{ steps.release-config.outputs.base-image }}
-      builder-tag: ${{ steps.release-config.outputs.builder-tag }}
-      node-major: ${{ steps.release-config.outputs.node-major }}
-      release-tag: ${{ steps.release-config.outputs.release-tag }}
+      base_image: ${{ steps.release-config.outputs.base_image }}
+      default_node_major: ${{ steps.release-config.outputs.default_node_major }}
+      node_lines: ${{ steps.release-config.outputs.node_lines }}
+      node_majors: ${{ steps.release-config.outputs.node_majors }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -46,36 +47,72 @@ jobs:
       - name: Resolve release configuration
         id: release-config
         run: |
+          node_lines_config=".github/docker-release-node-lines.json"
           base_image="$(awk -F= '$1 == "ARG base_image" { print $2; exit }' stacks/node/base/Dockerfile)"
-          node_version="$(awk -F= '$1 == "ARG node_version" { print $2; exit }' stacks/node/base/Dockerfile)"
-          if [[ ! "${node_version}" =~ ^([0-9]+)$ ]]; then
-            echo "::error::Unsupported node_version '${node_version}'. Expected a Node.js major version."
+          dockerfile_node_version="$(awk -F= '$1 == "ARG node_version" { print $2; exit }' stacks/node/base/Dockerfile)"
+          default_node_major="$(jq -r '.default' "${node_lines_config}")"
+          mapfile -t supported_node_majors < <(jq -r '.supported[]' "${node_lines_config}")
+
+          if [[ ! "${dockerfile_node_version}" =~ ^[0-9]+$ ]]; then
+            echo "::error::Unsupported node_version '${dockerfile_node_version}'. Expected a Node.js major version."
             exit 1
           fi
+          if [[ ! "${default_node_major}" =~ ^[0-9]+$ ]]; then
+            echo "::error::Unsupported default Node.js major '${default_node_major}'."
+            exit 1
+          fi
+          if [[ "${dockerfile_node_version}" != "${default_node_major}" ]]; then
+            echo "::error::stacks/node/base/Dockerfile node_version must match .github/docker-release-node-lines.json default."
+            exit 1
+          fi
+          if [[ "${#supported_node_majors[@]}" -eq 0 ]]; then
+            echo "::error::.github/docker-release-node-lines.json must declare at least one supported Node.js major."
+            exit 1
+          fi
+
+          default_declared="false"
+          for node_major in "${supported_node_majors[@]}"; do
+            if [[ ! "${node_major}" =~ ^[0-9]+$ ]]; then
+              echo "::error::Unsupported Node.js major '${node_major}'."
+              exit 1
+            fi
+            if [[ "${node_major}" == "${default_node_major}" ]]; then
+              default_declared="true"
+            fi
+          done
+          if [[ "${default_declared}" != "true" ]]; then
+            echo "::error::Default Node.js major '${default_node_major}' must be listed in supported Node.js majors."
+            exit 1
+          fi
+
           [[ -n "${base_image}" ]]
 
-          node_major="${BASH_REMATCH[1]}"
-          release_tag="${node_major}-${GITHUB_SHA::12}"
+          node_lines="$(jq -c --arg sha "${GITHUB_SHA::12}" '.supported | map(. as $major | {"node_major": ($major | tostring), "release_tag": (($major | tostring) + "-" + $sha)})' "${node_lines_config}")"
+          node_majors="$(jq -r '.supported | map(tostring) | join(",")' "${node_lines_config}")"
 
           {
-            echo "base-image=${base_image}"
-            echo "builder-tag=${node_major}"
-            echo "node-major=${node_major}"
-            echo "release-tag=${release_tag}"
+            echo "base_image=${base_image}"
+            echo "default_node_major=${default_node_major}"
+            echo "node_lines=${node_lines}"
+            echo "node_majors=${node_majors}"
           } >> "${GITHUB_OUTPUT}"
 
       - name: Verify base image manifest before publishing
         env:
-          BASE_IMAGE: ${{ steps.release-config.outputs.base-image }}
+          BASE_IMAGE: ${{ steps.release-config.outputs.base_image }}
         run: docker buildx imagetools inspect "${BASE_IMAGE}" > /dev/null
 
   build-stack-base:
-    name: Build stack base
+    name: Build stack base Node ${{ matrix.node_line.node_major }}
     needs: validate-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -93,21 +130,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish ghcr.io/atls/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
+      - name: Publish ghcr.io/atls/stack-node:base-${{ matrix.node_line.release_tag }}
         uses: docker/build-push-action@v7.1.0
         with:
           context: stacks/node/base
           build-args: |
-            base_image=${{ needs.validate-release.outputs.base-image }}
-            node_version=${{ needs.validate-release.outputs.node-major }}
+            base_image=${{ needs.validate-release.outputs.base_image }}
+            node_version=${{ matrix.node_line.node_major }}
             stack_id=${{ env.STACK_ID }}
           platforms: ${{ env.PLATFORMS }}
           pull: true
           push: true
-          tags: ${{ env.IMAGE_PREFIX }}/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
+          tags: ${{ env.IMAGE_PREFIX }}/stack-node:base-${{ matrix.node_line.release_tag }}
 
   build-stack:
-    name: Build stack ${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }}
+    name: Build stack ${{ matrix.stack.tag }}-${{ matrix.node_line.node_major }}
     needs:
       - build-stack-base
       - validate-release
@@ -118,7 +155,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
+        node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
+        stack:
           - tag: build
             context: stacks/node/build
           - tag: run
@@ -140,15 +178,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish ghcr.io/atls/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.release-tag }}
+      - name: Publish ghcr.io/atls/stack-node:${{ matrix.stack.tag }}-${{ matrix.node_line.release_tag }}
         uses: docker/build-push-action@v7.1.0
         with:
-          context: ${{ matrix.context }}
-          build-args: base_image=${{ env.IMAGE_PREFIX }}/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
+          context: ${{ matrix.stack.context }}
+          build-args: base_image=${{ env.IMAGE_PREFIX }}/stack-node:base-${{ matrix.node_line.release_tag }}
           platforms: ${{ env.PLATFORMS }}
           pull: true
           push: true
-          tags: ${{ env.IMAGE_PREFIX }}/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.release-tag }}
+          tags: ${{ env.IMAGE_PREFIX }}/stack-node:${{ matrix.stack.tag }}-${{ matrix.node_line.release_tag }}
 
   publish-extensions:
     name: Publish extension ${{ matrix.name }}
@@ -228,7 +266,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ needs.validate-release.outputs.node-major }}
+          node-version: ${{ needs.validate-release.outputs.default_node_major }}
           cache: yarn
 
       - name: Install dependencies
@@ -295,7 +333,9 @@ jobs:
 
   publish-buildpack-group:
     name: Publish buildpack group
-    needs: publish-buildpack-components
+    needs:
+      - publish-buildpack-components
+      - validate-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -308,6 +348,9 @@ jobs:
         uses: buildpacks/github-actions/setup-pack@v5.12.1
         with:
           pack-version: ${{ env.PACK_VERSION }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4.0.0
 
       - name: Login to GHCR
         uses: docker/login-action@v4.1.0
@@ -358,7 +401,7 @@ jobs:
           grep -q linux/arm64 manifest.txt
 
   verify-stack-manifests:
-    name: Verify stack manifests
+    name: Verify stack manifests Node ${{ matrix.node_line.node_major }}
     needs:
       - build-stack
       - validate-release
@@ -366,6 +409,10 @@ jobs:
     permissions:
       contents: read
       packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
     steps:
       - name: Login to GHCR
         uses: docker/login-action@v4.1.0
@@ -377,7 +424,7 @@ jobs:
       - name: Verify linux/amd64 and linux/arm64
         env:
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
-          RELEASE_TAG: ${{ needs.validate-release.outputs.release-tag }}
+          RELEASE_TAG: ${{ matrix.node_line.release_tag }}
         run: |
           images=(
             "${IMAGE_PREFIX}/stack-node:base-${RELEASE_TAG}"
@@ -392,7 +439,7 @@ jobs:
           done
 
   publish-builder:
-    name: Publish builder
+    name: Publish builder Node ${{ matrix.node_line.node_major }}
     needs:
       - build-stack
       - publish-extensions
@@ -403,6 +450,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -422,7 +473,7 @@ jobs:
       - name: Publish builder
         env:
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
-          RELEASE_TAG: ${{ needs.validate-release.outputs.release-tag }}
+          RELEASE_TAG: ${{ matrix.node_line.release_tag }}
         run: |
           builder_config="${RUNNER_TEMP}/builder.toml"
           cp builders/base/builder.toml "${builder_config}"
@@ -435,7 +486,7 @@ jobs:
           pack builder create "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}" --verbose --config "${builder_config}" --publish --pull-policy if-not-present
 
   verify-builder-manifest:
-    name: Verify builder manifest
+    name: Verify builder manifest Node ${{ matrix.node_line.node_major }}
     needs:
       - publish-builder
       - validate-release
@@ -443,6 +494,10 @@ jobs:
     permissions:
       contents: read
       packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
     steps:
       - name: Login to GHCR
         uses: docker/login-action@v4.1.0
@@ -454,16 +509,16 @@ jobs:
       - name: Verify linux/amd64 and linux/arm64
         env:
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
-          RELEASE_TAG: ${{ needs.validate-release.outputs.release-tag }}
+          RELEASE_TAG: ${{ matrix.node_line.release_tag }}
         run: |
           docker buildx imagetools inspect "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}" | tee manifest.txt
           grep -q linux/amd64 manifest.txt
           grep -q linux/arm64 manifest.txt
 
   verify-node:
-    name: Verify Node.js stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }} ${{ matrix.platform }}
+    name: Verify Node.js stack-node:${{ matrix.target.tag }}-${{ matrix.node_line.node_major }} ${{ matrix.target.platform }}
     needs:
-      - promote-release-images
+      - scan-release-images
       - validate-release
     runs-on: ubuntu-latest
     permissions:
@@ -472,7 +527,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
+        node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
+        target:
           - tag: build
             platform: linux/amd64
             entrypoint: ''
@@ -502,11 +558,11 @@ jobs:
 
       - name: Verify Node.js major
         env:
-          COMMAND: ${{ matrix.command }}
-          ENTRYPOINT: ${{ matrix.entrypoint }}
-          EXPECTED_NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
-          IMAGE: ${{ env.IMAGE_PREFIX }}/stack-node:${{ matrix.tag }}-${{ needs.validate-release.outputs.node-major }}
-          PLATFORM: ${{ matrix.platform }}
+          COMMAND: ${{ matrix.target.command }}
+          ENTRYPOINT: ${{ matrix.target.entrypoint }}
+          EXPECTED_NODE_MAJOR: ${{ matrix.node_line.node_major }}
+          IMAGE: ${{ env.IMAGE_PREFIX }}/stack-node:${{ matrix.target.tag }}-${{ matrix.node_line.release_tag }}
+          PLATFORM: ${{ matrix.target.platform }}
         run: |
           read -r -a command <<< "${COMMAND}"
 
@@ -517,9 +573,9 @@ jobs:
           fi
 
   verify-builder-node:
-    name: Verify Node.js builder ${{ matrix.platform }}
+    name: Verify Node.js builder ${{ matrix.node_line.node_major }} ${{ matrix.platform }}
     needs:
-      - promote-release-images
+      - scan-release-images
       - validate-release
     runs-on: ubuntu-latest
     permissions:
@@ -528,6 +584,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
         platform:
           - linux/amd64
           - linux/arm64
@@ -544,14 +601,14 @@ jobs:
 
       - name: Verify Node.js major
         env:
-          BUILDER_TAG: ${{ needs.validate-release.outputs.builder-tag }}
-          EXPECTED_NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
+          EXPECTED_NODE_MAJOR: ${{ matrix.node_line.node_major }}
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
           PLATFORM: ${{ matrix.platform }}
-        run: docker run --rm --pull always --platform "${PLATFORM}" --entrypoint node "${IMAGE_PREFIX}/builder-base:${BUILDER_TAG}" --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
+          RELEASE_TAG: ${{ matrix.node_line.release_tag }}
+        run: docker run --rm --pull always --platform "${PLATFORM}" --entrypoint node "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}" --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
 
   scan-release-images:
-    name: Scan ${{ matrix.image }} ${{ matrix.platform }}
+    name: Scan ${{ matrix.image_kind }} Node ${{ matrix.node_line.node_major }} ${{ matrix.platform }}
     needs:
       - validate-release
       - verify-builder-manifest
@@ -564,14 +621,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
         platform:
           - linux/amd64
           - linux/arm64
-        image:
-          - ghcr.io/atls/builder-base:${{ needs.validate-release.outputs.release-tag }}
-          - ghcr.io/atls/stack-node:base-${{ needs.validate-release.outputs.release-tag }}
-          - ghcr.io/atls/stack-node:build-${{ needs.validate-release.outputs.release-tag }}
-          - ghcr.io/atls/stack-node:run-${{ needs.validate-release.outputs.release-tag }}
+        image_kind:
+          - builder-base
+          - stack-node-base
+          - stack-node-build
+          - stack-node-run
     steps:
       - name: Login to GHCR
         uses: docker/login-action@v4.1.0
@@ -586,11 +644,39 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Resolve scan image
+        id: scan-image
+        env:
+          IMAGE_KIND: ${{ matrix.image_kind }}
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
+          RELEASE_TAG: ${{ matrix.node_line.release_tag }}
+        run: |
+          case "${IMAGE_KIND}" in
+            builder-base)
+              image="${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}"
+              ;;
+            stack-node-base)
+              image="${IMAGE_PREFIX}/stack-node:base-${RELEASE_TAG}"
+              ;;
+            stack-node-build)
+              image="${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}"
+              ;;
+            stack-node-run)
+              image="${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}"
+              ;;
+            *)
+              echo "::error::Unsupported image kind '${IMAGE_KIND}'."
+              exit 1
+              ;;
+          esac
+
+          echo "image=${image}" >> "${GITHUB_OUTPUT}"
+
       - name: Report high and medium fixed vulnerabilities
         uses: docker/scout-action@v1.20.4
         with:
           command: cves
-          image: registry://${{ matrix.image }}
+          image: registry://${{ steps.scan-image.outputs.image }}
           platform: ${{ matrix.platform }}
           only-fixed: true
           only-severities: high,medium
@@ -601,7 +687,7 @@ jobs:
         uses: docker/scout-action@v1.20.4
         with:
           command: cves
-          image: registry://${{ matrix.image }}
+          image: registry://${{ steps.scan-image.outputs.image }}
           platform: ${{ matrix.platform }}
           only-fixed: true
           only-severities: critical
@@ -609,15 +695,24 @@ jobs:
           exit-code: true
 
   promote-release-images:
-    name: Promote release images
+    name: Promote release images Node ${{ matrix.node_line.node_major }}
     needs:
       - scan-release-images
+      - verify-builder-node
+      - verify-node
       - validate-release
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v4.0.0
 
@@ -630,26 +725,40 @@ jobs:
 
       - name: Promote stack and builder tags
         env:
-          BUILDER_TAG: ${{ needs.validate-release.outputs.builder-tag }}
+          DEFAULT_NODE_MAJOR: ${{ needs.validate-release.outputs.default_node_major }}
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
-          NODE_MAJOR: ${{ needs.validate-release.outputs.node-major }}
-          RELEASE_TAG: ${{ needs.validate-release.outputs.release-tag }}
+          NODE_MAJOR: ${{ matrix.node_line.node_major }}
+          RELEASE_TAG: ${{ matrix.node_line.release_tag }}
         run: |
+          base_tags=(--tag "${IMAGE_PREFIX}/stack-node:base-${NODE_MAJOR}")
+          build_tags=(--tag "${IMAGE_PREFIX}/stack-node:build-${NODE_MAJOR}")
+          run_tags=(--tag "${IMAGE_PREFIX}/stack-node:run-${NODE_MAJOR}")
+
+          if [[ "${NODE_MAJOR}" == "${DEFAULT_NODE_MAJOR}" ]]; then
+            base_tags+=(--tag "${IMAGE_PREFIX}/stack-node:base")
+            build_tags+=(--tag "${IMAGE_PREFIX}/stack-node:build")
+            run_tags+=(--tag "${IMAGE_PREFIX}/stack-node:run")
+          fi
+
           docker buildx imagetools create \
-            --tag "${IMAGE_PREFIX}/stack-node:base-${NODE_MAJOR}" \
-            --tag "${IMAGE_PREFIX}/stack-node:base" \
+            "${base_tags[@]}" \
             "${IMAGE_PREFIX}/stack-node:base-${RELEASE_TAG}"
 
           docker buildx imagetools create \
-            --tag "${IMAGE_PREFIX}/stack-node:build-${NODE_MAJOR}" \
-            --tag "${IMAGE_PREFIX}/stack-node:build" \
+            "${build_tags[@]}" \
             "${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}"
 
           docker buildx imagetools create \
-            --tag "${IMAGE_PREFIX}/stack-node:run-${NODE_MAJOR}" \
-            --tag "${IMAGE_PREFIX}/stack-node:run" \
+            "${run_tags[@]}" \
             "${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}"
 
           docker buildx imagetools create \
-            --tag "${IMAGE_PREFIX}/builder-base:${BUILDER_TAG}" \
+            --tag "${IMAGE_PREFIX}/builder-base:${NODE_MAJOR}" \
             "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}"
+
+          buildpack_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' buildpacks/yarn-workspace/buildpack.toml)"
+          [[ -n "${buildpack_version}" ]]
+
+          docker buildx imagetools create \
+            --tag "${IMAGE_PREFIX}/buildpack-yarn-workspace:${NODE_MAJOR}" \
+            "${IMAGE_PREFIX}/buildpack-yarn-workspace:${buildpack_version}"
