@@ -21,7 +21,7 @@ on:
 env:
   IMAGE_PREFIX: ghcr.io/atls
   REGISTRY: ghcr.io
-  STACK_ID: tech.atlantislab.stacks.node
+  STACK_ID: tech.atls.stacks.node
   PACK_VERSION: 0.40.4
   PLATFORMS: linux/amd64,linux/arm64
 

@@ -1,7 +1,7 @@
 api = "0.10"
 
 [buildpack]
-id = "tech.atlantislab.buildpacks.yarn-cache"
+id = "tech.atls.buildpacks.yarn-cache"
 version = "0.1.2"
 name = "Yarn Workspace Pack Buildpack"
 

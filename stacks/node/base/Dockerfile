@@ -3,7 +3,7 @@ FROM ${base_image}
 
 ARG cnb_uid=1001
 ARG cnb_gid=1001
-ARG stack_id=tech.atlantislab.stacks.node
+ARG stack_id=tech.atls.stacks.node
 ARG node_version=26
 ARG corepack_version=0.35.0
 ARG yarn_version=4.1.1
