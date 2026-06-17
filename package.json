@@ -8,8 +8,7 @@
     "libcnb/*"
   ],
   "scripts": {
-    "check": "python3 scripts/verify-cnb-version-refs.py",
-    "update:buildpack-refs": "scripts/update-buildpack-refs.sh"
+    "update:buildpack-refs": "jam update-buildpack --buildpack-file buildpacks/yarn-workspace/buildpack.toml --package-file buildpacks/yarn-workspace/package.toml --patch-only"
   },
   "resolutions": {
     "clipanion": "4.0.0-rc.2"

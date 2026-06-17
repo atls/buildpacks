@@ -41,19 +41,11 @@ Composite buildpack `buildpack-yarn-workspace` синхронизируется 
 yarn run update:buildpack-refs
 ```
 
-Команда обновляет `buildpacks/yarn-workspace/package.toml`, `buildpacks/yarn-workspace/buildpack.toml` и затем запускает проверку консистентности.
+Команда обновляет `buildpacks/yarn-workspace/package.toml` и `buildpacks/yarn-workspace/buildpack.toml`.
 
 `jam update-builder` сейчас не используется.
 `builder-base` остаётся base builder: он содержит lifecycle, stack images и extensions, а `buildpack-yarn-workspace` выбирается Raijin image pack.
 Кроме того, `jam update-builder` ожидает semver tags для build/run images, а `stack-node` публикуется channel/SHA тегами вроде `build-24`, `run-24` и `build-24-<sha>`.
-
-Перед merge проверка:
-
-```bash
-yarn run check
-```
-
-Та же проверка запускается в PR checks и перед Docker release.
 
 ## Runtime запуск Yarn PnP ESM workspace
 
