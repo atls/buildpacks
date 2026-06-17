@@ -7,12 +7,15 @@ on:
     paths:
       - '.github/workflows/release-please.yaml'
       - '.release-please-manifest.json'
+      - '.yarn/**'
+      - '.yarnrc.yml'
       - 'release-please-config.json'
       - 'builders/**'
       - 'buildpacks/**'
       - 'extensions/**'
       - 'libcnb/**'
       - 'package.json'
+      - 'tsconfig.json'
       - 'yarn.lock'
 
 permissions:
