@@ -40,7 +40,29 @@
         "stacks"
       ],
       "include-component-in-tag": true,
-      "release-type": "node"
+      "release-type": "node",
+      "changelog-sections": [
+        {
+          "type": "feat",
+          "section": "Features"
+        },
+        {
+          "type": "fix",
+          "section": "Bug Fixes"
+        },
+        {
+          "type": "deps",
+          "section": "Dependencies"
+        },
+        {
+          "type": "build",
+          "section": "Build System"
+        },
+        {
+          "type": "chore",
+          "section": "Maintenance"
+        }
+      ]
     },
     "buildpacks/require-extension": {
       "component": "buildpack-require-extension",
