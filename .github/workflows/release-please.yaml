@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - '.github/workflows/release-please.yaml'
+      - '.github/workflows/release-please-github-release.yaml'
       - '.release-please-manifest.json'
       - '.yarn/**'
       - '.yarnrc.yml'
@@ -36,5 +37,7 @@ jobs:
         uses: googleapis/release-please-action@v4.4.1
         with:
           token: ${{ secrets.PAT_token }}
+          target-branch: master
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          skip-github-release: true
