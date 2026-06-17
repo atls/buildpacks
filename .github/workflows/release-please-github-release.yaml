@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
     outputs:
       should_release: ${{ steps.release-head.outputs.should_release }}
     steps:
@@ -37,11 +38,35 @@ jobs:
       - name: Check release manifest change
         id: release-head
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_HEAD: ${{ github.event.workflow_run.head_sha }}
         run: |
           first_parent="$(git rev-parse "${RELEASE_HEAD}^1")"
-
+          manifest_changed=false
           if git diff --name-only "${first_parent}" "${RELEASE_HEAD}" -- .release-please-manifest.json | grep -qx '.release-please-manifest.json'; then
+            manifest_changed=true
+          fi
+
+          mapfile -t pending_release_prs < <(
+            gh pr list \
+              --state merged \
+              --label 'autorelease: pending' \
+              --limit 100 \
+              --json number,mergeCommit \
+              --jq '.[] | [.number, .mergeCommit.oid] | @tsv'
+          )
+
+          pending_release_count="${#pending_release_prs[@]}"
+          pending_release_head=''
+          if [[ "${pending_release_count}" -eq 1 ]]; then
+            pending_release_head="$(awk '{ print $2 }' <<< "${pending_release_prs[0]}")"
+          fi
+
+          echo "manifest_changed=${manifest_changed}"
+          echo "pending_release_count=${pending_release_count}"
+          echo "pending_release_head=${pending_release_head}"
+
+          if [[ "${manifest_changed}" == 'true' && "${pending_release_count}" -eq 1 && "${pending_release_head}" == "${RELEASE_HEAD}" ]]; then
             echo 'should_release=true' >> "${GITHUB_OUTPUT}"
           else
             echo 'should_release=false' >> "${GITHUB_OUTPUT}"
