@@ -7,6 +7,10 @@
     "buildpacks/*",
     "libcnb/*"
   ],
+  "scripts": {
+    "check": "python3 scripts/verify-cnb-version-refs.py",
+    "update:buildpack-refs": "scripts/update-buildpack-refs.sh"
+  },
   "resolutions": {
     "clipanion": "4.0.0-rc.2"
   },

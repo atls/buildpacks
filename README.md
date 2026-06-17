@@ -29,6 +29,32 @@ Workflow публикует:
 
 Semver buildpack tags остаются pin/rollback-артефактами. Node major channel tags можно использовать в потребителях, которым нужен актуальный проверенный buildpack под выбранную Node line без обновления patch-версии после каждого релиза.
 
+## Порядок обновления версий CNB buildpack-компонентов
+
+Версии buildpack и extension компонентов ведутся через `release-please-config.json` и `.release-please-manifest.json`.
+`release-please` обновляет только собственные версии компонентов в `buildpack.toml` и `extension.toml`.
+
+Composite buildpack `buildpack-yarn-workspace` синхронизируется штатным CNB-инструментом `jam update-buildpack`.
+После публикации новых component buildpack tags нужно выполнить:
+
+```bash
+yarn run update:buildpack-refs
+```
+
+Команда обновляет `buildpacks/yarn-workspace/package.toml`, `buildpacks/yarn-workspace/buildpack.toml` и затем запускает проверку консистентности.
+
+`jam update-builder` сейчас не используется.
+`builder-base` остаётся base builder: он содержит lifecycle, stack images и extensions, а `buildpack-yarn-workspace` выбирается Raijin image pack.
+Кроме того, `jam update-builder` ожидает semver tags для build/run images, а `stack-node` публикуется channel/SHA тегами вроде `build-24`, `run-24` и `build-24-<sha>`.
+
+Перед merge проверка:
+
+```bash
+yarn run check
+```
+
+Та же проверка запускается в PR checks и перед Docker release.
+
 ## Runtime запуск Yarn PnP ESM workspace
 
 `buildpack-yarn-workspace-start` формирует launch layer с `NODE_OPTIONS` для workspace без `node_modules`.

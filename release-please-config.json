@@ -1,0 +1,104 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "98386bca9834ab0bfc627549f949f794817fad62",
+  "include-v-in-tag": false,
+  "skip-changelog": true,
+  "packages": {
+    "buildpacks/require-extension": {
+      "component": "buildpack-require-extension",
+      "include-component-in-tag": true,
+      "release-type": "simple",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "buildpack.toml",
+          "jsonpath": "$.buildpack.version"
+        }
+      ]
+    },
+    "buildpacks/yarn-cache": {
+      "component": "buildpack-yarn-cache",
+      "include-component-in-tag": true,
+      "release-type": "simple",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "buildpack.toml",
+          "jsonpath": "$.buildpack.version"
+        }
+      ]
+    },
+    "buildpacks/yarn-install": {
+      "component": "buildpack-yarn-install",
+      "include-component-in-tag": true,
+      "release-type": "simple",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "buildpack.toml",
+          "jsonpath": "$.buildpack.version"
+        }
+      ]
+    },
+    "buildpacks/yarn-workspace": {
+      "component": "buildpack-yarn-workspace",
+      "include-component-in-tag": true,
+      "release-type": "simple",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "buildpack.toml",
+          "jsonpath": "$.buildpack.version"
+        }
+      ]
+    },
+    "buildpacks/yarn-workspace-start": {
+      "component": "buildpack-yarn-workspace-start",
+      "include-component-in-tag": true,
+      "release-type": "simple",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "buildpack.toml",
+          "jsonpath": "$.buildpack.version"
+        }
+      ]
+    },
+    "extensions/curl": {
+      "component": "buildpack-extension-curl",
+      "include-component-in-tag": true,
+      "release-type": "simple",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "extension.toml",
+          "jsonpath": "$.extension.version"
+        }
+      ]
+    },
+    "extensions/graphql-hive": {
+      "component": "buildpack-extension-graphql-hive",
+      "include-component-in-tag": true,
+      "release-type": "simple",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "extension.toml",
+          "jsonpath": "$.extension.version"
+        }
+      ]
+    },
+    "extensions/htop": {
+      "component": "buildpack-extension-htop",
+      "include-component-in-tag": true,
+      "release-type": "simple",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "extension.toml",
+          "jsonpath": "$.extension.version"
+        }
+      ]
+    }
+  }
+}

@@ -44,6 +44,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Verify CNB version refs
+        run: python3 scripts/verify-cnb-version-refs.py
+
       - name: Resolve release configuration
         id: release-config
         run: |
