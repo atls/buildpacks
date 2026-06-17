@@ -1,4 +1,4 @@
-name: Publish release
+name: GitHub release
 
 on:
   workflow_run:
@@ -15,7 +15,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: publish-release
+  group: github-release
   cancel-in-progress: false
 
 jobs:
@@ -73,7 +73,7 @@ jobs:
           fi
 
   release-please:
-    name: Publish release
+    name: GitHub release
     needs: detect-release-head
     if: ${{ needs.detect-release-head.outputs.should_release == 'true' }}
     runs-on: ubuntu-latest
