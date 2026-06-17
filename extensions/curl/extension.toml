@@ -2,7 +2,7 @@ api = "0.10"
 
 [extension]
 id = "tech.atls.extensions.curl"
-version = "0.0.2"
+version = "0.0.3"
 name = "curl extension"
 homepage = "https://github.com/atls/buildpacks"
 description = "Installs curl on the runtime base image"

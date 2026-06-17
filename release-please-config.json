@@ -3,6 +3,29 @@
   "bootstrap-sha": "98386bca9834ab0bfc627549f949f794817fad62",
   "include-v-in-tag": false,
   "skip-changelog": true,
+  "plugins": [
+    {
+      "type": "linked-versions",
+      "groupName": "cnb-buildpack-family",
+      "components": [
+        "buildpack-require-extension",
+        "buildpack-yarn-cache",
+        "buildpack-yarn-install",
+        "buildpack-yarn-workspace",
+        "buildpack-yarn-workspace-start",
+        "libcnb"
+      ]
+    },
+    {
+      "type": "linked-versions",
+      "groupName": "cnb-extension-family",
+      "components": [
+        "buildpack-extension-curl",
+        "buildpack-extension-graphql-hive",
+        "buildpack-extension-htop"
+      ]
+    }
+  ],
   "packages": {
     "buildpacks/require-extension": {
       "component": "buildpack-require-extension",
@@ -49,6 +72,14 @@
           "type": "toml",
           "path": "buildpack.toml",
           "jsonpath": "$.buildpack.version"
+        },
+        {
+          "type": "generic",
+          "path": "buildpack.toml"
+        },
+        {
+          "type": "generic",
+          "path": "package.toml"
         }
       ]
     },
@@ -73,6 +104,10 @@
           "type": "toml",
           "path": "extension.toml",
           "jsonpath": "$.extension.version"
+        },
+        {
+          "type": "generic",
+          "path": "/builders/base/builder.toml"
         }
       ]
     },
@@ -85,6 +120,10 @@
           "type": "toml",
           "path": "extension.toml",
           "jsonpath": "$.extension.version"
+        },
+        {
+          "type": "generic",
+          "path": "/builders/base/builder.toml"
         }
       ]
     },
@@ -97,8 +136,17 @@
           "type": "toml",
           "path": "extension.toml",
           "jsonpath": "$.extension.version"
+        },
+        {
+          "type": "generic",
+          "path": "/builders/base/builder.toml"
         }
       ]
+    },
+    "libcnb/libcnb": {
+      "component": "libcnb",
+      "include-component-in-tag": true,
+      "release-type": "node"
     }
   }
 }

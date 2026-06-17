@@ -2,7 +2,7 @@ api = "0.10"
 
 [extension]
 id = "tech.atls.extensions.graphql-hive"
-version = "0.0.2"
+version = "0.0.3"
 name = "graphql-hive extension"
 homepage = "https://github.com/atls/buildpacks"
 description = "Installs graphql-hive on the runtime base image"

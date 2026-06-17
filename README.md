@@ -32,16 +32,20 @@ Semver buildpack tags остаются pin/rollback-артефактами. Node
 ## Порядок обновления версий CNB buildpack-компонентов
 
 Версии buildpack и extension компонентов ведутся через `release-please-config.json` и `.release-please-manifest.json`.
-`release-please` обновляет только собственные версии компонентов в `buildpack.toml` и `extension.toml`.
+Buildpack-компоненты связаны через `release-please` `linked-versions` group `cnb-buildpack-family`.
+В эту группу входит `libcnb`, поэтому изменение общей CNB-библиотеки поднимает версии зависящих buildpack-компонентов тем же release PR.
 
-Composite buildpack `buildpack-yarn-workspace` синхронизируется штатным CNB-инструментом `jam update-buildpack`.
-После публикации новых component buildpack tags нужно выполнить:
+Composite buildpack `buildpack-yarn-workspace` получает refs на связанные component buildpacks в том же release PR через `release-please` generic markers в `buildpacks/yarn-workspace/package.toml` и `buildpacks/yarn-workspace/buildpack.toml`.
+Штатный CNB-инструмент `jam update-buildpack` остаётся локальной командой для сверки или ручной синхронизации с уже опубликованными component buildpack tags:
 
 ```bash
 yarn run update:buildpack-refs
 ```
 
 Команда обновляет `buildpacks/yarn-workspace/package.toml` и `buildpacks/yarn-workspace/buildpack.toml`.
+
+Extension-компоненты связаны через `release-please` `linked-versions` group `cnb-extension-family`.
+`builders/base/builder.toml` получает refs на связанные extension images в том же release PR, а Docker release берёт publish tag из соответствующего `extension.toml`.
 
 `jam update-builder` сейчас не используется.
 `builder-base` остаётся base builder: он содержит lifecycle, stack images и extensions, а `buildpack-yarn-workspace` выбирается Raijin image pack.

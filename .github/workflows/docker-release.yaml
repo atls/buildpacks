@@ -201,13 +201,13 @@ jobs:
         include:
               - name: curl
                 directory: extensions/curl
-                image: ghcr.io/atls/buildpack-extension-curl:0.0.2
+                image-repository: ghcr.io/atls/buildpack-extension-curl
               - name: htop
                 directory: extensions/htop
-                image: ghcr.io/atls/buildpack-extension-htop:0.0.2
+                image-repository: ghcr.io/atls/buildpack-extension-htop
               - name: graphql-hive
                 directory: extensions/graphql-hive
-                image: ghcr.io/atls/buildpack-extension-graphql-hive:0.0.2
+                image-repository: ghcr.io/atls/buildpack-extension-graphql-hive
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -224,13 +224,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish ${{ matrix.image }}
+      - name: Resolve extension image
+        id: extension-image
         working-directory: ${{ matrix.directory }}
-        run: pack extension package ${{ matrix.image }} --target linux/amd64 --target linux/arm64 --publish
+        env:
+          IMAGE_REPOSITORY: ${{ matrix.image-repository }}
+        run: |
+          version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' extension.toml)"
+          [[ -n "${version}" ]]
+
+          echo "image=${IMAGE_REPOSITORY}:${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Publish ${{ steps.extension-image.outputs.image }}
+        working-directory: ${{ matrix.directory }}
+        run: pack extension package ${{ steps.extension-image.outputs.image }} --target linux/amd64 --target linux/arm64 --publish
 
       - name: Verify linux/amd64 and linux/arm64
         env:
-          IMAGE: ${{ matrix.image }}
+          IMAGE: ${{ steps.extension-image.outputs.image }}
         run: |
           docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
           grep -q linux/amd64 manifest.txt

@@ -2,13 +2,13 @@
 uri = "."
 
 [[dependencies]]
-uri = "docker://ghcr.io/atls/buildpack-require-extension:0.1.2"
+uri = "docker://ghcr.io/atls/buildpack-require-extension:0.1.5" # x-release-please-version
 
 [[dependencies]]
-uri = "docker://ghcr.io/atls/buildpack-yarn-install:0.1.3"
+uri = "docker://ghcr.io/atls/buildpack-yarn-install:0.1.5" # x-release-please-version
 
 [[dependencies]]
-uri = "docker://ghcr.io/atls/buildpack-yarn-cache:0.1.3"
+uri = "docker://ghcr.io/atls/buildpack-yarn-cache:0.1.5" # x-release-please-version
 
 [[dependencies]]
-uri = "docker://ghcr.io/atls/buildpack-yarn-workspace-start:0.1.4"
+uri = "docker://ghcr.io/atls/buildpack-yarn-workspace-start:0.1.5" # x-release-please-version
