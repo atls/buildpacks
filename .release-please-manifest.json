@@ -1,4 +1,5 @@
 {
+  ".": "0.1.5",
   "buildpacks/require-extension": "0.1.5",
   "buildpacks/yarn-cache": "0.1.5",
   "buildpacks/yarn-install": "0.1.5",
