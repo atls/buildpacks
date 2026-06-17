@@ -1,7 +1,7 @@
 api = "0.10"
 
 [extension]
-id = "tech.atlantislab.extensions.curl"
+id = "tech.atls.extensions.curl"
 version = "0.0.1"
 name = "curl extension"
 homepage = "https://github.com/atls/buildpacks"

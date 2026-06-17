@@ -1,7 +1,7 @@
 api = "0.10"
 
 [extension]
-id = "tech.atlantislab.extensions.htop"
+id = "tech.atls.extensions.htop"
 version = "0.0.1"
 name = "htop extension"
 homepage = "https://github.com/atls/buildpacks"
