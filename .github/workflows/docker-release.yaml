@@ -243,13 +243,19 @@ jobs:
           VERSION_FILE: ${{ matrix.directory }}/extension.toml
         run: |
           before="${{ github.event.before }}"
+          current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
 
           if [[ "${before}" =~ ^0+$ ]]; then
             changed=true
-          elif git diff --name-only "${before}" "${GITHUB_SHA}" -- "${VERSION_FILE}" | grep -q .; then
-            changed=true
+          elif git cat-file -e "${before}:${VERSION_FILE}" 2>/dev/null; then
+            previous_version="$(git show "${before}:${VERSION_FILE}" | awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }')"
+            if [[ "${previous_version}" != "${current_version}" ]]; then
+              changed=true
+            else
+              changed=false
+            fi
           else
-            changed=false
+            changed=true
           fi
 
           echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
@@ -337,13 +343,19 @@ jobs:
           VERSION_FILE: ${{ matrix.directory }}/buildpack.toml
         run: |
           before="${{ github.event.before }}"
+          current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
 
           if [[ "${before}" =~ ^0+$ ]]; then
             changed=true
-          elif git diff --name-only "${before}" "${GITHUB_SHA}" -- "${VERSION_FILE}" | grep -q .; then
-            changed=true
+          elif git cat-file -e "${before}:${VERSION_FILE}" 2>/dev/null; then
+            previous_version="$(git show "${before}:${VERSION_FILE}" | awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }')"
+            if [[ "${previous_version}" != "${current_version}" ]]; then
+              changed=true
+            else
+              changed=false
+            fi
           else
-            changed=false
+            changed=true
           fi
 
           echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
@@ -433,13 +445,19 @@ jobs:
           VERSION_FILE: buildpacks/yarn-workspace/buildpack.toml
         run: |
           before="${{ github.event.before }}"
+          current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
 
           if [[ "${before}" =~ ^0+$ ]]; then
             changed=true
-          elif git diff --name-only "${before}" "${GITHUB_SHA}" -- "${VERSION_FILE}" | grep -q .; then
-            changed=true
+          elif git cat-file -e "${before}:${VERSION_FILE}" 2>/dev/null; then
+            previous_version="$(git show "${before}:${VERSION_FILE}" | awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }')"
+            if [[ "${previous_version}" != "${current_version}" ]]; then
+              changed=true
+            else
+              changed=false
+            fi
           else
-            changed=false
+            changed=true
           fi
 
           echo "changed=${changed}" >> "${GITHUB_OUTPUT}"

@@ -32,6 +32,8 @@ Semver buildpack tags остаются pin/rollback-артефактами. Node
 ## Порядок обновления версий CNB buildpack-компонентов
 
 Версии buildpack и extension компонентов ведутся через `release-please-config.json` и `.release-please-manifest.json`.
+Release PR создаёт GitHub Actions workflow `Release Please` после merge в `master`.
+Workflow использует `release-please-action` с правами `contents: write`, `issues: write` и `pull-requests: write`.
 Buildpack-компоненты связаны через `release-please` `linked-versions` group `cnb-buildpack-family`.
 В эту группу входит `libcnb`, поэтому изменение общей CNB-библиотеки поднимает версии зависящих buildpack-компонентов тем же release PR.
 
