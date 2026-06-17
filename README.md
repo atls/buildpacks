@@ -33,7 +33,7 @@ Semver buildpack tags остаются pin/rollback-артефактами. Node
 
 Версии buildpack и extension компонентов ведутся через `release-please-config.json` и `.release-please-manifest.json`.
 Release PR создаёт GitHub Actions workflow `Release Please` после merge в `master`.
-GitHub release и tag создаёт `Release Please GitHub release` только после successful `Docker release` на том же head SHA, где изменился `.release-please-manifest.json`.
+GitHub release и tag создаёт workflow `Publish release` только после successful `Docker release` на том же head SHA, где изменился `.release-please-manifest.json`.
 Workflow использует `release-please-action` с правами `contents: write`, `issues: write` и `pull-requests: write`.
 Для создания release PR используется `PAT_token`, чтобы созданные PR запускали обычные проверки `pull_request`.
 Buildpack-компоненты связаны через `release-please` `linked-versions` group `cnb-buildpack-family`.

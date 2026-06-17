@@ -6,7 +6,7 @@ on:
       - master
     paths:
       - '.github/workflows/release-please.yaml'
-      - '.github/workflows/release-please-github-release.yaml'
+      - '.github/workflows/publish-release.yaml'
       - '.release-please-manifest.json'
       - '.yarn/**'
       - '.yarnrc.yml'
