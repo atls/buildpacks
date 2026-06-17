@@ -211,6 +211,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup pack
         uses: buildpacks/github-actions/setup-pack@v5.12.1
@@ -235,11 +237,30 @@ jobs:
 
           echo "image=${IMAGE_REPOSITORY}:${version}" >> "${GITHUB_OUTPUT}"
 
+      - name: Check extension version change
+        id: release-change
+        env:
+          VERSION_FILE: ${{ matrix.directory }}/extension.toml
+        run: |
+          before="${{ github.event.before }}"
+
+          if [[ "${before}" =~ ^0+$ ]]; then
+            changed=true
+          elif git diff --name-only "${before}" "${GITHUB_SHA}" -- "${VERSION_FILE}" | grep -q .; then
+            changed=true
+          else
+            changed=false
+          fi
+
+          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+
       - name: Publish ${{ steps.extension-image.outputs.image }}
+        if: steps.release-change.outputs.changed == 'true'
         working-directory: ${{ matrix.directory }}
         run: pack extension package ${{ steps.extension-image.outputs.image }} --target linux/amd64 --target linux/arm64 --publish
 
       - name: Verify linux/amd64 and linux/arm64
+        if: steps.release-change.outputs.changed == 'true'
         env:
           IMAGE: ${{ steps.extension-image.outputs.image }}
         run: |
@@ -273,6 +294,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -308,7 +331,25 @@ jobs:
 
           echo "image=${IMAGE_REPOSITORY}:${version}" >> "${GITHUB_OUTPUT}"
 
+      - name: Check buildpack version change
+        id: release-change
+        env:
+          VERSION_FILE: ${{ matrix.directory }}/buildpack.toml
+        run: |
+          before="${{ github.event.before }}"
+
+          if [[ "${before}" =~ ^0+$ ]]; then
+            changed=true
+          elif git diff --name-only "${before}" "${GITHUB_SHA}" -- "${VERSION_FILE}" | grep -q .; then
+            changed=true
+          else
+            changed=false
+          fi
+
+          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+
       - name: Prepare buildpack package
+        if: steps.release-change.outputs.changed == 'true'
         id: buildpack-package
         env:
           BUILDPACK_DIRECTORY: ${{ matrix.directory }}
@@ -322,6 +363,7 @@ jobs:
           echo "config=${package_config}" >> "${GITHUB_OUTPUT}"
 
       - name: Verify buildpack package content
+        if: steps.release-change.outputs.changed == 'true'
         env:
           BUILDPACK_ARCHIVE: ${{ runner.temp }}/${{ matrix.name }}
           BUILDPACK_DIRECTORY: ${{ matrix.directory }}
@@ -332,9 +374,11 @@ jobs:
           ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-arm64.cnb" "${BUILDPACK_DIRECTORY}"
 
       - name: Publish ${{ steps.buildpack-image.outputs.image }}
+        if: steps.release-change.outputs.changed == 'true'
         run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ${{ steps.buildpack-package.outputs.config }} --target linux/amd64 --target linux/arm64 --publish --pull-policy if-not-present
 
       - name: Verify linux/amd64 and linux/arm64
+        if: steps.release-change.outputs.changed == 'true'
         env:
           IMAGE: ${{ steps.buildpack-image.outputs.image }}
         run: |
@@ -354,6 +398,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup pack
         uses: buildpacks/github-actions/setup-pack@v5.12.1
@@ -381,7 +427,25 @@ jobs:
 
           echo "image=${IMAGE_PREFIX}/buildpack-yarn-workspace:${version}" >> "${GITHUB_OUTPUT}"
 
+      - name: Check buildpack group version change
+        id: release-change
+        env:
+          VERSION_FILE: buildpacks/yarn-workspace/buildpack.toml
+        run: |
+          before="${{ github.event.before }}"
+
+          if [[ "${before}" =~ ^0+$ ]]; then
+            changed=true
+          elif git diff --name-only "${before}" "${GITHUB_SHA}" -- "${VERSION_FILE}" | grep -q .; then
+            changed=true
+          else
+            changed=false
+          fi
+
+          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+
       - name: Prepare buildpack package
+        if: steps.release-change.outputs.changed == 'true'
         id: buildpack-package
         run: |
           package_config="${RUNNER_TEMP}/yarn-workspace-package.toml"
@@ -392,6 +456,7 @@ jobs:
           echo "config=${package_config}" >> "${GITHUB_OUTPUT}"
 
       - name: Verify buildpack package content
+        if: steps.release-change.outputs.changed == 'true'
         env:
           BUILDPACK_ARCHIVE: ${{ runner.temp }}/yarn-workspace
           PACKAGE_CONFIG: ${{ steps.buildpack-package.outputs.config }}
@@ -401,9 +466,11 @@ jobs:
           ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-arm64.cnb" buildpacks/yarn-workspace
 
       - name: Publish ${{ steps.buildpack-image.outputs.image }}
+        if: steps.release-change.outputs.changed == 'true'
         run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ${{ steps.buildpack-package.outputs.config }} --target linux/amd64 --target linux/arm64 --publish --pull-policy if-not-present
 
       - name: Verify linux/amd64 and linux/arm64
+        if: steps.release-change.outputs.changed == 'true'
         env:
           IMAGE: ${{ steps.buildpack-image.outputs.image }}
         run: |
