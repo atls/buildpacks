@@ -79,10 +79,17 @@ jobs:
     if: ${{ needs.detect-release-head.outputs.should_release == 'true' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Create app token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ATLANTIS_SUPER_BOT_APP_ID }}
+          private-key: ${{ secrets.ATLANTIS_SUPER_BOT_PRIVATE_KEY }}
+
       - name: Create GitHub releases
         uses: googleapis/release-please-action@v4.4.1
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           target-branch: master
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
