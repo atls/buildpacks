@@ -714,6 +714,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+      security-events: write
     strategy:
       fail-fast: false
       matrix:
@@ -734,17 +735,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Login to Docker Scout
-        uses: docker/login-action@v4.1.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Resolve scan image
         id: scan-image
         env:
           IMAGE_KIND: ${{ matrix.image_kind }}
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
+          NODE_MAJOR: ${{ matrix.node_line.node_major }}
+          PLATFORM: ${{ matrix.platform }}
           RELEASE_TAG: ${{ matrix.node_line.release_tag }}
         run: |
           case "${IMAGE_KIND}" in
@@ -766,29 +763,58 @@ jobs:
               ;;
           esac
 
-          echo "image=${image}" >> "${GITHUB_OUTPUT}"
+          sarif="$(printf 'trivy-%s-%s-%s.sarif' "${IMAGE_KIND}" "${RELEASE_TAG}" "${PLATFORM}" | tr '/:' '--')"
+          platform_id="$(printf '%s' "${PLATFORM}" | tr '/:' '--')"
 
-      - name: Report high and medium fixed vulnerabilities
-        uses: docker/scout-action@v1.20.4
+          {
+            echo "image=${image}"
+            echo "sarif=${sarif}"
+            echo "category=container/${IMAGE_KIND}/${NODE_MAJOR}/${platform_id}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Configure Trivy platform
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          cat > trivy.yaml <<EOF
+          image:
+            platform: ${PLATFORM}
+            source:
+              - remote
+          EOF
+
+      - name: Report fixed vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
-          command: cves
-          image: registry://${{ steps.scan-image.outputs.image }}
-          platform: ${{ matrix.platform }}
-          only-fixed: true
-          only-severities: high,medium
-          summary: true
-          exit-code: false
+          scan-type: image
+          image-ref: ${{ steps.scan-image.outputs.image }}
+          trivy-config: trivy.yaml
+          format: sarif
+          output: ${{ steps.scan-image.outputs.sarif }}
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH,MEDIUM
+          limit-severities-for-sarif: true
+
+      - name: Upload vulnerability report
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ steps.scan-image.outputs.sarif }}
+          category: ${{ steps.scan-image.outputs.category }}
 
       - name: Gate critical fixed vulnerabilities
-        uses: docker/scout-action@v1.20.4
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
-          command: cves
-          image: registry://${{ steps.scan-image.outputs.image }}
-          platform: ${{ matrix.platform }}
-          only-fixed: true
-          only-severities: critical
-          summary: true
-          exit-code: true
+          scan-type: image
+          image-ref: ${{ steps.scan-image.outputs.image }}
+          trivy-config: trivy.yaml
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL
+          skip-setup-trivy: true
 
   promote-release-images:
     name: Promote release images Node ${{ matrix.node_line.node_major }}
