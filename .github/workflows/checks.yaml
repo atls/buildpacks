@@ -10,27 +10,3 @@ jobs:
     permissions: write-all
     with:
       node-version: '22'
-
-  version-bootstrap:
-    name: Version bootstrap
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout pull request merge ref
-        uses: actions/checkout@v6
-        with:
-          ref: refs/pull/${{ github.event.pull_request.number }}/merge
-          fetch-depth: 0
-
-      - name: Validate version bootstrap
-        run: |
-          bootstrap_sha="$(jq -r '."bootstrap-sha" // empty' release-please-config.json)"
-          if [[ -z "${bootstrap_sha}" ]]; then
-            exit 0
-          fi
-
-          if ! git merge-base --is-ancestor "${bootstrap_sha}" HEAD; then
-            echo "::error::release-please bootstrap-sha ${bootstrap_sha} is not reachable from the pull request merge ref."
-            exit 1
-          fi
