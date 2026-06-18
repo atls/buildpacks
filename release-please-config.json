@@ -3,6 +3,8 @@
   "bootstrap-sha": "98386bca9834ab0bfc627549f949f794817fad62",
   "include-v-in-tag": false,
   "skip-changelog": true,
+  "label": "release: pending",
+  "release-label": "release: tagged",
   "changelog-sections": [
     {
       "type": "feat",
