@@ -1,0 +1,12 @@
+{
+  ".": "0.1.5",
+  "buildpacks/require-extension": "0.1.5",
+  "buildpacks/yarn-cache": "0.1.5",
+  "buildpacks/yarn-install": "0.1.5",
+  "buildpacks/yarn-workspace": "0.1.5",
+  "buildpacks/yarn-workspace-start": "0.1.5",
+  "extensions/curl": "0.0.3",
+  "extensions/graphql-hive": "0.0.3",
+  "extensions/htop": "0.0.3",
+  "libcnb/libcnb": "0.1.5"
+}

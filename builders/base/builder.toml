@@ -20,15 +20,15 @@ arch = "arm64"
 
 [[extensions]]
 id = "tech.atls.extensions.curl"
-uri = "docker://ghcr.io/atls/buildpack-extension-curl:0.0.2"
+uri = "docker://ghcr.io/atls/buildpack-extension-curl:0.0.3" # x-release-please-version
 
 [[extensions]]
 id = "tech.atls.extensions.htop"
-uri = "docker://ghcr.io/atls/buildpack-extension-htop:0.0.2"
+uri = "docker://ghcr.io/atls/buildpack-extension-htop:0.0.3" # x-release-please-version
 
 [[extensions]]
 id = "tech.atls.extensions.graphql-hive"
-uri = "docker://ghcr.io/atls/buildpack-extension-graphql-hive:0.0.2"
+uri = "docker://ghcr.io/atls/buildpack-extension-graphql-hive:0.0.3" # x-release-please-version
 
 [[order-extensions]]
 [[order-extensions.group]]

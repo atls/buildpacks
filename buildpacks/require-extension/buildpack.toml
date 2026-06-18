@@ -2,7 +2,7 @@ api = "0.10"
 
 [buildpack]
 id = "tech.atls.buildpacks.require-extension"
-version = "0.1.2"
+version = "0.1.5"
 name = "Extensions requirer"
 
 [metadata]

@@ -29,6 +29,26 @@ Workflow публикует:
 
 Semver buildpack tags остаются pin/rollback-артефактами. Node major channel tags можно использовать в потребителях, которым нужен актуальный проверенный buildpack под выбранную Node line без обновления patch-версии после каждого релиза.
 
+## Порядок обновления версий CNB buildpack-компонентов
+
+Версии buildpack и extension компонентов ведутся через `release-please-config.json` и `.release-please-manifest.json`.
+Release PR создаёт GitHub Actions workflow `Release PR` после merge в `master`.
+GitHub release и tag создаёт workflow `GitHub release` только после successful `Docker release` на том же head SHA, где изменился `.release-please-manifest.json`.
+Workflow использует `release-please-action` с правами `contents: write`, `issues: write` и `pull-requests: write`.
+Для создания release PR используется `PAT_token`, чтобы созданные PR запускали обычные проверки `pull_request`.
+Buildpack-компоненты связаны через `release-please` `linked-versions` group `cnb-buildpack-family`.
+В эту группу входит `libcnb`, поэтому изменение общей CNB-библиотеки поднимает версии зависящих buildpack-компонентов тем же release PR.
+
+Composite buildpack `buildpack-yarn-workspace` получает refs на связанные component buildpacks в том же release PR через `release-please` generic markers в `buildpacks/yarn-workspace/package.toml` и `buildpacks/yarn-workspace/buildpack.toml`.
+`jam update-buildpack` для этих файлов не используется: он переписывает TOML без сохранения marker-комментариев, после чего `release-please` перестаёт синхронизировать composite refs.
+
+Extension-компоненты связаны через `release-please` `linked-versions` group `cnb-extension-family`.
+`builders/base/builder.toml` получает refs на связанные extension images в том же release PR, а Docker release берёт publish tag из соответствующего `extension.toml`.
+
+`jam update-builder` сейчас не используется.
+`builder-base` остаётся base builder: он содержит lifecycle, stack images и extensions, а `buildpack-yarn-workspace` выбирается Raijin image pack.
+Кроме того, `jam update-builder` ожидает semver tags для build/run images, а `stack-node` публикуется channel/SHA тегами вроде `build-24`, `run-24` и `build-24-<sha>`.
+
 ## Runtime запуск Yarn PnP ESM workspace
 
 `buildpack-yarn-workspace-start` формирует launch layer с `NODE_OPTIONS` для workspace без `node_modules`.
