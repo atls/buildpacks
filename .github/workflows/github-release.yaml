@@ -51,7 +51,7 @@ jobs:
           mapfile -t pending_release_prs < <(
             gh pr list \
               --state merged \
-              --label 'autorelease: pending' \
+              --label 'release: pending' \
               --limit 100 \
               --json number,mergeCommit \
               --jq '.[] | [.number, .mergeCommit.oid] | @tsv'
