@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: read
       pull-requests: read
     outputs:
       should_release: ${{ steps.release-head.outputs.should_release }}
