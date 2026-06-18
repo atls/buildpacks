@@ -6,7 +6,6 @@ on:
       - master
     paths:
       - '.github/docker-release-node-lines.json'
-      - '.github/workflows/docker-release.yaml'
       - '.yarn/**'
       - '.yarnrc.yml'
       - 'builders/**'
@@ -14,6 +13,7 @@ on:
       - 'extensions/**'
       - 'libcnb/**'
       - 'package.json'
+      - 'scripts/**'
       - 'stacks/**'
       - 'tsconfig.json'
       - 'yarn.lock'
@@ -40,9 +40,34 @@ jobs:
       default_node_major: ${{ steps.release-config.outputs.default_node_major }}
       node_lines: ${{ steps.release-config.outputs.node_lines }}
       node_majors: ${{ steps.release-config.outputs.node_majors }}
+      release_enabled: ${{ steps.release-eligibility.outputs.release_enabled }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release eligibility
+        id: release-eligibility
+        run: |
+          release_enabled=true
+          before="${{ github.event.before }}"
+
+          if [[ "${{ github.actor }}" == "atlantis-terraformer-bot[bot]" ]]; then
+            if [[ "${before}" =~ ^0+$ ]] || ! git cat-file -e "${before}^{commit}" 2>/dev/null; then
+              changed_files="$(git diff-tree --no-commit-id --name-only -r "${GITHUB_SHA}")"
+            else
+              changed_files="$(git diff --name-only "${before}" "${GITHUB_SHA}")"
+            fi
+
+            non_workflow_changes="$(printf '%s\n' "${changed_files}" | grep -vx '.github/workflows/docker-release.yaml' || true)"
+            if [[ -z "${non_workflow_changes}" ]]; then
+              release_enabled=false
+              echo "::notice::Skipping GHCR image release for Terraform-managed workflow-only update."
+            fi
+          fi
+
+          echo "release_enabled=${release_enabled}" >> "${GITHUB_OUTPUT}"
 
       - name: Resolve release configuration
         id: release-config
@@ -105,6 +130,7 @@ jobs:
   build-stack-base:
     name: Build stack base Node ${{ matrix.node_line.node_major }}
     needs: validate-release
+    if: needs.validate-release.outputs.release_enabled == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -191,6 +217,7 @@ jobs:
   publish-extensions:
     name: Publish extension ${{ matrix.name }}
     needs: validate-release
+    if: needs.validate-release.outputs.release_enabled == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -240,10 +267,12 @@ jobs:
       - name: Check extension version change
         id: release-change
         env:
+          IMAGE_REPOSITORY: ${{ matrix.image-repository }}
           VERSION_FILE: ${{ matrix.directory }}/extension.toml
         run: |
           before="${{ github.event.before }}"
           current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
+          image="${IMAGE_REPOSITORY}:${current_version}"
 
           if [[ "${before}" =~ ^0+$ ]]; then
             changed=true
@@ -255,6 +284,10 @@ jobs:
               changed=false
             fi
           else
+            changed=true
+          fi
+
+          if [[ "${changed}" == "false" ]] && ! docker buildx imagetools inspect "${image}" > /dev/null 2>&1; then
             changed=true
           fi
 
@@ -277,6 +310,7 @@ jobs:
   publish-buildpack-components:
     name: Publish buildpack ${{ matrix.name }}
     needs: validate-release
+    if: needs.validate-release.outputs.release_enabled == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -340,10 +374,12 @@ jobs:
       - name: Check buildpack version change
         id: release-change
         env:
+          IMAGE_REPOSITORY: ${{ matrix.image-repository }}
           VERSION_FILE: ${{ matrix.directory }}/buildpack.toml
         run: |
           before="${{ github.event.before }}"
           current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
+          image="${IMAGE_REPOSITORY}:${current_version}"
 
           if [[ "${before}" =~ ^0+$ ]]; then
             changed=true
@@ -355,6 +391,10 @@ jobs:
               changed=false
             fi
           else
+            changed=true
+          fi
+
+          if [[ "${changed}" == "false" ]] && ! docker buildx imagetools inspect "${image}" > /dev/null 2>&1; then
             changed=true
           fi
 
@@ -442,10 +482,12 @@ jobs:
       - name: Check buildpack group version change
         id: release-change
         env:
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
           VERSION_FILE: buildpacks/yarn-workspace/buildpack.toml
         run: |
           before="${{ github.event.before }}"
           current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
+          image="${IMAGE_PREFIX}/buildpack-yarn-workspace:${current_version}"
 
           if [[ "${before}" =~ ^0+$ ]]; then
             changed=true
@@ -457,6 +499,10 @@ jobs:
               changed=false
             fi
           else
+            changed=true
+          fi
+
+          if [[ "${changed}" == "false" ]] && ! docker buildx imagetools inspect "${image}" > /dev/null 2>&1; then
             changed=true
           fi
 
@@ -569,6 +615,7 @@ jobs:
       - name: Publish builder
         env:
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
+          PLATFORMS: ${{ env.PLATFORMS }}
           RELEASE_TAG: ${{ matrix.node_line.release_tag }}
         run: |
           builder_config="${RUNNER_TEMP}/builder.toml"
@@ -579,7 +626,13 @@ jobs:
             -e "s#${IMAGE_PREFIX}/stack-node:run#${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}#g" \
             "${builder_config}"
 
-          pack builder create "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}" --verbose --config "${builder_config}" --publish --pull-policy if-not-present
+          targets=()
+          IFS=',' read -r -a platforms <<< "${PLATFORMS}"
+          for platform in "${platforms[@]}"; do
+            targets+=(--target "${platform}")
+          done
+
+          pack builder create "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}" --verbose --config "${builder_config}" "${targets[@]}" --publish --pull-policy if-not-present
 
   verify-builder-manifest:
     name: Verify builder manifest Node ${{ matrix.node_line.node_major }}
