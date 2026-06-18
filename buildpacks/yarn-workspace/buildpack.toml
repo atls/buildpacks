@@ -2,7 +2,7 @@ api = "0.10"
 
 [buildpack]
 id = "tech.atls.buildpacks.yarn-workspace"
-version = "0.1.5"
+version = "0.2.0"
 name = "Yarn Workspace Buildpack"
 
 [metadata]
@@ -12,17 +12,17 @@ include-files = ["buildpack.toml"]
 [[order.group]]
 id = "tech.atls.buildpacks.yarn-install"
 optional = true
-version = "0.1.5" # x-release-please-version
+version = "0.2.0" # x-release-please-version
 
 [[order.group]]
 id = "tech.atls.buildpacks.yarn-cache"
 optional = true
-version = "0.1.5" # x-release-please-version
+version = "0.2.0" # x-release-please-version
 
 [[order.group]]
 id = "tech.atls.buildpacks.yarn-workspace-start"
-version = "0.1.5" # x-release-please-version
+version = "0.2.0" # x-release-please-version
 
 [[order.group]]
 id = "tech.atls.buildpacks.require-extension"
-version = "0.1.5" # x-release-please-version
+version = "0.2.0" # x-release-please-version
