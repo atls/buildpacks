@@ -72,7 +72,7 @@ jobs:
             echo 'should_release=false' >> "${GITHUB_OUTPUT}"
           fi
 
-  release-please:
+  github-release:
     name: GitHub release
     needs: detect-release-head
     if: ${{ needs.detect-release-head.outputs.should_release == 'true' }}

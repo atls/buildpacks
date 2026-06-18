@@ -1,11 +1,11 @@
-name: Release Please
+name: Release PR
 
 on:
   push:
     branches:
       - master
     paths:
-      - '.github/workflows/release-please.yaml'
+      - '.github/workflows/release-pr.yaml'
       - '.github/workflows/github-release.yaml'
       - '.release-please-manifest.json'
       - '.yarn/**'
@@ -25,15 +25,15 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: release-please
+  group: release-pr
   cancel-in-progress: false
 
 jobs:
-  release-please:
-    name: Release Please
+  release-pr:
+    name: Release PR
     runs-on: ubuntu-latest
     steps:
-      - name: Run release-please
+      - name: Create release PR
         uses: googleapis/release-please-action@v4.4.1
         with:
           token: ${{ secrets.PAT_token }}
