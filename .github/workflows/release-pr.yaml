@@ -29,8 +29,47 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  detect-release-head:
+    name: Detect release head
+    runs-on: ubuntu-latest
+    outputs:
+      should_create_pr: ${{ steps.release-head.outputs.should_create_pr }}
+    steps:
+      - name: Check pending release head
+        id: release-head
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_HEAD: ${{ github.sha }}
+        run: |
+          is_pending_release_head=false
+          mapfile -t pending_release_heads < <(
+            gh pr list \
+              --state merged \
+              --label 'autorelease: pending' \
+              --limit 100 \
+              --json mergeCommit \
+              --jq '.[] | .mergeCommit.oid // empty'
+          )
+
+          for pending_release_head in "${pending_release_heads[@]}"; do
+            if [[ "${pending_release_head}" == "${RELEASE_HEAD}" ]]; then
+              is_pending_release_head=true
+              break
+            fi
+          done
+
+          echo "is_pending_release_head=${is_pending_release_head}"
+
+          if [[ "${is_pending_release_head}" == 'true' ]]; then
+            echo 'should_create_pr=false' >> "${GITHUB_OUTPUT}"
+          else
+            echo 'should_create_pr=true' >> "${GITHUB_OUTPUT}"
+          fi
+
   release-pr:
     name: Release PR
+    needs: detect-release-head
+    if: ${{ needs.detect-release-head.outputs.should_create_pr == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Create release PR
