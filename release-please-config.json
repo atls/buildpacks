@@ -3,6 +3,28 @@
   "bootstrap-sha": "98386bca9834ab0bfc627549f949f794817fad62",
   "include-v-in-tag": false,
   "skip-changelog": true,
+  "changelog-sections": [
+    {
+      "type": "feat",
+      "section": "Features"
+    },
+    {
+      "type": "fix",
+      "section": "Bug Fixes"
+    },
+    {
+      "type": "deps",
+      "section": "Dependencies"
+    },
+    {
+      "type": "build",
+      "section": "Build System"
+    },
+    {
+      "type": "chore",
+      "section": "Maintenance"
+    }
+  ],
   "plugins": [
     {
       "type": "linked-versions",
@@ -40,29 +62,7 @@
         "stacks"
       ],
       "include-component-in-tag": true,
-      "release-type": "node",
-      "changelog-sections": [
-        {
-          "type": "feat",
-          "section": "Features"
-        },
-        {
-          "type": "fix",
-          "section": "Bug Fixes"
-        },
-        {
-          "type": "deps",
-          "section": "Dependencies"
-        },
-        {
-          "type": "build",
-          "section": "Build System"
-        },
-        {
-          "type": "chore",
-          "section": "Maintenance"
-        }
-      ]
+      "release-type": "node"
     },
     "buildpacks/require-extension": {
       "component": "buildpack-require-extension",
