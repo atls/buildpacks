@@ -40,13 +40,7 @@ Buildpack-компоненты связаны через `release-please` `linke
 В эту группу входит `libcnb`, поэтому изменение общей CNB-библиотеки поднимает версии зависящих buildpack-компонентов тем же release PR.
 
 Composite buildpack `buildpack-yarn-workspace` получает refs на связанные component buildpacks в том же release PR через `release-please` generic markers в `buildpacks/yarn-workspace/package.toml` и `buildpacks/yarn-workspace/buildpack.toml`.
-Штатный CNB-инструмент `jam update-buildpack` остаётся локальной командой для сверки или ручной синхронизации с уже опубликованными component buildpack tags:
-
-```bash
-yarn run update:buildpack-refs
-```
-
-Команда обновляет `buildpacks/yarn-workspace/package.toml` и `buildpacks/yarn-workspace/buildpack.toml`.
+`jam update-buildpack` для этих файлов не используется: он переписывает TOML без сохранения marker-комментариев, после чего `release-please` перестаёт синхронизировать composite refs.
 
 Extension-компоненты связаны через `release-please` `linked-versions` group `cnb-extension-family`.
 `builders/base/builder.toml` получает refs на связанные extension images в том же release PR, а Docker release берёт publish tag из соответствующего `extension.toml`.

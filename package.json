@@ -7,9 +7,6 @@
     "buildpacks/*",
     "libcnb/*"
   ],
-  "scripts": {
-    "update:buildpack-refs": "jam update-buildpack --buildpack-file buildpacks/yarn-workspace/buildpack.toml --package-file buildpacks/yarn-workspace/package.toml"
-  },
   "resolutions": {
     "clipanion": "4.0.0-rc.2"
   },
