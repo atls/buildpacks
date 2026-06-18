@@ -75,7 +75,7 @@ jobs:
       - name: Create release PR
         uses: googleapis/release-please-action@v4.4.1
         with:
-          token: ${{ secrets.PAT_token }}
+          token: ${{ secrets.GH_TOKEN }}
           target-branch: master
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
