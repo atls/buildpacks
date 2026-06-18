@@ -9,7 +9,7 @@
 
 Docker-релиз выполняется через GitHub Actions workflow `Docker release` после merge в `master`.
 Для публикации workflow использует `GITHUB_TOKEN` с доступом `packages: write` и публикует образы в GitHub Container Registry.
-Для Docker Scout scan workflow использует `DOCKERHUB_USERNAME` и `DOCKERHUB_TOKEN` только как Docker Scout credentials.
+Проверка опубликованных GHCR-образов выполняется через Trivy; отчёты загружаются в GitHub code scanning как SARIF.
 
 1. В `.github/docker-release-node-lines.json` добавить или удалить supported Node major.
 2. Если меняется default baseline, обновить `default` в `.github/docker-release-node-lines.json` и `ARG node_version` в `stacks/node/base/Dockerfile`.
