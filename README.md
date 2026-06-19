@@ -11,6 +11,7 @@ Docker-релиз выполняется через GitHub Actions workflow `Doc
 Для публикации workflow использует `GITHUB_TOKEN` с доступом `packages: write` и публикует образы в GitHub Container Registry.
 Базовый stack слой обновляет установленные Debian-пакеты перед установкой Node.js, чтобы release images не наследовали исправимые OS-уязвимости из upstream base image.
 Проверка опубликованных GHCR-образов выполняется через Trivy; отчёты загружаются в GitHub code scanning как SARIF.
+Поддерживаемый командный контракт для release workflow, которым управляет `atls/infrastructure`, описан в `scripts/README.md`.
 
 1. В `.github/docker-release-node-lines.json` добавить или удалить supported Node major.
 2. Если меняется default baseline, обновить `default` в `.github/docker-release-node-lines.json` и `ARG node_version` в `stacks/node/base/Dockerfile`.
