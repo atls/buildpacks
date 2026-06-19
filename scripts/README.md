@@ -8,7 +8,7 @@
 `scripts/ghcr-release.config.json` владеет константами релиза, которые использует командный слой:
 
 - префикс образов GHCR и реестр
-- stack id, pack version и целевые платформы
+- stack id и целевые платформы
 - путь к настройке Node lines
 - репозитории компонентов для extensions, buildpacks и workspace buildpack group
 - типы образов, которые сканирует Trivy

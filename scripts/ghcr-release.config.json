@@ -2,7 +2,6 @@
   "imagePrefix": "ghcr.io/atls",
   "registry": "ghcr.io",
   "stackId": "tech.atls.stacks.node",
-  "packVersion": "0.40.4",
   "platforms": ["linux/amd64", "linux/arm64"],
   "nodeLines": ".github/docker-release-node-lines.json",
   "workflowOnlyPaths": [".github/workflows/docker-release.yaml"],

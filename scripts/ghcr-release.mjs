@@ -58,7 +58,6 @@ export function releasePlan(options = {}) {
     image_prefix: config.imagePrefix,
     registry: config.registry,
     stack_id: config.stackId,
-    pack_version: config.packVersion,
     platforms: config.platforms,
     base_image: baseImage,
     default_node_major: defaultNodeMajor,
