@@ -10,6 +10,7 @@ on:
       - '.yarnrc.yml'
       - 'builders/**'
       - 'buildpacks/**'
+      - 'docker-bake.hcl'
       - 'extensions/**'
       - 'libcnb/**'
       - 'package.json'

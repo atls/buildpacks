@@ -29,8 +29,8 @@ Workflow должен использовать штатные CNB-инструм
 - `pack extension package` для extensions
 - `pack buildpack package` для buildpack и composite buildpack images
 - `pack builder create` для builder image
-- `buildpacks/actions/buildpack/compute-metadata` для чтения `buildpack.toml`
-- `buildpacks/actions/buildpackage/verify-metadata` для проверки опубликованного buildpackage metadata
+- `docker://ghcr.io/buildpacks/actions/buildpack/compute-metadata` для чтения `buildpack.toml`
+- `docker://ghcr.io/buildpacks/actions/buildpackage/verify-metadata` для проверки опубликованного buildpackage metadata
 
 Локальные helpers остаются только там, где нужен наш контракт упаковки TypeScript buildpacks:
 
