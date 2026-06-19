@@ -7,11 +7,6 @@
     "buildpacks/*",
     "libcnb/*"
   ],
-  "scripts": {
-    "release:check": "node scripts/ghcr-release.mjs check",
-    "release:plan": "node scripts/ghcr-release.mjs plan",
-    "test:release": "node --test scripts/ghcr-release.test.mjs"
-  },
   "resolutions": {
     "clipanion": "4.0.0-rc.2"
   },

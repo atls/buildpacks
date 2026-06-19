@@ -1,46 +1,55 @@
-# GHCR release commands
+# GHCR release contract
 
-`scripts/ghcr-release.mjs` — поддерживаемый командный слой для GHCR-релиза buildpacks-образов.
-Источник workflow управляется из `atls/infrastructure`; этот workflow должен вызывать команды из этого файла вместо хранения релизных решений в длинных inline shell-блоках.
+Источник workflow управляется из `atls/infrastructure`. В `atls/buildpacks` живут только исходные CNB/Docker-спеки и декларативные входы, которые workflow должен вызывать штатными инструментами.
 
-## Конфигурация
+## Stack images
 
-`scripts/ghcr-release.config.json` владеет константами релиза, которые использует командный слой:
+`docker-bake.hcl` описывает сборку `stack-node` через стандартный Docker Buildx Bake:
 
-- префикс образов GHCR и реестр
-- stack id и целевые платформы
-- путь к настройке Node lines
-- репозитории компонентов для extensions, buildpacks и workspace buildpack group
-- типы образов, которые сканирует Trivy
-- пути, которые относятся только к workflow и не требуют Docker-релиза при изменении Terraform
+- `stack-node-base`
+- `stack-node-build`
+- `stack-node-run`
 
-## Команды
+Managed workflow передаёт значения через Bake variables:
 
-Все команды печатают JSON в stdout. Команды, которые должны кормить GitHub Actions outputs, также поддерживают `--github-output <path>` и дописывают плоские поля в этот файл.
+- `IMAGE_PREFIX`
+- `STACK_ID`
+- `BASE_IMAGE`
+- `NODE_VERSION`
+- `RELEASE_TAG`
+- `PLATFORMS`
 
-| Команда | Назначение |
-| --- | --- |
-| `plan` | Собирает Node lines, default Node line, временные release tags, base image, refs компонентов, stack matrix и scan matrix |
-| `eligibility` | Решает, должен ли push публиковать образы, включая пропуск Terraform-managed изменений только в workflow |
-| `component-status` | Возвращает version, image ref и состояние change/missing для buildpack или extension |
-| `prepare-buildpack` | Вызывает существующий helper подготовки buildpack package и возвращает путь к staged package config |
-| `verify-buildpack-package` | Вызывает существующий verifier содержимого buildpack archive |
-| `builder-config` | Рендерит builder config для одного временного release tag без inline text replacement в workflow YAML |
-| `manifest-verify` | Проверяет, что published manifest содержит все ожидаемые платформы |
-| `node-verify` | Проверяет runtime Node.js major для stack или builder image |
-| `trivy-metadata` | Возвращает image ref, SARIF path, upload category и platform config для Trivy |
-| `trivy-config` | Записывает Trivy platform config file |
-| `promotion-plan` | Возвращает stable/channel tags, продвигаемые из временных release tags |
-| `promote` | Запускает `docker buildx imagetools create` для promotion plan при вызове с `--execute` |
-| `check` | Запускает локальные dry-run проверки release plan, builder config rendering, Trivy metadata и promotion plan |
+Так stack build-логика остаётся в стандартном `docker/bake-action`, а не в inline shell.
 
-## Локальная проверка
+## CNB artifacts
 
-Запуск:
+Workflow должен использовать штатные CNB-инструменты:
+
+- `buildpacks/github-actions/setup-pack` для установки `pack`
+- `pack extension package` для extensions
+- `pack buildpack package` для buildpack и composite buildpack images
+- `pack builder create` для builder image
+- `buildpacks/actions/buildpack/compute-metadata` для чтения `buildpack.toml`
+- `buildpacks/actions/buildpackage/verify-metadata` для проверки опубликованного buildpackage metadata
+
+Локальные helpers остаются только там, где нужен наш контракт упаковки TypeScript buildpacks:
+
+- `scripts/prepare-buildpack-package.sh`
+- `scripts/verify-buildpack-package.sh`
+
+## Проверки и promotion
+
+Workflow должен использовать готовые actions/commands:
+
+- `aquasecurity/trivy-action` для SARIF и critical fixed vulnerability gate
+- `docker buildx imagetools inspect` для проверки multi-arch manifests
+- `docker run --platform ... node --version` для runtime Node major check
+- `docker buildx imagetools create` для продвижения временных tags в stable/channel tags
+
+## Локальная проверка contract
 
 ```bash
-yarn release:check
-yarn test:release
+docker buildx bake --file docker-bake.hcl --print stack
 ```
 
-Эти проверки не публикуют образы. Команды, которые читают или меняют реестр, включаются явно: `component-status --check-remote`, `manifest-verify`, `node-verify` и `promote --execute`.
+Эта проверка не публикует образы и валидирует только Bake graph.
