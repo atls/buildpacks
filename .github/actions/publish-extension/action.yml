@@ -1,0 +1,83 @@
+name: Publish extension
+description: Publish a CNB extension image when its version changed or the image is missing.
+inputs:
+  directory:
+    description: Extension directory.
+    required: true
+  image-repository:
+    description: Extension image repository without tag.
+    required: true
+  before-sha:
+    description: Previous commit SHA from the workflow event.
+    required: true
+outputs:
+  image:
+    description: Published extension image reference.
+    value: ${{ steps.extension-image.outputs.image }}
+  changed:
+    description: Whether the extension needed publishing.
+    value: ${{ steps.release-change.outputs.changed }}
+runs:
+  using: composite
+  steps:
+    - name: Resolve extension image
+      id: extension-image
+      shell: bash
+      working-directory: ${{ inputs.directory }}
+      env:
+        IMAGE_REPOSITORY: ${{ inputs.image-repository }}
+      run: |
+        version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' extension.toml)"
+        if [[ -z "${version}" ]]; then
+          echo "::error::Failed to resolve extension version from extension.toml."
+          exit 1
+        fi
+
+        echo "image=${IMAGE_REPOSITORY}:${version}" >> "${GITHUB_OUTPUT}"
+
+    - name: Check extension version change
+      id: release-change
+      shell: bash
+      env:
+        BEFORE_SHA: ${{ inputs.before-sha }}
+        IMAGE: ${{ steps.extension-image.outputs.image }}
+        VERSION_FILE: ${{ inputs.directory }}/extension.toml
+      run: |
+        current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
+
+        if [[ "${BEFORE_SHA}" =~ ^0+$ ]]; then
+          changed=true
+        elif git cat-file -e "${BEFORE_SHA}:${VERSION_FILE}" 2>/dev/null; then
+          previous_version="$(git show "${BEFORE_SHA}:${VERSION_FILE}" | awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }')"
+          if [[ "${previous_version}" != "${current_version}" ]]; then
+            changed=true
+          else
+            changed=false
+          fi
+        else
+          changed=true
+        fi
+
+        if [[ "${changed}" == "false" ]] && ! docker buildx imagetools inspect "${IMAGE}" > /dev/null 2>&1; then
+          changed=true
+        fi
+
+        echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+
+    - name: Publish extension image
+      if: steps.release-change.outputs.changed == 'true'
+      shell: bash
+      working-directory: ${{ inputs.directory }}
+      env:
+        IMAGE: ${{ steps.extension-image.outputs.image }}
+      run: pack extension package "${IMAGE}" --target linux/amd64 --target linux/arm64 --publish
+
+    - name: Verify extension manifest
+      if: steps.release-change.outputs.changed == 'true'
+      shell: bash
+      env:
+        IMAGE: ${{ steps.extension-image.outputs.image }}
+      run: |
+        docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
+        grep -q linux/amd64 manifest.txt
+        grep -q linux/arm64 manifest.txt

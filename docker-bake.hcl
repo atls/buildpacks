@@ -48,7 +48,7 @@ target "stack-node-build" {
     base_image = "target:stack-node-base"
   }
   args = {
-    base_image = "${IMAGE_PREFIX}/stack-node:base-${RELEASE_TAG}"
+    base_image = "base_image"
   }
   platforms = PLATFORMS
   tags = ["${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}"]
@@ -60,7 +60,7 @@ target "stack-node-run" {
     base_image = "target:stack-node-base"
   }
   args = {
-    base_image = "${IMAGE_PREFIX}/stack-node:base-${RELEASE_TAG}"
+    base_image = "base_image"
   }
   platforms = PLATFORMS
   tags = ["${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}"]

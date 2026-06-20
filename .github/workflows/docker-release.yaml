@@ -5,6 +5,7 @@ on:
     branches:
       - master
     paths:
+      - '.github/actions/**'
       - '.github/docker-release-node-lines.json'
       - '.yarn/**'
       - '.yarnrc.yml'
@@ -37,10 +38,10 @@ jobs:
     permissions:
       contents: read
     outputs:
-      base_image: ${{ steps.release-config.outputs.base_image }}
-      default_node_major: ${{ steps.release-config.outputs.default_node_major }}
-      node_lines: ${{ steps.release-config.outputs.node_lines }}
-      node_majors: ${{ steps.release-config.outputs.node_majors }}
+      base_image: ${{ steps.bootstrap.outputs.base_image }}
+      default_node_major: ${{ steps.bootstrap.outputs.default_node_major }}
+      node_lines: ${{ steps.bootstrap.outputs.node_lines }}
+      node_majors: ${{ steps.bootstrap.outputs.node_majors }}
       release_enabled: ${{ steps.release-eligibility.outputs.release_enabled }}
     steps:
       - name: Checkout
@@ -70,66 +71,14 @@ jobs:
 
           echo "release_enabled=${release_enabled}" >> "${GITHUB_OUTPUT}"
 
-      - name: Resolve release configuration
-        id: release-config
-        run: |
-          node_lines_config=".github/docker-release-node-lines.json"
-          base_image="$(awk -F= '$1 == "ARG base_image" { print $2; exit }' stacks/node/base/Dockerfile)"
-          dockerfile_node_version="$(awk -F= '$1 == "ARG node_version" { print $2; exit }' stacks/node/base/Dockerfile)"
-          default_node_major="$(jq -r '.default' "${node_lines_config}")"
-          mapfile -t supported_node_majors < <(jq -r '.supported[]' "${node_lines_config}")
+      - name: Bootstrap release
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
+        with:
+          sha: ${{ github.sha }}
 
-          if [[ ! "${dockerfile_node_version}" =~ ^[0-9]+$ ]]; then
-            echo "::error::Unsupported node_version '${dockerfile_node_version}'. Expected a Node.js major version."
-            exit 1
-          fi
-          if [[ ! "${default_node_major}" =~ ^[0-9]+$ ]]; then
-            echo "::error::Unsupported default Node.js major '${default_node_major}'."
-            exit 1
-          fi
-          if [[ "${dockerfile_node_version}" != "${default_node_major}" ]]; then
-            echo "::error::stacks/node/base/Dockerfile node_version must match .github/docker-release-node-lines.json default."
-            exit 1
-          fi
-          if [[ "${#supported_node_majors[@]}" -eq 0 ]]; then
-            echo "::error::.github/docker-release-node-lines.json must declare at least one supported Node.js major."
-            exit 1
-          fi
-
-          default_declared="false"
-          for node_major in "${supported_node_majors[@]}"; do
-            if [[ ! "${node_major}" =~ ^[0-9]+$ ]]; then
-              echo "::error::Unsupported Node.js major '${node_major}'."
-              exit 1
-            fi
-            if [[ "${node_major}" == "${default_node_major}" ]]; then
-              default_declared="true"
-            fi
-          done
-          if [[ "${default_declared}" != "true" ]]; then
-            echo "::error::Default Node.js major '${default_node_major}' must be listed in supported Node.js majors."
-            exit 1
-          fi
-
-          [[ -n "${base_image}" ]]
-
-          node_lines="$(jq -c --arg sha "${GITHUB_SHA::12}" '.supported | map(. as $major | {"node_major": ($major | tostring), "release_tag": (($major | tostring) + "-" + $sha)})' "${node_lines_config}")"
-          node_majors="$(jq -r '.supported | map(tostring) | join(",")' "${node_lines_config}")"
-
-          {
-            echo "base_image=${base_image}"
-            echo "default_node_major=${default_node_major}"
-            echo "node_lines=${node_lines}"
-            echo "node_majors=${node_majors}"
-          } >> "${GITHUB_OUTPUT}"
-
-      - name: Verify base image manifest before publishing
-        env:
-          BASE_IMAGE: ${{ steps.release-config.outputs.base_image }}
-        run: docker buildx imagetools inspect "${BASE_IMAGE}" > /dev/null
-
-  build-stack-base:
-    name: Build stack base Node ${{ matrix.node_line.node_major }}
+  build-stack:
+    name: Build stack Node ${{ matrix.node_line.node_major }}
     needs: validate-release
     if: needs.validate-release.outputs.release_enabled == 'true'
     runs-on: ubuntu-latest
@@ -157,63 +106,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish ghcr.io/atls/stack-node:base-${{ matrix.node_line.release_tag }}
-        uses: docker/build-push-action@v7.1.0
+      - name: Publish stack images
+        uses: docker/bake-action@v7
         with:
-          context: stacks/node/base
-          build-args: |
-            base_image=${{ needs.validate-release.outputs.base_image }}
-            node_version=${{ matrix.node_line.node_major }}
-            stack_id=${{ env.STACK_ID }}
-          platforms: ${{ env.PLATFORMS }}
+          source: .
+          files: docker-bake.hcl
+          targets: stack
           pull: true
           push: true
-          tags: ${{ env.IMAGE_PREFIX }}/stack-node:base-${{ matrix.node_line.release_tag }}
-
-  build-stack:
-    name: Build stack ${{ matrix.stack.tag }}-${{ matrix.node_line.node_major }}
-    needs:
-      - build-stack-base
-      - validate-release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
-        stack:
-          - tag: build
-            context: stacks/node/build
-          - tag: run
-            context: stacks/node/run
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v4.0.0
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v4.0.0
-
-      - name: Login to GHCR
-        uses: docker/login-action@v4.1.0
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish ghcr.io/atls/stack-node:${{ matrix.stack.tag }}-${{ matrix.node_line.release_tag }}
-        uses: docker/build-push-action@v7.1.0
-        with:
-          context: ${{ matrix.stack.context }}
-          build-args: base_image=${{ env.IMAGE_PREFIX }}/stack-node:base-${{ matrix.node_line.release_tag }}
-          platforms: ${{ env.PLATFORMS }}
-          pull: true
-          push: true
-          tags: ${{ env.IMAGE_PREFIX }}/stack-node:${{ matrix.stack.tag }}-${{ matrix.node_line.release_tag }}
+          vars: |
+            IMAGE_PREFIX=${{ env.IMAGE_PREFIX }}
+            STACK_ID=${{ env.STACK_ID }}
+            BASE_IMAGE=${{ needs.validate-release.outputs.base_image }}
+            NODE_VERSION=${{ matrix.node_line.node_major }}
+            RELEASE_TAG=${{ matrix.node_line.release_tag }}
+            PLATFORMS=${{ env.PLATFORMS }}
 
   publish-extensions:
     name: Publish extension ${{ matrix.name }}
@@ -254,59 +161,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Resolve extension image
-        id: extension-image
-        working-directory: ${{ matrix.directory }}
-        env:
-          IMAGE_REPOSITORY: ${{ matrix.image-repository }}
-        run: |
-          version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' extension.toml)"
-          [[ -n "${version}" ]]
-
-          echo "image=${IMAGE_REPOSITORY}:${version}" >> "${GITHUB_OUTPUT}"
-
-      - name: Check extension version change
-        id: release-change
-        env:
-          IMAGE_REPOSITORY: ${{ matrix.image-repository }}
-          VERSION_FILE: ${{ matrix.directory }}/extension.toml
-        run: |
-          before="${{ github.event.before }}"
-          current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
-          image="${IMAGE_REPOSITORY}:${current_version}"
-
-          if [[ "${before}" =~ ^0+$ ]]; then
-            changed=true
-          elif git cat-file -e "${before}:${VERSION_FILE}" 2>/dev/null; then
-            previous_version="$(git show "${before}:${VERSION_FILE}" | awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }')"
-            if [[ "${previous_version}" != "${current_version}" ]]; then
-              changed=true
-            else
-              changed=false
-            fi
-          else
-            changed=true
-          fi
-
-          if [[ "${changed}" == "false" ]] && ! docker buildx imagetools inspect "${image}" > /dev/null 2>&1; then
-            changed=true
-          fi
-
-          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
-
-      - name: Publish ${{ steps.extension-image.outputs.image }}
-        if: steps.release-change.outputs.changed == 'true'
-        working-directory: ${{ matrix.directory }}
-        run: pack extension package ${{ steps.extension-image.outputs.image }} --target linux/amd64 --target linux/arm64 --publish
-
-      - name: Verify linux/amd64 and linux/arm64
-        if: steps.release-change.outputs.changed == 'true'
-        env:
-          IMAGE: ${{ steps.extension-image.outputs.image }}
-        run: |
-          docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
-          grep -q linux/amd64 manifest.txt
-          grep -q linux/arm64 manifest.txt
+      - name: Publish extension
+        uses: ./.github/actions/publish-extension
+        with:
+          before-sha: ${{ github.event.before }}
+          directory: ${{ matrix.directory }}
+          image-repository: ${{ matrix.image-repository }}
 
   publish-buildpack-components:
     name: Publish buildpack ${{ matrix.name }}
@@ -361,86 +221,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Resolve buildpack image
-        id: buildpack-image
-        working-directory: ${{ matrix.directory }}
-        env:
-          IMAGE_REPOSITORY: ${{ matrix.image-repository }}
-        run: |
-          version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' buildpack.toml)"
-          [[ -n "${version}" ]]
+      - name: Publish buildpackage
+        uses: ./.github/actions/publish-buildpackage
+        with:
+          before-sha: ${{ github.event.before }}
+          directory: ${{ matrix.directory }}
+          image-repository: ${{ matrix.image-repository }}
+          name: ${{ matrix.name }}
 
-          echo "image=${IMAGE_REPOSITORY}:${version}" >> "${GITHUB_OUTPUT}"
-
-      - name: Check buildpack version change
-        id: release-change
-        env:
-          IMAGE_REPOSITORY: ${{ matrix.image-repository }}
-          VERSION_FILE: ${{ matrix.directory }}/buildpack.toml
-        run: |
-          before="${{ github.event.before }}"
-          current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
-          image="${IMAGE_REPOSITORY}:${current_version}"
-
-          if [[ "${before}" =~ ^0+$ ]]; then
-            changed=true
-          elif git cat-file -e "${before}:${VERSION_FILE}" 2>/dev/null; then
-            previous_version="$(git show "${before}:${VERSION_FILE}" | awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }')"
-            if [[ "${previous_version}" != "${current_version}" ]]; then
-              changed=true
-            else
-              changed=false
-            fi
-          else
-            changed=true
-          fi
-
-          if [[ "${changed}" == "false" ]] && ! docker buildx imagetools inspect "${image}" > /dev/null 2>&1; then
-            changed=true
-          fi
-
-          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
-
-      - name: Prepare buildpack package
-        if: steps.release-change.outputs.changed == 'true'
-        id: buildpack-package
-        env:
-          BUILDPACK_DIRECTORY: ${{ matrix.directory }}
-          BUILDPACK_NAME: ${{ matrix.name }}
-        run: |
-          package_config="${RUNNER_TEMP}/${BUILDPACK_NAME}-package.toml"
-          stage_dir="${RUNNER_TEMP}/${BUILDPACK_NAME}-buildpack"
-
-          ./scripts/prepare-buildpack-package.sh "${BUILDPACK_DIRECTORY}" "${stage_dir}" "${package_config}"
-
-          echo "config=${package_config}" >> "${GITHUB_OUTPUT}"
-
-      - name: Verify buildpack package content
-        if: steps.release-change.outputs.changed == 'true'
-        env:
-          BUILDPACK_ARCHIVE: ${{ runner.temp }}/${{ matrix.name }}
-          BUILDPACK_DIRECTORY: ${{ matrix.directory }}
-          PACKAGE_CONFIG: ${{ steps.buildpack-package.outputs.config }}
-        run: |
-          pack buildpack package "${BUILDPACK_ARCHIVE}" --config "${PACKAGE_CONFIG}" --target linux/amd64 --target linux/arm64 --format file --pull-policy if-not-present
-          ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-amd64.cnb" "${BUILDPACK_DIRECTORY}"
-          ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-arm64.cnb" "${BUILDPACK_DIRECTORY}"
-
-      - name: Publish ${{ steps.buildpack-image.outputs.image }}
-        if: steps.release-change.outputs.changed == 'true'
-        run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ${{ steps.buildpack-package.outputs.config }} --target linux/amd64 --target linux/arm64 --publish --pull-policy if-not-present
-
-      - name: Verify linux/amd64 and linux/arm64
-        if: steps.release-change.outputs.changed == 'true'
-        env:
-          IMAGE: ${{ steps.buildpack-image.outputs.image }}
-        run: |
-          docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
-          grep -q linux/amd64 manifest.txt
-          grep -q linux/arm64 manifest.txt
-
-  publish-buildpack-group:
-    name: Publish buildpack group
+  publish-composite-buildpack:
+    name: Publish composite buildpack
     needs:
       - publish-buildpack-components
       - validate-release
@@ -469,79 +259,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Resolve buildpack group image
-        id: buildpack-image
-        working-directory: buildpacks/yarn-workspace
-        env:
-          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
-        run: |
-          version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' buildpack.toml)"
-          [[ -n "${version}" ]]
-
-          echo "image=${IMAGE_PREFIX}/buildpack-yarn-workspace:${version}" >> "${GITHUB_OUTPUT}"
-
-      - name: Check buildpack group version change
-        id: release-change
-        env:
-          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
-          VERSION_FILE: buildpacks/yarn-workspace/buildpack.toml
-        run: |
-          before="${{ github.event.before }}"
-          current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
-          image="${IMAGE_PREFIX}/buildpack-yarn-workspace:${current_version}"
-
-          if [[ "${before}" =~ ^0+$ ]]; then
-            changed=true
-          elif git cat-file -e "${before}:${VERSION_FILE}" 2>/dev/null; then
-            previous_version="$(git show "${before}:${VERSION_FILE}" | awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }')"
-            if [[ "${previous_version}" != "${current_version}" ]]; then
-              changed=true
-            else
-              changed=false
-            fi
-          else
-            changed=true
-          fi
-
-          if [[ "${changed}" == "false" ]] && ! docker buildx imagetools inspect "${image}" > /dev/null 2>&1; then
-            changed=true
-          fi
-
-          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
-
-      - name: Prepare buildpack package
-        if: steps.release-change.outputs.changed == 'true'
-        id: buildpack-package
-        run: |
-          package_config="${RUNNER_TEMP}/yarn-workspace-package.toml"
-          stage_dir="${RUNNER_TEMP}/yarn-workspace-buildpack"
-
-          ./scripts/prepare-buildpack-package.sh buildpacks/yarn-workspace "${stage_dir}" "${package_config}"
-
-          echo "config=${package_config}" >> "${GITHUB_OUTPUT}"
-
-      - name: Verify buildpack package content
-        if: steps.release-change.outputs.changed == 'true'
-        env:
-          BUILDPACK_ARCHIVE: ${{ runner.temp }}/yarn-workspace
-          PACKAGE_CONFIG: ${{ steps.buildpack-package.outputs.config }}
-        run: |
-          pack buildpack package "${BUILDPACK_ARCHIVE}" --config "${PACKAGE_CONFIG}" --target linux/amd64 --target linux/arm64 --format file --pull-policy if-not-present
-          ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-amd64.cnb" buildpacks/yarn-workspace
-          ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-arm64.cnb" buildpacks/yarn-workspace
-
-      - name: Publish ${{ steps.buildpack-image.outputs.image }}
-        if: steps.release-change.outputs.changed == 'true'
-        run: pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ${{ steps.buildpack-package.outputs.config }} --target linux/amd64 --target linux/arm64 --publish --pull-policy if-not-present
-
-      - name: Verify linux/amd64 and linux/arm64
-        if: steps.release-change.outputs.changed == 'true'
-        env:
-          IMAGE: ${{ steps.buildpack-image.outputs.image }}
-        run: |
-          docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
-          grep -q linux/amd64 manifest.txt
-          grep -q linux/arm64 manifest.txt
+      - name: Publish buildpackage
+        uses: ./.github/actions/publish-buildpackage
+        with:
+          before-sha: ${{ github.event.before }}
+          directory: buildpacks/yarn-workspace
+          image-repository: ${{ env.IMAGE_PREFIX }}/buildpack-yarn-workspace
+          name: yarn-workspace
 
   verify-stack-manifests:
     name: Verify stack manifests Node ${{ matrix.node_line.node_major }}
@@ -564,29 +288,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify linux/amd64 and linux/arm64
-        env:
-          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
-          RELEASE_TAG: ${{ matrix.node_line.release_tag }}
-        run: |
-          images=(
-            "${IMAGE_PREFIX}/stack-node:base-${RELEASE_TAG}"
-            "${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}"
-            "${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}"
-          )
+      - name: Verify stack base
+        uses: ./.github/actions/verify-release-images
+        with:
+          image: ${{ env.IMAGE_PREFIX }}/stack-node:base-${{ matrix.node_line.release_tag }}
+          platforms: ${{ env.PLATFORMS }}
 
-          for image in "${images[@]}"; do
-            docker buildx imagetools inspect "${image}" | tee manifest.txt
-            grep -q linux/amd64 manifest.txt
-            grep -q linux/arm64 manifest.txt
-          done
+      - name: Verify stack build
+        uses: ./.github/actions/verify-release-images
+        with:
+          image: ${{ env.IMAGE_PREFIX }}/stack-node:build-${{ matrix.node_line.release_tag }}
+          platforms: ${{ env.PLATFORMS }}
+
+      - name: Verify stack run
+        uses: ./.github/actions/verify-release-images
+        with:
+          image: ${{ env.IMAGE_PREFIX }}/stack-node:run-${{ matrix.node_line.release_tag }}
+          platforms: ${{ env.PLATFORMS }}
 
   publish-builder:
     name: Publish builder Node ${{ matrix.node_line.node_major }}
     needs:
       - build-stack
       - publish-extensions
-      - publish-buildpack-group
+      - publish-composite-buildpack
       - validate-release
       - verify-stack-manifests
     runs-on: ubuntu-latest
@@ -614,26 +339,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish builder
-        env:
-          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
-          PLATFORMS: ${{ env.PLATFORMS }}
-          RELEASE_TAG: ${{ matrix.node_line.release_tag }}
-        run: |
-          builder_config="${RUNNER_TEMP}/builder.toml"
-          cp builders/base/builder.toml "${builder_config}"
-
-          sed -i \
-            -e "s#${IMAGE_PREFIX}/stack-node:build#${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}#g" \
-            -e "s#${IMAGE_PREFIX}/stack-node:run#${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}#g" \
-            "${builder_config}"
-
-          targets=()
-          IFS=',' read -r -a platforms <<< "${PLATFORMS}"
-          for platform in "${platforms[@]}"; do
-            targets+=(--target "${platform}")
-          done
-
-          pack builder create "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}" --verbose --config "${builder_config}" "${targets[@]}" --publish --pull-policy if-not-present
+        uses: ./.github/actions/publish-builder
+        with:
+          image-prefix: ${{ env.IMAGE_PREFIX }}
+          platforms: ${{ env.PLATFORMS }}
+          release-tag: ${{ matrix.node_line.release_tag }}
 
   verify-builder-manifest:
     name: Verify builder manifest Node ${{ matrix.node_line.node_major }}
@@ -656,14 +366,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify linux/amd64 and linux/arm64
-        env:
-          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
-          RELEASE_TAG: ${{ matrix.node_line.release_tag }}
-        run: |
-          docker buildx imagetools inspect "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}" | tee manifest.txt
-          grep -q linux/amd64 manifest.txt
-          grep -q linux/arm64 manifest.txt
+      - name: Verify builder manifest
+        uses: ./.github/actions/verify-release-images
+        with:
+          image: ${{ env.IMAGE_PREFIX }}/builder-base:${{ matrix.node_line.release_tag }}
+          platforms: ${{ env.PLATFORMS }}
 
   verify-node:
     name: Verify Node.js stack-node:${{ matrix.target.tag }}-${{ matrix.node_line.node_major }} ${{ matrix.target.platform }}
@@ -707,20 +414,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify Node.js major
-        env:
-          COMMAND: ${{ matrix.target.command }}
-          ENTRYPOINT: ${{ matrix.target.entrypoint }}
-          EXPECTED_NODE_MAJOR: ${{ matrix.node_line.node_major }}
-          IMAGE: ${{ env.IMAGE_PREFIX }}/stack-node:${{ matrix.target.tag }}-${{ matrix.node_line.release_tag }}
-          PLATFORM: ${{ matrix.target.platform }}
-        run: |
-          read -r -a command <<< "${COMMAND}"
-
-          if [[ -n "${ENTRYPOINT}" ]]; then
-            docker run --rm --pull always --platform "${PLATFORM}" --entrypoint "${ENTRYPOINT}" "${IMAGE}" "${command[@]}" | grep "^v${EXPECTED_NODE_MAJOR}\\."
-          else
-            docker run --rm --pull always --platform "${PLATFORM}" "${IMAGE}" "${command[@]}" | grep "^v${EXPECTED_NODE_MAJOR}\\."
-          fi
+        uses: ./.github/actions/verify-release-images
+        with:
+          expected-node-major: ${{ matrix.node_line.node_major }}
+          image: ${{ env.IMAGE_PREFIX }}/stack-node:${{ matrix.target.tag }}-${{ matrix.node_line.release_tag }}
+          node-command: ${{ matrix.target.command }}
+          node-entrypoint: ${{ matrix.target.entrypoint }}
+          platforms: ${{ matrix.target.platform }}
 
   verify-builder-node:
     name: Verify Node.js builder ${{ matrix.node_line.node_major }} ${{ matrix.platform }}
@@ -750,12 +450,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify Node.js major
-        env:
-          EXPECTED_NODE_MAJOR: ${{ matrix.node_line.node_major }}
-          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
-          PLATFORM: ${{ matrix.platform }}
-          RELEASE_TAG: ${{ matrix.node_line.release_tag }}
-        run: docker run --rm --pull always --platform "${PLATFORM}" --entrypoint node "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}" --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
+        uses: ./.github/actions/verify-release-images
+        with:
+          expected-node-major: ${{ matrix.node_line.node_major }}
+          image: ${{ env.IMAGE_PREFIX }}/builder-base:${{ matrix.node_line.release_tag }}
+          node-command: --version
+          node-entrypoint: node
+          platforms: ${{ matrix.platform }}
 
   scan-release-images:
     name: Scan ${{ matrix.image_kind }} Node ${{ matrix.node_line.node_major }} ${{ matrix.platform }}
@@ -789,89 +490,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Resolve scan image
-        id: scan-image
-        env:
-          IMAGE_KIND: ${{ matrix.image_kind }}
-          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
-          NODE_MAJOR: ${{ matrix.node_line.node_major }}
-          PLATFORM: ${{ matrix.platform }}
-          RELEASE_TAG: ${{ matrix.node_line.release_tag }}
-        run: |
-          case "${IMAGE_KIND}" in
-            builder-base)
-              image="${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}"
-              ;;
-            stack-node-base)
-              image="${IMAGE_PREFIX}/stack-node:base-${RELEASE_TAG}"
-              ;;
-            stack-node-build)
-              image="${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}"
-              ;;
-            stack-node-run)
-              image="${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}"
-              ;;
-            *)
-              echo "::error::Unsupported image kind '${IMAGE_KIND}'."
-              exit 1
-              ;;
-          esac
-
-          sarif="$(printf 'trivy-%s-%s-%s.sarif' "${IMAGE_KIND}" "${RELEASE_TAG}" "${PLATFORM}" | tr '/:' '--')"
-          platform_id="$(printf '%s' "${PLATFORM}" | tr '/:' '--')"
-
-          {
-            echo "image=${image}"
-            echo "sarif=${sarif}"
-            echo "category=container/${IMAGE_KIND}/${NODE_MAJOR}/${platform_id}"
-          } >> "${GITHUB_OUTPUT}"
-
-      - name: Configure Trivy platform
-        env:
-          PLATFORM: ${{ matrix.platform }}
-        run: |
-          cat > trivy.yaml <<EOF
-          image:
-            platform: ${PLATFORM}
-            source:
-              - remote
-          EOF
-
-      - name: Report fixed vulnerabilities
-        uses: aquasecurity/trivy-action@v0.36.0
+      - name: Scan release image
+        uses: ./.github/actions/scan-release-images
         with:
-          scan-type: image
-          image-ref: ${{ steps.scan-image.outputs.image }}
-          trivy-config: trivy.yaml
-          format: sarif
-          output: ${{ steps.scan-image.outputs.sarif }}
-          exit-code: '0'
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: CRITICAL,HIGH,MEDIUM
-          limit-severities-for-sarif: true
+          image-kind: ${{ matrix.image_kind }}
+          image-prefix: ${{ env.IMAGE_PREFIX }}
+          node-major: ${{ matrix.node_line.node_major }}
+          platform: ${{ matrix.platform }}
+          release-tag: ${{ matrix.node_line.release_tag }}
 
-      - name: Upload vulnerability report
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: ${{ steps.scan-image.outputs.sarif }}
-          category: ${{ steps.scan-image.outputs.category }}
-
-      - name: Gate critical fixed vulnerabilities
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: image
-          image-ref: ${{ steps.scan-image.outputs.image }}
-          trivy-config: trivy.yaml
-          format: table
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: CRITICAL
-          skip-setup-trivy: true
-
-  promote-release-images:
-    name: Promote release images Node ${{ matrix.node_line.node_major }}
+  update-channel-tags:
+    name: Update channel tags Node ${{ matrix.node_line.node_major }}
     needs:
       - scan-release-images
       - verify-builder-node
@@ -899,42 +528,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Promote stack and builder tags
-        env:
-          DEFAULT_NODE_MAJOR: ${{ needs.validate-release.outputs.default_node_major }}
-          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
-          NODE_MAJOR: ${{ matrix.node_line.node_major }}
-          RELEASE_TAG: ${{ matrix.node_line.release_tag }}
-        run: |
-          base_tags=(--tag "${IMAGE_PREFIX}/stack-node:base-${NODE_MAJOR}")
-          build_tags=(--tag "${IMAGE_PREFIX}/stack-node:build-${NODE_MAJOR}")
-          run_tags=(--tag "${IMAGE_PREFIX}/stack-node:run-${NODE_MAJOR}")
-
-          if [[ "${NODE_MAJOR}" == "${DEFAULT_NODE_MAJOR}" ]]; then
-            base_tags+=(--tag "${IMAGE_PREFIX}/stack-node:base")
-            build_tags+=(--tag "${IMAGE_PREFIX}/stack-node:build")
-            run_tags+=(--tag "${IMAGE_PREFIX}/stack-node:run")
-          fi
-
-          docker buildx imagetools create \
-            "${base_tags[@]}" \
-            "${IMAGE_PREFIX}/stack-node:base-${RELEASE_TAG}"
-
-          docker buildx imagetools create \
-            "${build_tags[@]}" \
-            "${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}"
-
-          docker buildx imagetools create \
-            "${run_tags[@]}" \
-            "${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}"
-
-          docker buildx imagetools create \
-            --tag "${IMAGE_PREFIX}/builder-base:${NODE_MAJOR}" \
-            "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}"
-
-          buildpack_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' buildpacks/yarn-workspace/buildpack.toml)"
-          [[ -n "${buildpack_version}" ]]
-
-          docker buildx imagetools create \
-            --tag "${IMAGE_PREFIX}/buildpack-yarn-workspace:${NODE_MAJOR}" \
-            "${IMAGE_PREFIX}/buildpack-yarn-workspace:${buildpack_version}"
+      - name: Update channel tags
+        uses: ./.github/actions/update-channel-tags
+        with:
+          default-node-major: ${{ needs.validate-release.outputs.default_node_major }}
+          image-prefix: ${{ env.IMAGE_PREFIX }}
+          node-major: ${{ matrix.node_line.node_major }}
+          release-tag: ${{ matrix.node_line.release_tag }}

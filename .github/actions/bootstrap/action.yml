@@ -1,0 +1,97 @@
+name: Bootstrap release
+description: Resolve Node release lines and validate the stack default.
+inputs:
+  node-lines-config:
+    description: Path to the Node release lines config.
+    default: .github/docker-release-node-lines.json
+  stack-dockerfile:
+    description: Path to the stack base Dockerfile.
+    default: stacks/node/base/Dockerfile
+  sha:
+    description: Commit SHA used to derive immutable release tags.
+    required: true
+  verify-base-image:
+    description: Whether to verify the configured base image manifest.
+    default: 'true'
+outputs:
+  base_image:
+    description: Upstream base image read from the stack Dockerfile.
+    value: ${{ steps.release-config.outputs.base_image }}
+  default_node_major:
+    description: Default Node.js major release line.
+    value: ${{ steps.release-config.outputs.default_node_major }}
+  node_lines:
+    description: JSON matrix of supported Node.js release lines.
+    value: ${{ steps.release-config.outputs.node_lines }}
+  node_majors:
+    description: Comma-separated supported Node.js majors.
+    value: ${{ steps.release-config.outputs.node_majors }}
+runs:
+  using: composite
+  steps:
+    - name: Resolve release configuration
+      id: release-config
+      shell: bash
+      env:
+        NODE_LINES_CONFIG: ${{ inputs.node-lines-config }}
+        SHA: ${{ inputs.sha }}
+        STACK_DOCKERFILE: ${{ inputs.stack-dockerfile }}
+      run: |
+        base_image="$(awk -F= '$1 == "ARG base_image" { print $2; exit }' "${STACK_DOCKERFILE}")"
+        dockerfile_node_version="$(awk -F= '$1 == "ARG node_version" { print $2; exit }' "${STACK_DOCKERFILE}")"
+        default_node_major="$(jq -r '.default' "${NODE_LINES_CONFIG}")"
+        mapfile -t supported_node_majors < <(jq -r '.supported[]' "${NODE_LINES_CONFIG}")
+
+        if [[ ! "${dockerfile_node_version}" =~ ^[0-9]+$ ]]; then
+          echo "::error::Unsupported node_version '${dockerfile_node_version}'. Expected a Node.js major version."
+          exit 1
+        fi
+        if [[ ! "${default_node_major}" =~ ^[0-9]+$ ]]; then
+          echo "::error::Unsupported default Node.js major '${default_node_major}'."
+          exit 1
+        fi
+        if [[ "${dockerfile_node_version}" != "${default_node_major}" ]]; then
+          echo "::error::${STACK_DOCKERFILE} node_version must match ${NODE_LINES_CONFIG} default."
+          exit 1
+        fi
+        if [[ "${#supported_node_majors[@]}" -eq 0 ]]; then
+          echo "::error::${NODE_LINES_CONFIG} must declare at least one supported Node.js major."
+          exit 1
+        fi
+
+        default_declared="false"
+        for node_major in "${supported_node_majors[@]}"; do
+          if [[ ! "${node_major}" =~ ^[0-9]+$ ]]; then
+            echo "::error::Unsupported Node.js major '${node_major}'."
+            exit 1
+          fi
+          if [[ "${node_major}" == "${default_node_major}" ]]; then
+            default_declared="true"
+          fi
+        done
+        if [[ "${default_declared}" != "true" ]]; then
+          echo "::error::Default Node.js major '${default_node_major}' must be listed in supported Node.js majors."
+          exit 1
+        fi
+        if [[ -z "${base_image}" ]]; then
+          echo "::error::Failed to resolve base_image from ${STACK_DOCKERFILE}."
+          exit 1
+        fi
+
+        release_sha="${SHA:0:12}"
+        node_lines="$(jq -c --arg sha "${release_sha}" '.supported | map(. as $major | {"node_major": ($major | tostring), "release_tag": (($major | tostring) + "-" + $sha)})' "${NODE_LINES_CONFIG}")"
+        node_majors="$(jq -r '.supported | map(tostring) | join(",")' "${NODE_LINES_CONFIG}")"
+
+        {
+          echo "base_image=${base_image}"
+          echo "default_node_major=${default_node_major}"
+          echo "node_lines=${node_lines}"
+          echo "node_majors=${node_majors}"
+        } >> "${GITHUB_OUTPUT}"
+
+    - name: Verify base image manifest
+      if: inputs.verify-base-image == 'true'
+      shell: bash
+      env:
+        BASE_IMAGE: ${{ steps.release-config.outputs.base_image }}
+      run: docker buildx imagetools inspect "${BASE_IMAGE}" > /dev/null

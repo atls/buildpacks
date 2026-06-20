@@ -1,0 +1,49 @@
+name: Publish builder
+description: Render the builder config for a release tag and publish the builder image.
+inputs:
+  image-prefix:
+    description: Image namespace prefix.
+    required: true
+  platforms:
+    description: Comma-separated target platforms.
+    required: true
+  release-tag:
+    description: Immutable release tag suffix.
+    required: true
+  builder-config:
+    description: Source builder config.
+    default: builders/base/builder.toml
+outputs:
+  image:
+    description: Published builder image reference.
+    value: ${{ steps.builder.outputs.image }}
+runs:
+  using: composite
+  steps:
+    - name: Publish builder image
+      id: builder
+      shell: bash
+      env:
+        BUILDER_CONFIG: ${{ inputs.builder-config }}
+        IMAGE_PREFIX: ${{ inputs.image-prefix }}
+        PLATFORMS: ${{ inputs.platforms }}
+        RELEASE_TAG: ${{ inputs.release-tag }}
+      run: |
+        rendered_config="${RUNNER_TEMP}/builder.toml"
+        cp "${BUILDER_CONFIG}" "${rendered_config}"
+
+        sed -i \
+          -e "s#${IMAGE_PREFIX}/stack-node:build#${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}#g" \
+          -e "s#${IMAGE_PREFIX}/stack-node:run#${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}#g" \
+          "${rendered_config}"
+
+        targets=()
+        IFS=',' read -r -a platforms <<< "${PLATFORMS}"
+        for platform in "${platforms[@]}"; do
+          targets+=(--target "${platform}")
+        done
+
+        image="${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}"
+        pack builder create "${image}" --verbose --config "${rendered_config}" "${targets[@]}" --publish --pull-policy if-not-present
+
+        echo "image=${image}" >> "${GITHUB_OUTPUT}"

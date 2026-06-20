@@ -1,0 +1,120 @@
+name: Scan release image
+description: Run the Trivy release scan, upload SARIF, and gate fixed critical vulnerabilities.
+inputs:
+  image:
+    description: Image reference to scan.
+    default: ''
+  image-prefix:
+    description: Image namespace prefix used when image is not passed directly.
+    default: ghcr.io/atls
+  image-kind:
+    description: Release image kind used in SARIF metadata.
+    required: true
+  node-major:
+    description: Node.js major release line.
+    required: true
+  platform:
+    description: Platform to scan.
+    required: true
+  release-tag:
+    description: Immutable release tag.
+    required: true
+outputs:
+  image:
+    description: Image reference scanned by Trivy.
+    value: ${{ steps.scan-metadata.outputs.image }}
+  category:
+    description: SARIF category.
+    value: ${{ steps.scan-metadata.outputs.category }}
+  sarif:
+    description: SARIF output path.
+    value: ${{ steps.scan-metadata.outputs.sarif }}
+runs:
+  using: composite
+  steps:
+    - name: Resolve scan metadata
+      id: scan-metadata
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        IMAGE_KIND: ${{ inputs.image-kind }}
+        IMAGE_PREFIX: ${{ inputs.image-prefix }}
+        NODE_MAJOR: ${{ inputs.node-major }}
+        PLATFORM: ${{ inputs.platform }}
+        RELEASE_TAG: ${{ inputs.release-tag }}
+      run: |
+        image="${IMAGE}"
+        if [[ -z "${image}" ]]; then
+          case "${IMAGE_KIND}" in
+            builder-base)
+              image="${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}"
+              ;;
+            stack-node-base)
+              image="${IMAGE_PREFIX}/stack-node:base-${RELEASE_TAG}"
+              ;;
+            stack-node-build)
+              image="${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}"
+              ;;
+            stack-node-run)
+              image="${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}"
+              ;;
+            *)
+              echo "::error::Unsupported image kind '${IMAGE_KIND}'."
+              exit 1
+              ;;
+          esac
+        fi
+
+        sarif="$(printf 'trivy-%s-%s-%s.sarif' "${IMAGE_KIND}" "${RELEASE_TAG}" "${PLATFORM}" | tr '/:' '--')"
+        platform_id="$(printf '%s' "${PLATFORM}" | tr '/:' '--')"
+
+        {
+          echo "image=${image}"
+          echo "sarif=${sarif}"
+          echo "category=container/${IMAGE_KIND}/${NODE_MAJOR}/${platform_id}"
+        } >> "${GITHUB_OUTPUT}"
+
+    - name: Configure Trivy platform
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+      run: |
+        cat > trivy.yaml <<EOF
+        image:
+          platform: ${PLATFORM}
+          source:
+            - remote
+        EOF
+
+    - name: Report fixed vulnerabilities
+      uses: aquasecurity/trivy-action@v0.36.0
+      with:
+        scan-type: image
+        image-ref: ${{ steps.scan-metadata.outputs.image }}
+        trivy-config: trivy.yaml
+        format: sarif
+        output: ${{ steps.scan-metadata.outputs.sarif }}
+        exit-code: '0'
+        ignore-unfixed: true
+        vuln-type: os,library
+        severity: CRITICAL,HIGH,MEDIUM
+        limit-severities-for-sarif: true
+
+    - name: Upload vulnerability report
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: ${{ steps.scan-metadata.outputs.sarif }}
+        category: ${{ steps.scan-metadata.outputs.category }}
+
+    - name: Gate critical fixed vulnerabilities
+      uses: aquasecurity/trivy-action@v0.36.0
+      with:
+        scan-type: image
+        image-ref: ${{ steps.scan-metadata.outputs.image }}
+        trivy-config: trivy.yaml
+        format: table
+        exit-code: '1'
+        ignore-unfixed: true
+        vuln-type: os,library
+        severity: CRITICAL
+        skip-setup-trivy: true

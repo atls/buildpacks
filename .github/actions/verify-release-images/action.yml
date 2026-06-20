@@ -1,0 +1,54 @@
+name: Verify release images
+description: Verify multi-arch manifests and optional Node.js runtime version.
+inputs:
+  image:
+    description: Image reference to verify.
+    required: true
+  platforms:
+    description: Comma-separated platforms expected in the manifest.
+    default: linux/amd64,linux/arm64
+  expected-node-major:
+    description: Expected Node.js major. Leave empty to skip runtime verification.
+    default: ''
+  node-entrypoint:
+    description: Optional entrypoint used for Node.js runtime verification.
+    default: ''
+  node-command:
+    description: Command used for Node.js runtime verification.
+    default: node --version
+runs:
+  using: composite
+  steps:
+    - name: Verify manifest platforms
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        PLATFORMS: ${{ inputs.platforms }}
+      run: |
+        docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
+
+        IFS=',' read -r -a platforms <<< "${PLATFORMS}"
+        for platform in "${platforms[@]}"; do
+          grep -q "${platform}" manifest.txt
+        done
+
+    - name: Verify Node.js major
+      if: inputs.expected-node-major != ''
+      shell: bash
+      env:
+        COMMAND: ${{ inputs.node-command }}
+        ENTRYPOINT: ${{ inputs.node-entrypoint }}
+        EXPECTED_NODE_MAJOR: ${{ inputs.expected-node-major }}
+        IMAGE: ${{ inputs.image }}
+        PLATFORMS: ${{ inputs.platforms }}
+      run: |
+        read -r -a command <<< "${COMMAND}"
+        IFS=',' read -r -a platforms <<< "${PLATFORMS}"
+
+        for platform in "${platforms[@]}"; do
+          if [[ -n "${ENTRYPOINT}" ]]; then
+            docker run --rm --pull always --platform "${platform}" --entrypoint "${ENTRYPOINT}" "${IMAGE}" "${command[@]}" | grep "^v${EXPECTED_NODE_MAJOR}\\."
+          else
+            docker run --rm --pull always --platform "${platform}" "${IMAGE}" "${command[@]}" | grep "^v${EXPECTED_NODE_MAJOR}\\."
+          fi
+        done

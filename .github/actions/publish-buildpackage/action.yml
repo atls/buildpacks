@@ -1,0 +1,113 @@
+name: Publish buildpackage
+description: Publish a CNB buildpack package when its version changed or the image is missing.
+inputs:
+  name:
+    description: Buildpack package name used for temporary files.
+    required: true
+  directory:
+    description: Buildpack directory.
+    required: true
+  image-repository:
+    description: Buildpack image repository without tag.
+    required: true
+  before-sha:
+    description: Previous commit SHA from the workflow event.
+    required: true
+outputs:
+  image:
+    description: Published buildpack image reference.
+    value: ${{ steps.buildpack-image.outputs.image }}
+  changed:
+    description: Whether the buildpack needed publishing.
+    value: ${{ steps.release-change.outputs.changed }}
+runs:
+  using: composite
+  steps:
+    - name: Resolve buildpack image
+      id: buildpack-image
+      shell: bash
+      working-directory: ${{ inputs.directory }}
+      env:
+        IMAGE_REPOSITORY: ${{ inputs.image-repository }}
+      run: |
+        version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' buildpack.toml)"
+        if [[ -z "${version}" ]]; then
+          echo "::error::Failed to resolve buildpack version from buildpack.toml."
+          exit 1
+        fi
+
+        echo "image=${IMAGE_REPOSITORY}:${version}" >> "${GITHUB_OUTPUT}"
+
+    - name: Check buildpack version change
+      id: release-change
+      shell: bash
+      env:
+        BEFORE_SHA: ${{ inputs.before-sha }}
+        IMAGE: ${{ steps.buildpack-image.outputs.image }}
+        VERSION_FILE: ${{ inputs.directory }}/buildpack.toml
+      run: |
+        current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
+
+        if [[ "${BEFORE_SHA}" =~ ^0+$ ]]; then
+          changed=true
+        elif git cat-file -e "${BEFORE_SHA}:${VERSION_FILE}" 2>/dev/null; then
+          previous_version="$(git show "${BEFORE_SHA}:${VERSION_FILE}" | awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }')"
+          if [[ "${previous_version}" != "${current_version}" ]]; then
+            changed=true
+          else
+            changed=false
+          fi
+        else
+          changed=true
+        fi
+
+        if [[ "${changed}" == "false" ]] && ! docker buildx imagetools inspect "${IMAGE}" > /dev/null 2>&1; then
+          changed=true
+        fi
+
+        echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+
+    - name: Prepare buildpack package
+      if: steps.release-change.outputs.changed == 'true'
+      id: buildpack-package
+      shell: bash
+      env:
+        BUILDPACK_DIRECTORY: ${{ inputs.directory }}
+        BUILDPACK_NAME: ${{ inputs.name }}
+      run: |
+        package_config="${RUNNER_TEMP}/${BUILDPACK_NAME}-package.toml"
+        stage_dir="${RUNNER_TEMP}/${BUILDPACK_NAME}-buildpack"
+
+        ./scripts/prepare-buildpack-package.sh "${BUILDPACK_DIRECTORY}" "${stage_dir}" "${package_config}"
+
+        echo "config=${package_config}" >> "${GITHUB_OUTPUT}"
+
+    - name: Verify buildpack package content
+      if: steps.release-change.outputs.changed == 'true'
+      shell: bash
+      env:
+        BUILDPACK_ARCHIVE: ${{ runner.temp }}/${{ inputs.name }}
+        BUILDPACK_DIRECTORY: ${{ inputs.directory }}
+        PACKAGE_CONFIG: ${{ steps.buildpack-package.outputs.config }}
+      run: |
+        pack buildpack package "${BUILDPACK_ARCHIVE}" --config "${PACKAGE_CONFIG}" --target linux/amd64 --target linux/arm64 --format file --pull-policy if-not-present
+        ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-amd64.cnb" "${BUILDPACK_DIRECTORY}"
+        ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-linux-arm64.cnb" "${BUILDPACK_DIRECTORY}"
+
+    - name: Publish buildpack image
+      if: steps.release-change.outputs.changed == 'true'
+      shell: bash
+      env:
+        IMAGE: ${{ steps.buildpack-image.outputs.image }}
+        PACKAGE_CONFIG: ${{ steps.buildpack-package.outputs.config }}
+      run: pack buildpack package "${IMAGE}" --config "${PACKAGE_CONFIG}" --target linux/amd64 --target linux/arm64 --publish --pull-policy if-not-present
+
+    - name: Verify buildpack manifest
+      if: steps.release-change.outputs.changed == 'true'
+      shell: bash
+      env:
+        IMAGE: ${{ steps.buildpack-image.outputs.image }}
+      run: |
+        docker buildx imagetools inspect "${IMAGE}" | tee manifest.txt
+        grep -q linux/amd64 manifest.txt
+        grep -q linux/arm64 manifest.txt
