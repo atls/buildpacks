@@ -281,6 +281,9 @@ jobs:
       matrix:
         node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Login to GHCR
         uses: docker/login-action@v4.1.0
         with:
@@ -359,6 +362,9 @@ jobs:
       matrix:
         node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Login to GHCR
         uses: docker/login-action@v4.1.0
         with:
@@ -403,6 +409,9 @@ jobs:
             entrypoint: ''
             command: node --version
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v4.0.0
 
@@ -439,6 +448,9 @@ jobs:
           - linux/amd64
           - linux/arm64
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v4.0.0
 
@@ -483,6 +495,9 @@ jobs:
           - stack-node-build
           - stack-node-run
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Login to GHCR
         uses: docker/login-action@v4.1.0
         with:

@@ -18,7 +18,7 @@ inputs:
     default: buildpacks/yarn-workspace
   buildpack-image-repository:
     description: Composite buildpack image repository without tag.
-    default: ghcr.io/atls/buildpack-yarn-workspace
+    default: ''
 runs:
   using: composite
   steps:
@@ -58,6 +58,7 @@ runs:
           --tag "${IMAGE_PREFIX}/builder-base:${NODE_MAJOR}" \
           "${IMAGE_PREFIX}/builder-base:${RELEASE_TAG}"
 
+        buildpack_image_repository="${BUILDPACK_IMAGE_REPOSITORY:-${IMAGE_PREFIX}/buildpack-yarn-workspace}"
         buildpack_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${BUILDPACK_DIRECTORY}/buildpack.toml")"
         if [[ -z "${buildpack_version}" ]]; then
           echo "::error::Failed to resolve buildpack version from ${BUILDPACK_DIRECTORY}/buildpack.toml."
@@ -65,5 +66,5 @@ runs:
         fi
 
         docker buildx imagetools create \
-          --tag "${BUILDPACK_IMAGE_REPOSITORY}:${NODE_MAJOR}" \
-          "${BUILDPACK_IMAGE_REPOSITORY}:${buildpack_version}"
+          --tag "${buildpack_image_repository}:${NODE_MAJOR}" \
+          "${buildpack_image_repository}:${buildpack_version}"
