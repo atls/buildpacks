@@ -9,6 +9,9 @@ builder and buildpack images.
 
 ## Build An Application
 
+These examples assume a zero-install Yarn workspace with `.yarn/cache`
+committed.
+
 Use Node 26 for new applications:
 
 ```bash
@@ -26,7 +29,7 @@ pack build my-app \
 ```
 
 The builder provides the Node stack and CNB lifecycle. The buildpack prepares a
-Yarn workspace application for build and launch.
+zero-install Yarn workspace application for build and launch.
 
 ## Images
 
@@ -78,9 +81,18 @@ For application configuration, prefer explicit Node-line tags such as
 
 ## Yarn Workspace Buildpack
 
-`buildpack-yarn-workspace` is the application buildpack for Yarn workspace
-projects. It combines install, cache and launch behavior into one buildpack
-image.
+`buildpack-yarn-workspace` is the application buildpack for zero-install Yarn
+workspace projects.
+
+The application repository must include:
+
+- `package.json`;
+- `yarn.lock`;
+- `.yarn/cache`.
+
+The install and cache buildpacks run only when `yarn.lock` and `.yarn/cache` are
+present. Repositories that do not commit `.yarn/cache` need a separate
+dependency installation step.
 
 For Yarn Plug'n'Play applications, the buildpack prepares launch-time Node
 options:
