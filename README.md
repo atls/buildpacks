@@ -45,10 +45,8 @@ All release images are published for `linux/amd64` and `linux/arm64`.
 
 Use Node-line tags for normal application builds:
 
-```text
-ghcr.io/atls/builder-base:26
-ghcr.io/atls/buildpack-yarn-workspace:26
-```
+- `ghcr.io/atls/builder-base:26`
+- `ghcr.io/atls/buildpack-yarn-workspace:26`
 
 Available Node lines:
 
