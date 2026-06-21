@@ -87,3 +87,43 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           skip-github-release: true
+
+      - name: Enable release PR auto-merge
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_PR_BRANCH: release-please--branches--master
+          RELEASE_PR_LABEL: 'release: pending'
+        run: |
+          mapfile -t release_prs < <(
+            gh pr list \
+              --state open \
+              --head "${RELEASE_PR_BRANCH}" \
+              --label "${RELEASE_PR_LABEL}" \
+              --json number,isDraft,headRefName \
+              --jq '.[] | [.number, .isDraft, .headRefName] | @tsv'
+          )
+
+          release_pr_count="${#release_prs[@]}"
+          if [[ "${release_pr_count}" -eq 0 ]]; then
+            echo 'No release PR found for auto-merge'
+            exit 0
+          fi
+
+          if [[ "${release_pr_count}" -ne 1 ]]; then
+            echo "Expected exactly one release PR, got ${release_pr_count}" >&2
+            exit 1
+          fi
+
+          read -r release_pr_number release_pr_draft release_pr_head <<< "${release_prs[0]}"
+
+          if [[ "${release_pr_head}" != "${RELEASE_PR_BRANCH}" ]]; then
+            echo "Unexpected release PR head: ${release_pr_head}" >&2
+            exit 1
+          fi
+
+          if [[ "${release_pr_draft}" == 'true' ]]; then
+            echo "Release PR #${release_pr_number} is draft" >&2
+            exit 1
+          fi
+
+          gh pr merge "${release_pr_number}" --auto --merge
