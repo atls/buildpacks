@@ -1,3 +1,4 @@
 {
-  "baseImage": "mcr.microsoft.com/devcontainers/base:debian-12"
+  "baseImage": "mcr.microsoft.com/devcontainers/base:debian-12",
+  "platforms": ["linux/amd64", "linux/arm64"]
 }
