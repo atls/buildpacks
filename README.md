@@ -10,7 +10,7 @@ builder and buildpack images.
 ## Build An Application
 
 These examples assume a zero-install Yarn workspace with `.yarn/cache`
-committed.
+committed and a `start-image` script in `package.json`.
 
 Use Node 26 for new applications:
 
@@ -88,7 +88,8 @@ The application repository must include:
 
 - `package.json`;
 - `yarn.lock`;
-- `.yarn/cache`.
+- `.yarn/cache`;
+- a `start-image` script in `package.json`.
 
 The install and cache buildpacks run only when `yarn.lock` and `.yarn/cache` are
 present. Repositories that do not commit `.yarn/cache` need a separate
@@ -101,19 +102,20 @@ options:
 - loads `.pnp.loader.mjs` with `--loader`;
 - enables source maps.
 
-Because the buildpack owns these launch options, the application start command
+Because the buildpack owns these launch options, the application launch script
 can stay simple:
 
 ```json
 {
   "scripts": {
-    "start": "node dist/index.js"
+    "start-image": "node dist/index.js"
   }
 }
 ```
 
-Do not duplicate Plug'n'Play loader flags in the application start script unless
-the application intentionally overrides the buildpack behavior.
+The image start buildpack runs `yarn start-image`. Do not duplicate Plug'n'Play
+loader flags in that script unless the application intentionally overrides the
+buildpack behavior.
 
 ## Builder And Buildpack
 
