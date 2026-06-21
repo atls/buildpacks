@@ -2,7 +2,7 @@ api = "0.10"
 
 [buildpack]
 id = "tech.atls.buildpacks.yarn-cache"
-version = "0.2.1"
+version = "0.2.2"
 name = "Yarn Workspace Pack Buildpack"
 
 [metadata]
