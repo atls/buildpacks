@@ -9,8 +9,8 @@ builder and buildpack images.
 
 ## Build An Application
 
-These examples assume a zero-install Yarn workspace with .yarn/cache committed
-and a start-image script in package.json.
+These examples assume a Yarn zero-install Plug'n'Play workspace with a
+start-image script in package.json.
 
 Use Node 26 for new applications:
 
@@ -79,19 +79,10 @@ builder-base:26 and buildpack-yarn-workspace:26.
 
 ## Yarn Workspace Buildpack
 
-buildpack-yarn-workspace is the application buildpack for zero-install Yarn
-workspace projects.
+buildpack-yarn-workspace is the application buildpack for Yarn zero-install
+Plug'n'Play workspace projects.
 
-The application repository must include:
-
-- package.json;
-- yarn.lock;
-- .yarn/cache;
-- a start-image script in package.json.
-
-The install and cache buildpacks run only when yarn.lock and .yarn/cache are
-present. Repositories that do not commit .yarn/cache need a separate dependency
-installation step.
+The buildpack-specific launch contract is a start-image script in package.json.
 
 For Yarn Plug'n'Play applications, the buildpack prepares launch-time Node
 options:
@@ -106,14 +97,14 @@ can stay simple:
 ```json
 {
   "scripts": {
-    "start-image": "node dist/index.js"
+    "start-image": "node server.js"
   }
 }
 ```
 
-The image start buildpack runs yarn start-image. Do not duplicate Plug'n'Play
-loader flags in that script unless the application intentionally overrides the
-buildpack behavior.
+The image start buildpack runs yarn start-image. That script should start the
+application entrypoint. Do not duplicate Plug'n'Play loader flags in it unless
+the application intentionally overrides the buildpack behavior.
 
 ## Builder And Buildpack
 
