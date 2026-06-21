@@ -147,6 +147,10 @@
         {
           "type": "generic",
           "path": "/builders/base/builder.toml"
+        },
+        {
+          "type": "generic",
+          "path": "/builders/base/builder.release.toml"
         }
       ]
     },
@@ -163,6 +167,10 @@
         {
           "type": "generic",
           "path": "/builders/base/builder.toml"
+        },
+        {
+          "type": "generic",
+          "path": "/builders/base/builder.release.toml"
         }
       ]
     },
@@ -179,6 +187,10 @@
         {
           "type": "generic",
           "path": "/builders/base/builder.toml"
+        },
+        {
+          "type": "generic",
+          "path": "/builders/base/builder.release.toml"
         }
       ]
     },

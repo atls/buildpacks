@@ -44,7 +44,7 @@ Composite buildpack `buildpack-yarn-workspace` получает refs на свя
 `jam update-buildpack` для этих файлов не используется: он переписывает TOML без сохранения marker-комментариев, после чего `release-please` перестаёт синхронизировать composite refs.
 
 Extension-компоненты связаны через `release-please` `linked-versions` group `cnb-extension-family`.
-`builders/base/builder.toml` получает refs на связанные extension images в том же release PR, а Docker release берёт publish tag из соответствующего `extension.toml`.
+`builders/base/builder.toml` и `builders/base/builder.release.toml` получают refs на связанные extension images в том же release PR, а Docker release берёт publish tag из соответствующего `extension.toml`.
 
 `jam update-builder` сейчас не используется.
 `builder-base` остаётся base builder: он содержит lifecycle, stack images и extensions, а `buildpack-yarn-workspace` выбирается Raijin image pack.

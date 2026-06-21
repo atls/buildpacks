@@ -1,9 +1,11 @@
 name: GHCR image release
 
 on:
-  push:
+  pull_request:
     branches:
       - master
+    types:
+      - closed
     paths:
       - '.github/actions/**'
       - '.github/docker-release-node-lines.json'
@@ -34,6 +36,7 @@ concurrency:
 jobs:
   validate-release:
     name: Validate release
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -42,34 +45,12 @@ jobs:
       default_node_major: ${{ steps.bootstrap.outputs.default_node_major }}
       node_lines: ${{ steps.bootstrap.outputs.node_lines }}
       node_majors: ${{ steps.bootstrap.outputs.node_majors }}
-      release_enabled: ${{ steps.release-eligibility.outputs.release_enabled }}
+      release_base_sha: ${{ github.event.pull_request.base.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Resolve release eligibility
-        id: release-eligibility
-        run: |
-          release_enabled=true
-          before="${{ github.event.before }}"
-
-          if [[ "${{ github.actor }}" == "atlantis-terraformer-bot[bot]" ]]; then
-            if [[ "${before}" =~ ^0+$ ]] || ! git cat-file -e "${before}^{commit}" 2>/dev/null; then
-              changed_files="$(git diff-tree --no-commit-id --name-only -r "${GITHUB_SHA}")"
-            else
-              changed_files="$(git diff --name-only "${before}" "${GITHUB_SHA}")"
-            fi
-
-            non_workflow_changes="$(printf '%s\n' "${changed_files}" | grep -vx '.github/workflows/docker-release.yaml' || true)"
-            if [[ -z "${non_workflow_changes}" ]]; then
-              release_enabled=false
-              echo "::notice::Skipping GHCR image release for Terraform-managed workflow-only update."
-            fi
-          fi
-
-          echo "release_enabled=${release_enabled}" >> "${GITHUB_OUTPUT}"
 
       - name: Bootstrap release
         id: bootstrap
@@ -80,7 +61,6 @@ jobs:
   build-stack:
     name: Build stack Node ${{ matrix.node_line.node_major }}
     needs: validate-release
-    if: needs.validate-release.outputs.release_enabled == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -125,7 +105,6 @@ jobs:
   publish-extensions:
     name: Publish extension ${{ matrix.name }}
     needs: validate-release
-    if: needs.validate-release.outputs.release_enabled == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -164,14 +143,13 @@ jobs:
       - name: Publish extension
         uses: ./.github/actions/publish-extension
         with:
-          before-sha: ${{ github.event.before }}
+          before-sha: ${{ needs.validate-release.outputs.release_base_sha }}
           directory: ${{ matrix.directory }}
           image-repository: ${{ matrix.image-repository }}
 
   publish-buildpack-components:
     name: Publish buildpack ${{ matrix.name }}
     needs: validate-release
-    if: needs.validate-release.outputs.release_enabled == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -224,7 +202,7 @@ jobs:
       - name: Publish buildpackage
         uses: ./.github/actions/publish-buildpackage
         with:
-          before-sha: ${{ github.event.before }}
+          before-sha: ${{ needs.validate-release.outputs.release_base_sha }}
           directory: ${{ matrix.directory }}
           image-repository: ${{ matrix.image-repository }}
           name: ${{ matrix.name }}
@@ -262,7 +240,7 @@ jobs:
       - name: Publish buildpackage
         uses: ./.github/actions/publish-buildpackage
         with:
-          before-sha: ${{ github.event.before }}
+          before-sha: ${{ needs.validate-release.outputs.release_base_sha }}
           directory: buildpacks/yarn-workspace
           image-repository: ${{ env.IMAGE_PREFIX }}/buildpack-yarn-workspace
           name: yarn-workspace

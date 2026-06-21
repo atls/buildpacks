@@ -10,9 +10,9 @@ inputs:
   release-tag:
     description: Immutable release tag suffix.
     required: true
-  builder-config:
-    description: Source builder config.
-    default: builders/base/builder.toml
+  builder-config-template:
+    description: Source builder config template.
+    default: builders/base/builder.release.toml
 outputs:
   image:
     description: Published builder image reference.
@@ -24,18 +24,17 @@ runs:
       id: builder
       shell: bash
       env:
-        BUILDER_CONFIG: ${{ inputs.builder-config }}
+        BUILDER_CONFIG_TEMPLATE: ${{ inputs.builder-config-template }}
         IMAGE_PREFIX: ${{ inputs.image-prefix }}
         PLATFORMS: ${{ inputs.platforms }}
         RELEASE_TAG: ${{ inputs.release-tag }}
       run: |
         rendered_config="${RUNNER_TEMP}/builder.toml"
-        cp "${BUILDER_CONFIG}" "${rendered_config}"
-
-        sed -i \
-          -e "s#${IMAGE_PREFIX}/stack-node:build#${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}#g" \
-          -e "s#${IMAGE_PREFIX}/stack-node:run#${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}#g" \
-          "${rendered_config}"
+        while IFS= read -r line || [[ -n "${line}" ]]; do
+          line="${line//\$\{IMAGE_PREFIX\}/${IMAGE_PREFIX}}"
+          line="${line//\$\{RELEASE_TAG\}/${RELEASE_TAG}}"
+          printf '%s\n' "${line}"
+        done < "${BUILDER_CONFIG_TEMPLATE}" > "${rendered_config}"
 
         targets=()
         IFS=',' read -r -a platforms <<< "${PLATFORMS}"
