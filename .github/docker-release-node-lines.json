@@ -1,5 +1,4 @@
 {
-  "imagePrefix": "ghcr.io/atls",
   "stackId": "tech.atls.stacks.node",
   "defaultNodeMajor": 26,
   "supportedNodeMajors": [24, 26],
