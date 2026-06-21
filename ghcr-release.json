@@ -2,5 +2,7 @@
   "imagePrefix": "ghcr.io/atls",
   "stackId": "tech.atls.stacks.node",
   "baseImage": "mcr.microsoft.com/devcontainers/base:debian-12",
+  "defaultNodeMajor": 26,
+  "supportedNodeMajors": [24, 26],
   "platforms": ["linux/amd64", "linux/arm64"]
 }

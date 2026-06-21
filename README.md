@@ -4,20 +4,20 @@
 
 ## Порядок обновления версий `NodeJS` базового билдера
 
-GHCR release config хранится в `.github/docker-release-node-lines.json`.
-Канонические поля: `imagePrefix`, `stackId`, `baseImage`, `defaultNodeMajor`, `supportedNodeMajors` и `platforms`.
-Поля `default` и `supported` остаются compatibility aliases для текущего managed workflow и должны совпадать с `defaultNodeMajor` и `supportedNodeMajors` до обновления workflow в `atls/infrastructure`.
+Контракт GHCR-релиза, принадлежащий `atls/buildpacks`, хранится в `ghcr-release.json`.
+Текущий управляемый workflow до обновления в `atls/infrastructure` продолжает читать совместимый конфиг `.github/docker-release-node-lines.json` и `ARG node_version` из `stacks/node/base/Dockerfile`.
 
 Docker-релиз выполняется через GitHub Actions workflow `Docker release` после merge в `master`.
 Для публикации workflow использует `GITHUB_TOKEN` с доступом `packages: write` и публикует образы в GitHub Container Registry.
 Базовый stack слой обновляет установленные Debian-пакеты перед установкой Node.js, чтобы release images не наследовали исправимые OS-уязвимости из upstream base image.
 Проверка опубликованных GHCR-образов выполняется через Trivy; отчёты загружаются в GitHub code scanning как SARIF.
 
-1. В `.github/docker-release-node-lines.json` добавить или удалить supported Node major.
-2. Если меняется default baseline, обновить `defaultNodeMajor` и compatibility alias `default`.
-3. Вмержить PR с релизными изменениями в `master`.
-4. Дождаться прохождения workflow `Docker release`.
-5. Проверить наличие нового тега в [GHCR](https://github.com/orgs/atls/packages/container/package/builder-base).
+1. В `ghcr-release.json` добавить или удалить supported Node major.
+2. До обновления управляемого workflow в `atls/infrastructure` синхронно обновить совместимые поля в `.github/docker-release-node-lines.json`.
+3. Если меняется default baseline, обновить `default` в `.github/docker-release-node-lines.json` и `ARG node_version` в `stacks/node/base/Dockerfile`.
+4. Вмержить PR с релизными изменениями в `master`.
+5. Дождаться прохождения workflow `Docker release`.
+6. Проверить наличие нового тега в [GHCR](https://github.com/orgs/atls/packages/container/package/builder-base).
 
 Workflow публикует:
 
