@@ -49,10 +49,8 @@ ghcr.io/atls/buildpack-yarn-workspace:26
 
 Available Node lines:
 
-```text
-24
-26
-```
+- Node 24
+- Node 26
 
 Node-line tags move to the latest published image for that Node line. Use them
 when an application should receive the current validated builder and buildpack
@@ -60,26 +58,20 @@ for its Node version.
 
 Use semantic version tags when a rollout needs a fixed buildpack version:
 
-```text
-ghcr.io/atls/buildpack-yarn-workspace:0.2.2
-```
+- `ghcr.io/atls/buildpack-yarn-workspace:0.2.2`
 
 Stack images use role-specific tags:
 
-```text
-ghcr.io/atls/stack-node:base-26
-ghcr.io/atls/stack-node:build-26
-ghcr.io/atls/stack-node:run-26
-```
+- `ghcr.io/atls/stack-node:base-26`
+- `ghcr.io/atls/stack-node:build-26`
+- `ghcr.io/atls/stack-node:run-26`
 
 The same tags exist for Node 24. Tags without a Node suffix currently point to
 the default Node line, which is Node 26:
 
-```text
-ghcr.io/atls/stack-node:base
-ghcr.io/atls/stack-node:build
-ghcr.io/atls/stack-node:run
-```
+- `ghcr.io/atls/stack-node:base`
+- `ghcr.io/atls/stack-node:build`
+- `ghcr.io/atls/stack-node:run`
 
 For application configuration, prefer explicit Node-line tags such as
 `builder-base:26` and `buildpack-yarn-workspace:26`.
