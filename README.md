@@ -4,8 +4,9 @@
 
 ## Порядок обновления версий `NodeJS` базового билдера
 
-Поддерживаемые Node lines для Docker-релиза задаются в `.github/docker-release-node-lines.json`.
-Поле `default` должно совпадать с `ARG node_version` в `stacks/node/base/Dockerfile`; этот default управляет moving aliases без Node major.
+GHCR release config хранится в `.github/docker-release-node-lines.json`.
+Канонические поля: `imagePrefix`, `stackId`, `baseImage`, `defaultNodeMajor`, `supportedNodeMajors` и `platforms`.
+Поля `default` и `supported` остаются compatibility aliases для текущего managed workflow и должны совпадать с `defaultNodeMajor` и `supportedNodeMajors` до обновления workflow в `atls/infrastructure`.
 
 Docker-релиз выполняется через GitHub Actions workflow `Docker release` после merge в `master`.
 Для публикации workflow использует `GITHUB_TOKEN` с доступом `packages: write` и публикует образы в GitHub Container Registry.
@@ -13,7 +14,7 @@ Docker-релиз выполняется через GitHub Actions workflow `Doc
 Проверка опубликованных GHCR-образов выполняется через Trivy; отчёты загружаются в GitHub code scanning как SARIF.
 
 1. В `.github/docker-release-node-lines.json` добавить или удалить supported Node major.
-2. Если меняется default baseline, обновить `default` в `.github/docker-release-node-lines.json` и `ARG node_version` в `stacks/node/base/Dockerfile`.
+2. Если меняется default baseline, обновить `defaultNodeMajor` и compatibility alias `default`.
 3. Вмержить PR с релизными изменениями в `master`.
 4. Дождаться прохождения workflow `Docker release`.
 5. Проверить наличие нового тега в [GHCR](https://github.com/orgs/atls/packages/container/package/builder-base).

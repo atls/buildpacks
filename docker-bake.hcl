@@ -1,26 +1,20 @@
 variable "IMAGE_PREFIX" {
-  default = "ghcr.io/atls"
 }
 
 variable "STACK_ID" {
-  default = "tech.atls.stacks.node"
 }
 
 variable "BASE_IMAGE" {
-  default = "mcr.microsoft.com/devcontainers/base:debian-12"
 }
 
 variable "NODE_VERSION" {
-  default = "26"
 }
 
 variable "RELEASE_TAG" {
-  default = "local"
 }
 
 variable "PLATFORMS" {
   type = list(string)
-  default = ["linux/amd64", "linux/arm64"]
 }
 
 group "stack" {
