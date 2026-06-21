@@ -1,5 +1,4 @@
 {
-  "stackId": "tech.atls.stacks.node",
   "defaultNodeMajor": 26,
   "supportedNodeMajors": [24, 26],
   "default": 26,
