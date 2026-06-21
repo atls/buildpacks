@@ -4,20 +4,19 @@
 
 ## Порядок обновления версий `NodeJS` базового билдера
 
-Контракт GHCR-релиза, принадлежащий `atls/buildpacks`, хранится в `stacks/node/ghcr-release.json`.
-Текущий управляемый workflow до обновления в `atls/infrastructure` продолжает читать совместимый конфиг `.github/docker-release-node-lines.json` и `ARG node_version` из `stacks/node/base/Dockerfile`.
+Поддерживаемые Node lines для Docker-релиза задаются в `.github/docker-release-node-lines.json`.
+Поле `default` должно совпадать с `ARG node_version` в `stacks/node/base/Dockerfile`; этот default управляет moving aliases без Node major.
 
 Docker-релиз выполняется через GitHub Actions workflow `Docker release` после merge в `master`.
 Для публикации workflow использует `GITHUB_TOKEN` с доступом `packages: write` и публикует образы в GitHub Container Registry.
 Базовый stack слой обновляет установленные Debian-пакеты перед установкой Node.js, чтобы release images не наследовали исправимые OS-уязвимости из upstream base image.
 Проверка опубликованных GHCR-образов выполняется через Trivy; отчёты загружаются в GitHub code scanning как SARIF.
 
-1. В `stacks/node/ghcr-release.json` добавить или удалить supported Node major.
-2. До обновления управляемого workflow в `atls/infrastructure` синхронно обновить совместимые поля в `.github/docker-release-node-lines.json`.
-3. Если меняется default baseline, обновить `default` в `.github/docker-release-node-lines.json` и `ARG node_version` в `stacks/node/base/Dockerfile`.
-4. Вмержить PR с релизными изменениями в `master`.
-5. Дождаться прохождения workflow `Docker release`.
-6. Проверить наличие нового тега в [GHCR](https://github.com/orgs/atls/packages/container/package/builder-base).
+1. В `.github/docker-release-node-lines.json` добавить или удалить supported Node major.
+2. Если меняется default baseline, обновить `default` в `.github/docker-release-node-lines.json` и `ARG node_version` в `stacks/node/base/Dockerfile`.
+3. Вмержить PR с релизными изменениями в `master`.
+4. Дождаться прохождения workflow `Docker release`.
+5. Проверить наличие нового тега в [GHCR](https://github.com/orgs/atls/packages/container/package/builder-base).
 
 Workflow публикует:
 
@@ -45,7 +44,7 @@ Composite buildpack `buildpack-yarn-workspace` получает refs на свя
 `jam update-buildpack` для этих файлов не используется: он переписывает TOML без сохранения marker-комментариев, после чего `release-please` перестаёт синхронизировать composite refs.
 
 Extension-компоненты связаны через `release-please` `linked-versions` group `cnb-extension-family`.
-`builders/base/builder.toml` и `builders/base/builder.release.toml` получают refs на связанные extension images в том же release PR, а Docker release берёт publish tag из соответствующего `extension.toml`.
+`builders/base/builder.toml` получает refs на связанные extension images в том же release PR, а Docker release берёт publish tag из соответствующего `extension.toml`.
 
 `jam update-builder` сейчас не используется.
 `builder-base` остаётся base builder: он содержит lifecycle, stack images и extensions, а `buildpack-yarn-workspace` выбирается Raijin image pack.
