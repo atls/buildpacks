@@ -1,113 +1,139 @@
-# Buildpacks
+# ATLS Buildpacks
 
-[<img src="https://img.shields.io/static/v1?style=for-the-badge&label=%40atls%2Fcode-service&message=0.0.25&labelColor=ECEEF5&color=D7DCEB">](https://npmjs.com/package/@atls/code-service)
-[<img src="https://img.shields.io/static/v1?style=for-the-badge&label=%40atls%2Fschematics&message=0.0.21&labelColor=ECEEF5&color=D7DCEB">](https://npmjs.com/package/@atls/schematics)
+Buildpacks, builders and stack images for Node.js applications that use Yarn
+workspaces.
 
-## Порядок обновления версий Node.js базового билдера
+The images are published in GitHub Container Registry. They are public and can
+be used with pack, CI jobs, or any tool that accepts Cloud Native Buildpacks
+builder and buildpack images.
 
-Поддерживаемые линейки Node.js для Docker-релиза задаются в
-`.github/docker-release-node-lines.json`.
-Поле `default` должно совпадать с `ARG node_version` в `stacks/node/base/Dockerfile`.
-Оно управляет алиасами без номера линейки Node.js.
+## Build An Application
 
-Docker-релиз выполняет рабочий процесс GitHub Actions Docker release после слияния в
-`master`.
-Для публикации используется `GITHUB_TOKEN` с доступом `packages: write`.
-Образы публикуются в GitHub Container Registry.
+These examples assume a Yarn zero-install Plug'n'Play workspace with a
+start-image script in package.json.
 
-Базовый слой стека обновляет установленные Debian-пакеты перед установкой Node.js.
-Так релизные образы не наследуют исправимые уязвимости операционной системы из
-исходного базового образа.
-Опубликованные GHCR-образы проверяет Trivy.
-Отчёты загружаются в GitHub code scanning в формате SARIF.
+Use Node 26 for new applications:
 
-1. В `.github/docker-release-node-lines.json` добавить или удалить поддерживаемую линейку
-   Node.js.
-2. Если меняется линейка по умолчанию, обновить `default` в
-   `.github/docker-release-node-lines.json` и `ARG node_version` в
-   `stacks/node/base/Dockerfile`.
-3. Вмержить PR с релизными изменениями в `master`.
-4. Дождаться прохождения рабочего процесса Docker release.
-5. Проверить наличие нового тега в
-   [GHCR](https://github.com/orgs/atls/packages/container/package/builder-base).
+```bash
+pack build my-app \
+  --builder ghcr.io/atls/builder-base:26 \
+  --buildpack ghcr.io/atls/buildpack-yarn-workspace:26
+```
 
-Рабочий процесс публикует:
+Use Node 24 when the application must stay on Node 24:
 
-1. Неизменяемые теги стека:
-   `ghcr.io/atls/stack-node:base-<node-major>-<sha>`,
-   `build-<node-major>-<sha>`, `run-<node-major>-<sha>`.
-2. Канальные теги стека для каждой поддерживаемой линейки Node.js:
-   `ghcr.io/atls/stack-node:base-<node-major>`, `build-<node-major>`,
-   `run-<node-major>`.
-3. Алиасы без номера линейки: `ghcr.io/atls/stack-node:base`, `build`, `run`.
-   Они указывают только на Node.js из `default`.
-4. Buildpack-теги с семантической версией: `ghcr.io/atls/buildpack-*:<version>`.
-5. Канальные теги группы buildpack для каждой поддерживаемой линейки Node.js:
-   `ghcr.io/atls/buildpack-yarn-workspace:<node-major>`.
-6. Неизменяемые builder-теги: `ghcr.io/atls/builder-base:<node-major>-<sha>`.
-7. Канальные builder-теги: `ghcr.io/atls/builder-base:<node-major>`.
-   Они собираются из тегов стека той же линейки Node.js.
+```bash
+pack build my-app \
+  --builder ghcr.io/atls/builder-base:24 \
+  --buildpack ghcr.io/atls/buildpack-yarn-workspace:24
+```
 
-Buildpack-теги с семантической версией остаются артефактами для фиксации и отката.
-Канальные теги по линейке Node.js подходят потребителям, которым нужен актуальный
-проверенный buildpack без обновления патч-версии после каждого релиза.
+The builder provides the Node stack and CNB lifecycle. The buildpack prepares a
+zero-install Yarn workspace application for build and launch.
 
-## Порядок обновления версий CNB buildpack-компонентов
+## Images
 
-Версии buildpack и extension-компонентов ведутся через `release-please-config.json` и
-`.release-please-manifest.json`.
-Релизный PR создаёт рабочий процесс GitHub Actions Release PR после слияния в
-`master`.
-GitHub release и тег создаёт рабочий процесс GitHub release.
-Он запускается только после успешного Docker release на том же SHA head-коммита, где
-изменился `.release-please-manifest.json`.
+| Image | Use it for |
+| --- | --- |
+| ghcr.io/atls/builder-base | Building application images with the ATLS Node stack. |
+| ghcr.io/atls/buildpack-yarn-workspace | Building Yarn workspace applications. |
+| ghcr.io/atls/stack-node | Stack base, build and run images used by the builder. |
 
-Рабочий процесс использует `release-please-action` с правами `contents: write`,
-`issues: write` и `pull-requests: write`.
-Для создания релизного PR используется токен GitHub App из
-`ATLANTIS_SUPER_BOT_APP_ID` и `ATLANTIS_SUPER_BOT_PRIVATE_KEY`.
-Так созданные PR запускают обычные проверки `pull_request`.
+All release images are published for linux/amd64 and linux/arm64.
 
-Buildpack-компоненты связаны через группу `cnb-buildpack-family` в
-`release-please` `linked-versions`.
-В эту группу входит `libcnb`.
-Поэтому изменение общей CNB-библиотеки поднимает версии зависящих
-buildpack-компонентов тем же релизным PR.
+## Tags
 
-Составной buildpack `buildpack-yarn-workspace` получает ссылки на связанные
-компонентные buildpacks в том же релизном PR.
-Для этого используются маркеры `release-please` в
-`buildpacks/yarn-workspace/package.toml` и `buildpacks/yarn-workspace/buildpack.toml`.
+Use Node-line tags for normal application builds:
 
-`jam update-buildpack` для этих файлов не используется.
-Он переписывает TOML без сохранения marker-комментариев.
-После этого `release-please` перестаёт синхронизировать ссылки составного buildpack.
+- ghcr.io/atls/builder-base:26
+- ghcr.io/atls/buildpack-yarn-workspace:26
 
-Extension-компоненты связаны через группу `cnb-extension-family` в `release-please`
-`linked-versions`.
-`builders/base/builder.toml` получает ссылки на связанные образы расширений в том же
-релизном PR.
-Docker release берёт публикуемый тег из соответствующего `extension.toml`.
+Available Node lines:
 
-`jam update-builder` сейчас не используется.
-`builder-base` остаётся базовым builder: он содержит lifecycle, образы стека и
-расширения.
-`buildpack-yarn-workspace` выбирает Raijin image pack.
+- Node 24
+- Node 26
 
-Кроме того, `jam update-builder` ожидает теги build/run-образов с семантической
-версией.
-`stack-node` публикуется канальными и SHA-тегами вроде `build-24`, `run-24` и
-`build-24-<sha>`.
+Node-line tags move to the latest published image for that Node line. Use them
+when an application should receive the current validated builder and buildpack
+for its Node version.
 
-## Запуск Yarn PnP ESM workspace
+Use semantic version tags when a rollout needs a fixed buildpack version:
 
-`buildpack-yarn-workspace-start` формирует слой запуска с `NODE_OPTIONS` для
-workspace без `node_modules`.
+- ghcr.io/atls/buildpack-yarn-workspace:0.2.2
 
-Если в приложении есть `.pnp.cjs`, buildpack добавляет его через `--require`.
-Если в приложении есть `.pnp.loader.mjs`, buildpack добавляет его через `--loader`.
-Карты исходников включаются через `--enable-source-maps`.
+Stack images use role-specific tags:
 
-Прикладной `package.json` не должен дублировать эти флаги в `start`-команде.
-Для ESM workspace достаточно запускать собранную точку входа, например
-`node dist/index.js`.
+- ghcr.io/atls/stack-node:base-26
+- ghcr.io/atls/stack-node:build-26
+- ghcr.io/atls/stack-node:run-26
+
+The same tags exist for Node 24. Tags without a Node suffix currently point to
+the default Node line, which is Node 26:
+
+- ghcr.io/atls/stack-node:base
+- ghcr.io/atls/stack-node:build
+- ghcr.io/atls/stack-node:run
+
+For application configuration, prefer explicit Node-line tags such as
+builder-base:26 and buildpack-yarn-workspace:26.
+
+## Yarn Workspace Buildpack
+
+buildpack-yarn-workspace is the application buildpack for Yarn zero-install
+Plug'n'Play workspace projects.
+
+The buildpack-specific launch contract is a start-image script in package.json.
+
+For Yarn Plug'n'Play applications, the buildpack prepares launch-time Node
+options:
+
+- loads .pnp.cjs with --require;
+- loads .pnp.loader.mjs with --loader;
+- enables source maps.
+
+Because the buildpack owns these launch options, the application launch script
+can stay simple:
+
+```json
+{
+  "scripts": {
+    "start-image": "node server.js"
+  }
+}
+```
+
+The image start buildpack runs yarn start-image. That script should start the
+application entrypoint. Do not duplicate Plug'n'Play loader flags in it unless
+the application intentionally overrides the buildpack behavior.
+
+## Builder And Buildpack
+
+builder-base is a base builder. It does not make every application buildable by
+itself.
+
+For Yarn workspace applications, pass both images:
+
+```bash
+pack build my-app \
+  --builder ghcr.io/atls/builder-base:26 \
+  --buildpack ghcr.io/atls/buildpack-yarn-workspace:26
+```
+
+Tools that wrap CNB builds should use the same pair: one builder image and one
+application buildpack image for the selected Node line.
+
+## Registry
+
+- [builder-base](https://github.com/orgs/atls/packages/container/package/builder-base)
+- [buildpack-yarn-workspace](https://github.com/orgs/atls/packages/container/package/buildpack-yarn-workspace)
+- [stack-node](https://github.com/orgs/atls/packages/container/package/stack-node)
+
+Component buildpacks and extensions are also published in GHCR:
+
+- buildpack-yarn-install
+- buildpack-yarn-cache
+- buildpack-yarn-workspace-start
+- buildpack-require-extension
+- buildpack-extension-curl
+- buildpack-extension-htop
+- buildpack-extension-graphql-hive
