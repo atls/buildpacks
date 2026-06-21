@@ -93,5 +93,6 @@ jobs:
         if: ${{ steps.release-please.outputs.prs_created == 'true' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
           RELEASE_PR_NUMBER: ${{ fromJSON(steps.release-please.outputs.prs)[0].number }}
         run: gh pr merge "${RELEASE_PR_NUMBER}" --auto --merge
