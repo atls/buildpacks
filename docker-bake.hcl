@@ -32,6 +32,7 @@ target "stack-node-base" {
     node_version = NODE_VERSION
     stack_id     = STACK_ID
   }
+  pull = true
   platforms = PLATFORMS
   tags = ["${IMAGE_PREFIX}/stack-node:base-${RELEASE_TAG}"]
 }
@@ -44,6 +45,7 @@ target "stack-node-build" {
   args = {
     base_image = "base_image"
   }
+  pull = true
   platforms = PLATFORMS
   tags = ["${IMAGE_PREFIX}/stack-node:build-${RELEASE_TAG}"]
 }
@@ -56,6 +58,7 @@ target "stack-node-run" {
   args = {
     base_image = "base_image"
   }
+  pull = true
   platforms = PLATFORMS
   tags = ["${IMAGE_PREFIX}/stack-node:run-${RELEASE_TAG}"]
 }
