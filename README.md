@@ -4,7 +4,7 @@
 
 ## Порядок обновления версий `NodeJS` базового билдера
 
-Контракт GHCR-релиза, принадлежащий `atls/buildpacks`, хранится в `ghcr-release.json`.
+Контракт GHCR-релиза, принадлежащий `atls/buildpacks`, хранится в `stacks/node/ghcr-release.json`.
 Текущий управляемый workflow до обновления в `atls/infrastructure` продолжает читать совместимый конфиг `.github/docker-release-node-lines.json` и `ARG node_version` из `stacks/node/base/Dockerfile`.
 
 Docker-релиз выполняется через GitHub Actions workflow `Docker release` после merge в `master`.
@@ -12,7 +12,7 @@ Docker-релиз выполняется через GitHub Actions workflow `Doc
 Базовый stack слой обновляет установленные Debian-пакеты перед установкой Node.js, чтобы release images не наследовали исправимые OS-уязвимости из upstream base image.
 Проверка опубликованных GHCR-образов выполняется через Trivy; отчёты загружаются в GitHub code scanning как SARIF.
 
-1. В `ghcr-release.json` добавить или удалить supported Node major.
+1. В `stacks/node/ghcr-release.json` добавить или удалить supported Node major.
 2. До обновления управляемого workflow в `atls/infrastructure` синхронно обновить совместимые поля в `.github/docker-release-node-lines.json`.
 3. Если меняется default baseline, обновить `default` в `.github/docker-release-node-lines.json` и `ARG node_version` в `stacks/node/base/Dockerfile`.
 4. Вмержить PR с релизными изменениями в `master`.
