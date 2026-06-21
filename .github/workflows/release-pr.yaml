@@ -90,7 +90,7 @@ jobs:
           skip-github-release: true
 
       - name: Enable release PR auto-merge
-        if: ${{ steps.release-please.outputs.prs_created == 'true' }}
+        if: ${{ steps.release-please.outputs.prs_created == 'true' && steps.release-please.outputs.prs != '' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
