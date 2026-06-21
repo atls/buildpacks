@@ -80,6 +80,7 @@ jobs:
           private-key: ${{ secrets.ATLANTIS_SUPER_BOT_PRIVATE_KEY }}
 
       - name: Create release PR
+        id: release-please
         uses: googleapis/release-please-action@v4.4.1
         with:
           token: ${{ steps.app-token.outputs.token }}
@@ -87,3 +88,11 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           skip-github-release: true
+
+      - name: Enable release PR auto-merge
+        if: ${{ steps.release-please.outputs.prs_created == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_PR_NUMBER: ${{ fromJSON(steps.release-please.outputs.prs)[0].number }}
+        run: gh pr merge "${RELEASE_PR_NUMBER}" --auto --merge
