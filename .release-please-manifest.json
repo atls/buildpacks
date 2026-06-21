@@ -1,12 +1,12 @@
 {
-  ".": "0.2.1",
-  "buildpacks/require-extension": "0.2.1",
-  "buildpacks/yarn-cache": "0.2.1",
-  "buildpacks/yarn-install": "0.2.1",
-  "buildpacks/yarn-workspace": "0.2.1",
-  "buildpacks/yarn-workspace-start": "0.2.1",
+  ".": "0.2.2",
+  "buildpacks/require-extension": "0.2.2",
+  "buildpacks/yarn-cache": "0.2.2",
+  "buildpacks/yarn-install": "0.2.2",
+  "buildpacks/yarn-workspace": "0.2.2",
+  "buildpacks/yarn-workspace-start": "0.2.2",
   "extensions/curl": "0.0.4",
   "extensions/graphql-hive": "0.0.4",
   "extensions/htop": "0.0.4",
-  "libcnb/libcnb": "0.2.1"
+  "libcnb/libcnb": "0.2.2"
 }
