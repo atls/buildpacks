@@ -1,61 +1,113 @@
-# Build packs
+# Buildpacks
 
-[<img src="https://img.shields.io/static/v1?style=for-the-badge&label=%40atls%2Fcode-service&message=0.0.25&labelColor=ECEEF5&color=D7DCEB">](https://npmjs.com/package/@atls/code-service) [<img src="https://img.shields.io/static/v1?style=for-the-badge&label=%40atls%2Fschematics&message=0.0.21&labelColor=ECEEF5&color=D7DCEB">](https://npmjs.com/package/@atls/schematics)
+[<img src="https://img.shields.io/static/v1?style=for-the-badge&label=%40atls%2Fcode-service&message=0.0.25&labelColor=ECEEF5&color=D7DCEB">](https://npmjs.com/package/@atls/code-service)
+[<img src="https://img.shields.io/static/v1?style=for-the-badge&label=%40atls%2Fschematics&message=0.0.21&labelColor=ECEEF5&color=D7DCEB">](https://npmjs.com/package/@atls/schematics)
 
-## Порядок обновления версий `NodeJS` базового билдера
+## Порядок обновления версий Node.js базового билдера
 
-Поддерживаемые Node lines для Docker-релиза задаются в `.github/docker-release-node-lines.json`.
-Поле `default` должно совпадать с `ARG node_version` в `stacks/node/base/Dockerfile`; этот default управляет moving aliases без Node major.
+Поддерживаемые линейки Node.js для Docker-релиза задаются в
+`.github/docker-release-node-lines.json`.
+Поле `default` должно совпадать с `ARG node_version` в `stacks/node/base/Dockerfile`.
+Оно управляет алиасами без номера линейки Node.js.
 
-Docker-релиз выполняется через GitHub Actions workflow `Docker release` после merge в `master`.
-Для публикации workflow использует `GITHUB_TOKEN` с доступом `packages: write` и публикует образы в GitHub Container Registry.
-Базовый stack слой обновляет установленные Debian-пакеты перед установкой Node.js, чтобы release images не наследовали исправимые OS-уязвимости из upstream base image.
-Проверка опубликованных GHCR-образов выполняется через Trivy; отчёты загружаются в GitHub code scanning как SARIF.
+Docker-релиз выполняет рабочий процесс GitHub Actions Docker release после слияния в
+`master`.
+Для публикации используется `GITHUB_TOKEN` с доступом `packages: write`.
+Образы публикуются в GitHub Container Registry.
 
-1. В `.github/docker-release-node-lines.json` добавить или удалить supported Node major.
-2. Если меняется default baseline, обновить `default` в `.github/docker-release-node-lines.json` и `ARG node_version` в `stacks/node/base/Dockerfile`.
+Базовый слой стека обновляет установленные Debian-пакеты перед установкой Node.js.
+Так релизные образы не наследуют исправимые уязвимости операционной системы из
+исходного базового образа.
+Опубликованные GHCR-образы проверяет Trivy.
+Отчёты загружаются в GitHub code scanning в формате SARIF.
+
+1. В `.github/docker-release-node-lines.json` добавить или удалить поддерживаемую линейку
+   Node.js.
+2. Если меняется линейка по умолчанию, обновить `default` в
+   `.github/docker-release-node-lines.json` и `ARG node_version` в
+   `stacks/node/base/Dockerfile`.
 3. Вмержить PR с релизными изменениями в `master`.
-4. Дождаться прохождения workflow `Docker release`.
-5. Проверить наличие нового тега в [GHCR](https://github.com/orgs/atls/packages/container/package/builder-base).
+4. Дождаться прохождения рабочего процесса Docker release.
+5. Проверить наличие нового тега в
+   [GHCR](https://github.com/orgs/atls/packages/container/package/builder-base).
 
-Workflow публикует:
+Рабочий процесс публикует:
 
-1. immutable stack tags `ghcr.io/atls/stack-node:base-<Node major>-<sha>`, `build-<Node major>-<sha>`, `run-<Node major>-<sha>`
-2. channel stack tags `ghcr.io/atls/stack-node:base-<Node major>`, `build-<Node major>`, `run-<Node major>` для каждой supported Node line
-3. default moving aliases `ghcr.io/atls/stack-node:base`, `build`, `run` только для Node major из `default`
-4. semver buildpack tags `ghcr.io/atls/buildpack-*:<version>`
-5. buildpack group channel tags `ghcr.io/atls/buildpack-yarn-workspace:<Node major>` для каждой supported Node line
-6. immutable builder tags `ghcr.io/atls/builder-base:<Node major>-<sha>`
-7. builder channel tags `ghcr.io/atls/builder-base:<Node major>`, собранные из stack tags той же Node line
+1. Неизменяемые теги стека:
+   `ghcr.io/atls/stack-node:base-<node-major>-<sha>`,
+   `build-<node-major>-<sha>`, `run-<node-major>-<sha>`.
+2. Канальные теги стека для каждой поддерживаемой линейки Node.js:
+   `ghcr.io/atls/stack-node:base-<node-major>`, `build-<node-major>`,
+   `run-<node-major>`.
+3. Алиасы без номера линейки: `ghcr.io/atls/stack-node:base`, `build`, `run`.
+   Они указывают только на Node.js из `default`.
+4. Buildpack-теги с семантической версией: `ghcr.io/atls/buildpack-*:<version>`.
+5. Канальные теги группы buildpack для каждой поддерживаемой линейки Node.js:
+   `ghcr.io/atls/buildpack-yarn-workspace:<node-major>`.
+6. Неизменяемые builder-теги: `ghcr.io/atls/builder-base:<node-major>-<sha>`.
+7. Канальные builder-теги: `ghcr.io/atls/builder-base:<node-major>`.
+   Они собираются из тегов стека той же линейки Node.js.
 
-Semver buildpack tags остаются pin/rollback-артефактами. Node major channel tags можно использовать в потребителях, которым нужен актуальный проверенный buildpack под выбранную Node line без обновления patch-версии после каждого релиза.
+Buildpack-теги с семантической версией остаются артефактами для фиксации и отката.
+Канальные теги по линейке Node.js подходят потребителям, которым нужен актуальный
+проверенный buildpack без обновления патч-версии после каждого релиза.
 
 ## Порядок обновления версий CNB buildpack-компонентов
 
-Версии buildpack и extension компонентов ведутся через `release-please-config.json` и `.release-please-manifest.json`.
-Release PR создаёт GitHub Actions workflow `Release PR` после merge в `master`.
-GitHub release и tag создаёт workflow `GitHub release` только после successful `Docker release` на том же head SHA, где изменился `.release-please-manifest.json`.
-Workflow использует `release-please-action` с правами `contents: write`, `issues: write` и `pull-requests: write`.
-Для создания release PR используется GitHub App token из `ATLANTIS_SUPER_BOT_APP_ID` и `ATLANTIS_SUPER_BOT_PRIVATE_KEY`, чтобы созданные PR запускали обычные проверки `pull_request`.
-Buildpack-компоненты связаны через `release-please` `linked-versions` group `cnb-buildpack-family`.
-В эту группу входит `libcnb`, поэтому изменение общей CNB-библиотеки поднимает версии зависящих buildpack-компонентов тем же release PR.
+Версии buildpack и extension-компонентов ведутся через `release-please-config.json` и
+`.release-please-manifest.json`.
+Релизный PR создаёт рабочий процесс GitHub Actions Release PR после слияния в
+`master`.
+GitHub release и тег создаёт рабочий процесс GitHub release.
+Он запускается только после успешного Docker release на том же SHA head-коммита, где
+изменился `.release-please-manifest.json`.
 
-Composite buildpack `buildpack-yarn-workspace` получает refs на связанные component buildpacks в том же release PR через `release-please` generic markers в `buildpacks/yarn-workspace/package.toml` и `buildpacks/yarn-workspace/buildpack.toml`.
-`jam update-buildpack` для этих файлов не используется: он переписывает TOML без сохранения marker-комментариев, после чего `release-please` перестаёт синхронизировать composite refs.
+Рабочий процесс использует `release-please-action` с правами `contents: write`,
+`issues: write` и `pull-requests: write`.
+Для создания релизного PR используется токен GitHub App из
+`ATLANTIS_SUPER_BOT_APP_ID` и `ATLANTIS_SUPER_BOT_PRIVATE_KEY`.
+Так созданные PR запускают обычные проверки `pull_request`.
 
-Extension-компоненты связаны через `release-please` `linked-versions` group `cnb-extension-family`.
-`builders/base/builder.toml` получает refs на связанные extension images в том же release PR, а Docker release берёт publish tag из соответствующего `extension.toml`.
+Buildpack-компоненты связаны через группу `cnb-buildpack-family` в
+`release-please` `linked-versions`.
+В эту группу входит `libcnb`.
+Поэтому изменение общей CNB-библиотеки поднимает версии зависящих
+buildpack-компонентов тем же релизным PR.
+
+Составной buildpack `buildpack-yarn-workspace` получает ссылки на связанные
+компонентные buildpacks в том же релизном PR.
+Для этого используются маркеры `release-please` в
+`buildpacks/yarn-workspace/package.toml` и `buildpacks/yarn-workspace/buildpack.toml`.
+
+`jam update-buildpack` для этих файлов не используется.
+Он переписывает TOML без сохранения marker-комментариев.
+После этого `release-please` перестаёт синхронизировать ссылки составного buildpack.
+
+Extension-компоненты связаны через группу `cnb-extension-family` в `release-please`
+`linked-versions`.
+`builders/base/builder.toml` получает ссылки на связанные образы расширений в том же
+релизном PR.
+Docker release берёт публикуемый тег из соответствующего `extension.toml`.
 
 `jam update-builder` сейчас не используется.
-`builder-base` остаётся base builder: он содержит lifecycle, stack images и extensions, а `buildpack-yarn-workspace` выбирается Raijin image pack.
-Кроме того, `jam update-builder` ожидает semver tags для build/run images, а `stack-node` публикуется channel/SHA тегами вроде `build-24`, `run-24` и `build-24-<sha>`.
+`builder-base` остаётся базовым builder: он содержит lifecycle, образы стека и
+расширения.
+`buildpack-yarn-workspace` выбирает Raijin image pack.
 
-## Runtime запуск Yarn PnP ESM workspace
+Кроме того, `jam update-builder` ожидает теги build/run-образов с семантической
+версией.
+`stack-node` публикуется канальными и SHA-тегами вроде `build-24`, `run-24` и
+`build-24-<sha>`.
 
-`buildpack-yarn-workspace-start` формирует launch layer с `NODE_OPTIONS` для workspace без `node_modules`.
+## Запуск Yarn PnP ESM workspace
+
+`buildpack-yarn-workspace-start` формирует слой запуска с `NODE_OPTIONS` для
+workspace без `node_modules`.
 
 Если в приложении есть `.pnp.cjs`, buildpack добавляет его через `--require`.
 Если в приложении есть `.pnp.loader.mjs`, buildpack добавляет его через `--loader`.
-Source maps включаются через `--enable-source-maps`.
+Карты исходников включаются через `--enable-source-maps`.
 
-Прикладной `package.json` не должен дублировать эти флаги в `start`-команде. Для ESM workspace достаточно запускать собранную точку входа, например `node dist/index.js`.
+Прикладной `package.json` не должен дублировать эти флаги в `start`-команде.
+Для ESM workspace достаточно запускать собранную точку входа, например
+`node dist/index.js`.
