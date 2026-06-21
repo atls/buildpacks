@@ -90,9 +90,21 @@ jobs:
           skip-github-release: true
 
       - name: Enable release PR auto-merge
-        if: ${{ steps.release-please.outputs.prs_created == 'true' && steps.release-please.outputs.prs != '' }}
+        if: ${{ steps.release-please.outputs.prs_created == 'true' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_PR_NUMBER: ${{ fromJSON(steps.release-please.outputs.prs)[0].number }}
-        run: gh pr merge "${RELEASE_PR_NUMBER}" --auto --merge
+          RELEASE_PRS: ${{ steps.release-please.outputs.prs }}
+        run: |
+          if [[ -z "${RELEASE_PRS}" ]]; then
+            echo 'No release PR returned for auto-merge'
+            exit 0
+          fi
+
+          release_pr_number="$(jq -r '.[0].number // empty' <<< "${RELEASE_PRS}")"
+          if [[ -z "${release_pr_number}" ]]; then
+            echo 'Release PR output does not contain a pull request number' >&2
+            exit 1
+          fi
+
+          gh pr merge "${release_pr_number}" --auto --merge
