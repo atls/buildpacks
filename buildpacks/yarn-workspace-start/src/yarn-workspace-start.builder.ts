@@ -1,14 +1,16 @@
-import { readFileSync } from 'node:fs'
-import { writeFile }    from 'node:fs/promises'
-import { chmod }        from 'node:fs/promises'
-import { join }         from 'node:path'
-import { isAbsolute }   from 'node:path'
-import { access }         from 'node:fs/promises'
+import type { Builder }      from '@atls/libcnb'
+import type { BuildContext } from '@atls/libcnb'
 
-import { Builder }      from '@atls/libcnb'
-import { BuildContext } from '@atls/libcnb'
-import { BuildResult }  from '@atls/libcnb'
-import { Process }      from '@atls/libcnb'
+/* eslint-disable n/no-sync */
+import { readFileSync }      from 'node:fs'
+import { writeFile }         from 'node:fs/promises'
+import { chmod }             from 'node:fs/promises'
+import { access }            from 'node:fs/promises'
+import { join }              from 'node:path'
+import { isAbsolute }        from 'node:path'
+
+import { BuildResult }       from '@atls/libcnb'
+import { Process }           from '@atls/libcnb'
 
 const RUN_SCRIPT_PATH = '/workspace/run.sh'
 const START_IMAGE_SCRIPT = 'start-image'
@@ -75,7 +77,9 @@ export class YarnWorkspaceStartBuilder implements Builder {
     const command = pkgjson.scripts?.[START_IMAGE_SCRIPT]
 
     if (typeof command !== 'string' || command.trim().length === 0) {
-      throw new Error(`Missing required package.json script "${START_IMAGE_SCRIPT}" for launch command`)
+      throw new Error(
+        `Missing required package.json script "${START_IMAGE_SCRIPT}" for launch command`
+      )
     }
 
     await writeFile(
@@ -96,11 +100,7 @@ export class YarnWorkspaceStartBuilder implements Builder {
       nodeOptions.push('--loader', join(ctx.applicationDir, PNP_ESM_LOADER))
     }
 
-    nodeOptionsLayer.launchEnv.append(
-      'NODE_OPTIONS',
-      nodeOptions.join(' '),
-      ' '
-    )
+    nodeOptionsLayer.launchEnv.append('NODE_OPTIONS', nodeOptions.join(' '), ' ')
 
     const result = new BuildResult()
 

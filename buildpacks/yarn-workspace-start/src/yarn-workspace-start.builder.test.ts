@@ -1,26 +1,24 @@
-/// <reference types="jest" />
+import type { BuildContext }         from '@atls/libcnb'
 
-import { mkdtemp }                    from 'node:fs/promises'
-import { mkdir }                      from 'node:fs/promises'
-import { readFile }                   from 'node:fs/promises'
-import { rm }                         from 'node:fs/promises'
-import { writeFile }                  from 'node:fs/promises'
-import { tmpdir }                     from 'node:os'
-import { join }                       from 'node:path'
+import assert                        from 'node:assert/strict'
+import { mkdtemp }                   from 'node:fs/promises'
+import { mkdir }                     from 'node:fs/promises'
+import { readFile }                  from 'node:fs/promises'
+import { rm }                        from 'node:fs/promises'
+import { writeFile }                 from 'node:fs/promises'
+import { tmpdir }                    from 'node:os'
+import { join }                      from 'node:path'
+import { test }                      from 'node:test'
 
-import { BuildContext }               from '@atls/libcnb'
-import { Layers }                     from '@atls/libcnb'
+import { Layers }                    from '@atls/libcnb'
 
-import { YarnWorkspaceStartBuilder }  from './yarn-workspace-start.builder'
+import { YarnWorkspaceStartBuilder } from './yarn-workspace-start.builder.js'
 
 const writePackageJson = async (
   applicationDir: string,
   scripts: Record<string, string>
 ): Promise<void> => {
-  await writeFile(
-    join(applicationDir, 'package.json'),
-    JSON.stringify({ scripts }, null, 2)
-  )
+  await writeFile(join(applicationDir, 'package.json'), JSON.stringify({ scripts }, null, 2))
 }
 
 const createContext = async (): Promise<{
@@ -51,87 +49,90 @@ const createContext = async (): Promise<{
   }
 }
 
-describe('YarnWorkspaceStartBuilder', () => {
-  it('uses the packaged Yarn release to run scripts.start-image', async () => {
-    const { applicationDir, context, outputDir, rootDir, runScriptPath } = await createContext()
+test('YarnWorkspaceStartBuilder uses the packaged Yarn release to run scripts.start-image', async () => {
+  const { applicationDir, context, outputDir, rootDir, runScriptPath } = await createContext()
 
-    try {
-      await writePackageJson(applicationDir, {
-        'start-image': 'astro preview --host 0.0.0.0 --port 3000',
-      })
-      await mkdir(join(applicationDir, '.yarn'))
-      await mkdir(join(applicationDir, '.yarn/releases'))
-      await writeFile(join(applicationDir, '.yarnrc.yml'), 'yarnPath: .yarn/releases/yarn.mjs\n')
-      await writeFile(join(applicationDir, '.yarn/releases/yarn.mjs'), '')
-      await writeFile(join(applicationDir, '.pnp.cjs'), '')
-      await writeFile(join(applicationDir, '.pnp.loader.mjs'), '')
+  try {
+    await writePackageJson(applicationDir, {
+      'start-image': 'astro preview --host 0.0.0.0 --port 3000',
+    })
+    await mkdir(join(applicationDir, '.yarn'))
+    await mkdir(join(applicationDir, '.yarn/releases'))
+    await writeFile(join(applicationDir, '.yarnrc.yml'), 'yarnPath: .yarn/releases/yarn.mjs\n')
+    await writeFile(join(applicationDir, '.yarn/releases/yarn.mjs'), '')
+    await writeFile(join(applicationDir, '.pnp.cjs'), '')
+    await writeFile(join(applicationDir, '.pnp.loader.mjs'), '')
 
-      const result = await new YarnWorkspaceStartBuilder(runScriptPath).build(context)
-      const runScript = await readFile(runScriptPath, 'utf-8')
+    const result = await new YarnWorkspaceStartBuilder(runScriptPath).build(context)
+    const runScript = await readFile(runScriptPath, 'utf-8')
 
-      await result.toPath(outputDir)
+    await result.toPath(outputDir)
 
-      expect(runScript).toBe(
-        `#!/usr/bin/env bash\numask 0002\nexec node '${join(applicationDir, '.yarn/releases/yarn.mjs')}' start-image`
-      )
-      expect(runScript).not.toContain('undefined')
-      expect(result.launchMetadata.processes[0].command).toEqual(['./run.sh'])
-      expect(result.layers).toHaveLength(1)
-      await expect(readFile(join(rootDir, 'layers/node-options/env.launch/NODE_OPTIONS.append'), 'utf-8'))
-        .resolves
-        .toBe(`--enable-source-maps --require ${join(applicationDir, '.pnp.cjs')} --loader ${join(applicationDir, '.pnp.loader.mjs')}`)
-    } finally {
-      await rm(rootDir, { recursive: true, force: true })
-    }
-  })
+    assert.equal(
+      runScript,
+      `#!/usr/bin/env bash\numask 0002\nexec node '${join(applicationDir, '.yarn/releases/yarn.mjs')}' start-image`
+    )
+    assert.equal(runScript.includes('undefined'), false)
+    assert.deepEqual(result.launchMetadata.processes[0].command, ['./run.sh'])
+    assert.equal(result.layers.length, 1)
+    assert.equal(
+      await readFile(join(rootDir, 'layers/node-options/env.launch/NODE_OPTIONS.append'), 'utf-8'),
+      `--enable-source-maps --require ${join(applicationDir, '.pnp.cjs')} --loader ${join(applicationDir, '.pnp.loader.mjs')}`
+    )
+  } finally {
+    await rm(rootDir, { recursive: true, force: true })
+  }
+})
 
-  it('falls back to global Yarn when no packaged Yarn release exists', async () => {
-    const { applicationDir, context, rootDir, runScriptPath } = await createContext()
+test('YarnWorkspaceStartBuilder falls back to global Yarn when no packaged Yarn release exists', async () => {
+  const { applicationDir, context, rootDir, runScriptPath } = await createContext()
 
-    try {
-      await writePackageJson(applicationDir, {
-        'start-image': 'node server.js',
-      })
+  try {
+    await writePackageJson(applicationDir, {
+      'start-image': 'node server.js',
+    })
 
-      await new YarnWorkspaceStartBuilder(runScriptPath).build(context)
+    await new YarnWorkspaceStartBuilder(runScriptPath).build(context)
 
-      await expect(readFile(runScriptPath, 'utf-8'))
-        .resolves
-        .toBe('#!/usr/bin/env bash\numask 0002\nexec yarn start-image')
-    } finally {
-      await rm(rootDir, { recursive: true, force: true })
-    }
-  })
+    assert.equal(
+      await readFile(runScriptPath, 'utf-8'),
+      '#!/usr/bin/env bash\numask 0002\nexec yarn start-image'
+    )
+  } finally {
+    await rm(rootDir, { recursive: true, force: true })
+  }
+})
 
-  it('fails when scripts.start-image is missing', async () => {
-    const { applicationDir, context, rootDir, runScriptPath } = await createContext()
+test('YarnWorkspaceStartBuilder fails when scripts.start-image is missing', async () => {
+  const { applicationDir, context, rootDir, runScriptPath } = await createContext()
 
-    try {
-      await writePackageJson(applicationDir, {
-        start: 'yarn start',
-      })
+  try {
+    await writePackageJson(applicationDir, {
+      start: 'yarn start',
+    })
 
-      await expect(new YarnWorkspaceStartBuilder(runScriptPath).build(context))
-        .rejects
-        .toThrow('Missing required package.json script "start-image" for launch command')
-    } finally {
-      await rm(rootDir, { recursive: true, force: true })
-    }
-  })
+    await assert.rejects(
+      new YarnWorkspaceStartBuilder(runScriptPath).build(context),
+      /Missing required package\.json script "start-image" for launch command/
+    )
+  } finally {
+    await rm(rootDir, { recursive: true, force: true })
+  }
+})
 
-  it('fails when scripts.start-image is empty', async () => {
-    const { applicationDir, context, rootDir, runScriptPath } = await createContext()
+test('YarnWorkspaceStartBuilder fails when scripts.start-image is empty', async () => {
+  const { applicationDir, context, rootDir, runScriptPath } = await createContext()
 
-    try {
-      await writePackageJson(applicationDir, {
-        'start-image': '   ',
-      })
+  try {
+    await writePackageJson(applicationDir, {
+      'start-image': '   ',
+    })
 
-      await expect(new YarnWorkspaceStartBuilder(runScriptPath).build(context))
-        .rejects
-        .toThrow('Missing required package.json script "start-image" for launch command')
-    } finally {
-      await rm(rootDir, { recursive: true, force: true })
-    }
-  })
+    await assert.rejects(
+      new YarnWorkspaceStartBuilder(runScriptPath).build(context),
+      /Missing required package\.json script "start-image" for launch command/
+    )
+  } finally {
+    await rm(rootDir, { recursive: true, force: true })
+  }
 })

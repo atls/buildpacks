@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "license": "BSD-3-Clause",
+  "type": "module",
   "main": "src/index.ts",
   "files": [
     "dist"
@@ -12,13 +13,11 @@
     "build": "yarn service build",
     "clean": "rm -r -f dist"
   },
-  "dependencies": {
+  "devDependencies": {
     "@atls/libcnb": "workspace:*",
+    "@types/node": "20.12.3",
     "@yarnpkg/core": "4.0.3",
     "@yarnpkg/fslib": "3.0.2",
     "execa": "5.1.1"
-  },
-  "devDependencies": {
-    "@types/node": "20.12.3"
   }
 }

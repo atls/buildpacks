@@ -1,5 +1,5 @@
-import { BuildContext } from './build.context'
-import { BuildResult }  from './build.result'
+import { BuildContext } from './build.context.js'
+import { BuildResult }  from './build.result.js'
 
 export interface Builder {
   build(context: BuildContext): Promise<BuildResult>

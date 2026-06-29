@@ -1,6 +1,6 @@
 import { join }  from 'node:path'
 
-import { Layer } from './layer'
+import { Layer } from './layer.js'
 
 export class Layers {
   private layers: Map<string, Layer> = new Map()

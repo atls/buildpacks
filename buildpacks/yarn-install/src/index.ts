@@ -1,9 +1,6 @@
 import { run }                 from '@atls/libcnb'
 
-import { YarnInstallBuilder }  from './yarn-install.builder'
-import { YarnInstallDetector } from './yarn-install.detector'
+import { YarnInstallBuilder }  from './yarn-install.builder.js'
+import { YarnInstallDetector } from './yarn-install.detector.js'
 
 run(new YarnInstallDetector(), new YarnInstallBuilder())
-
-// @ts-ignore
-const core = require('@atls/libcnb') // eslint-disable-line

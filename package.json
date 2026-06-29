@@ -11,8 +11,8 @@
     "clipanion": "4.0.0-rc.2"
   },
   "devDependencies": {
-    "@atls/code-service": "0.1.9",
     "@atls/config-jest": "0.1.5",
+    "@atls/raijin": "0.5.2",
     "@jest/core": "29.7.0",
     "@types/eslint": "8",
     "@types/jest": "29",
@@ -20,5 +20,5 @@
     "eslint": "8.57.0",
     "typescript": "5.2.2"
   },
-  "packageManager": "yarn@4.1.1"
+  "packageManager": "yarn@4.14.1"
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument */
 import { readFile }  from 'node:fs/promises'
 import { writeFile } from 'node:fs/promises'
 import { access }    from 'node:fs/promises'
@@ -6,9 +7,9 @@ import { stringify } from '@iarna/toml'
 import { parse }     from '@iarna/toml'
 
 export class Store {
-  constructor(public readonly metadata: { [key: string]: any } = {}) {}
+  constructor(public readonly metadata: Record<string, any> = {}) {}
 
-  static async fromPath(path) {
+  static async fromPath(path: string) {
     try {
       await access(path)
 
@@ -20,7 +21,7 @@ export class Store {
     }
   }
 
-  async toPath(path) {
+  async toPath(path: string) {
     if (Object.keys(this.metadata).length > 0) {
       await writeFile(
         path,
