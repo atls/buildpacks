@@ -1,5 +1,5 @@
-import { Buildpack } from '../buildpack'
-import { Platform }  from '../platform'
+import type { Buildpack } from '../buildpack/index.js'
+import type { Platform }  from '../platform.js'
 
 export class DetectContext {
   constructor(

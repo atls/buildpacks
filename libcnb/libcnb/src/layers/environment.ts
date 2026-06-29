@@ -1,3 +1,4 @@
+/* eslint-disable n/no-sync */
 import { existsSync } from 'node:fs'
 import { writeFile }  from 'node:fs/promises'
 import { readFile }   from 'node:fs/promises'

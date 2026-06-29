@@ -1,14 +1,15 @@
-import { PortablePath } from '@yarnpkg/fslib'
-import { execUtils }    from '@yarnpkg/core'
-import { xfs }          from '@yarnpkg/fslib'
-import { ppath }        from '@yarnpkg/fslib'
+import type { Builder }      from '@atls/libcnb'
+import type { BuildContext } from '@atls/libcnb'
+import type { PortablePath } from '@yarnpkg/fslib'
 
-import YAML             from 'yaml'
-import { createHash }   from 'crypto'
+import { createHash }        from 'node:crypto'
 
-import { Builder }      from '@atls/libcnb'
-import { BuildContext } from '@atls/libcnb'
-import { BuildResult }  from '@atls/libcnb'
+import { execUtils }         from '@yarnpkg/core'
+import { xfs }               from '@yarnpkg/fslib'
+import { ppath }             from '@yarnpkg/fslib'
+import YAML                  from 'yaml'
+
+import { BuildResult }       from '@atls/libcnb'
 
 export class YarnCacheBuilder implements Builder {
   async build(ctx: BuildContext): Promise<BuildResult> {

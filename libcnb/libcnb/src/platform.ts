@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { readdir }  from 'node:fs/promises'
-import { join }     from 'path'
+import { join }     from 'node:path'
 
 export class Platform {
   constructor(

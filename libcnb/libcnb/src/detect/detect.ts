@@ -1,12 +1,14 @@
+import type { Detector } from './detector.js'
+
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument */
 import { writeFile }     from 'node:fs/promises'
 
 import { stringify }     from '@iarna/toml'
 
-import { Buildpack }     from '../buildpack'
-import { ExitHandler }   from '../exit.handler'
-import { Platform }      from '../platform'
-import { DetectContext } from './detect.context'
-import { Detector }      from './detector'
+import { Buildpack }     from '../buildpack/index.js'
+import { ExitHandler }   from '../exit.handler.js'
+import { Platform }      from '../platform.js'
+import { DetectContext } from './detect.context.js'
 
 export const detect = async (detector: Detector) => {
   if (!process.env.CNB_STACK_ID) {

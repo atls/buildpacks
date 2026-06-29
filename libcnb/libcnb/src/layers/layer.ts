@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-return, n/no-sync */
 import { existsSync }  from 'node:fs'
 import { readFile }    from 'node:fs/promises'
 import { rmdir }       from 'node:fs/promises'
@@ -10,7 +11,7 @@ import { join }        from 'node:path'
 import { parse }       from '@iarna/toml'
 import { stringify }   from '@iarna/toml'
 
-import { Environment } from './environment'
+import { Environment } from './environment.js'
 
 export class Layer {
   build: boolean = false
@@ -19,7 +20,7 @@ export class Layer {
 
   launch: boolean = false
 
-  metadata: { [key: string]: any } = {}
+  metadata: Record<string, any> = {}
 
   sharedEnv: Environment
 
@@ -53,7 +54,7 @@ export class Layer {
           cache: boolean
           launch: boolean
         }
-        metadata?: { [key: string]: any }
+        metadata?: Record<string, any>
       }
 
       if (metadataFile.types) {

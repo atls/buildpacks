@@ -1,12 +1,12 @@
 import { join }          from 'node:path'
 
-import { Buildpack }     from '../buildpack'
-import { Layers }        from '../layers'
-import { Store }         from '../output'
-import { BuildpackPlan } from '../plan'
-import { Platform }      from '../platform'
-import { BuildContext }  from './build.context'
-import { Builder }       from './builder'
+import { Buildpack }     from '../buildpack/index.js'
+import { Layers }        from '../layers/index.js'
+import { Store }         from '../output/index.js'
+import { BuildpackPlan } from '../plan/index.js'
+import { Platform }      from '../platform.js'
+import { BuildContext }  from './build.context.js'
+import { Builder }       from './builder.js'
 
 export const build = async (builder: Builder) => {
   if (!process.env.CNB_STACK_ID) {

@@ -1,13 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call */
 import { readFile }            from 'node:fs/promises'
 import { join }                from 'node:path'
 
 import { parse }               from '@iarna/toml'
 
-import { BuildpackGroupEntry } from './buildpack.group-entry'
-import { BuildpackInfo }       from './buildpack.info'
-import { BuildpackLicense }    from './buildpack.license'
-import { BuildpackOrder }      from './buildpack.order'
-import { BuildpackStack }      from './buildpack.stack'
+import { BuildpackGroupEntry } from './buildpack.group-entry.js'
+import { BuildpackInfo }       from './buildpack.info.js'
+import { BuildpackLicense }    from './buildpack.license.js'
+import { BuildpackOrder }      from './buildpack.order.js'
+import { BuildpackStack }      from './buildpack.stack.js'
 
 export class Buildpack {
   constructor(
@@ -15,7 +16,7 @@ export class Buildpack {
     public readonly info: BuildpackInfo,
     public readonly path: string,
     public readonly stacks: Array<BuildpackStack> = [],
-    public readonly metadata: { [key: string]: any } = {},
+    public readonly metadata: Record<string, any> = {},
     public readonly order: Array<BuildpackOrder> = []
   ) {}
 
@@ -33,17 +34,17 @@ export class Buildpack {
         data.buildpack.description,
         data.buildpack.keywords,
         (data.buildpack.licenses || []).map(
-          (license) => new BuildpackLicense(license.type, license.uri)
+          (license: any) => new BuildpackLicense(license.type, license.uri)
         )
       ),
       path,
-      (data.stacks || []).map((stack) => new BuildpackStack(stack.id, stack.mixins)),
+      (data.stacks || []).map((stack: any) => new BuildpackStack(stack.id, stack.mixins)),
       data.metadata,
       (data.order || []).map(
-        (order) =>
+        (order: any) =>
           new BuildpackOrder(
             (order.group || []).map(
-              (group) => new BuildpackGroupEntry(group.id, group.version, group.optional)
+              (group: any) => new BuildpackGroupEntry(group.id, group.version, group.optional)
             )
           )
       )

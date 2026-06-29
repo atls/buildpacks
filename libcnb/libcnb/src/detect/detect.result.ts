@@ -1,4 +1,4 @@
-import { BuildPlan } from '../plan'
+import type { BuildPlan } from '../plan/index.js'
 
 export class DetectResult {
   constructor(

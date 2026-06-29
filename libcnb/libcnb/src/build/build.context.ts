@@ -1,8 +1,8 @@
-import { Buildpack }     from '../buildpack'
-import { Layers }        from '../layers'
-import { Store }         from '../output'
-import { BuildpackPlan } from '../plan'
-import { Platform }      from '../platform'
+import { Buildpack }     from '../buildpack/index.js'
+import { Layers }        from '../layers/index.js'
+import { Store }         from '../output/index.js'
+import { BuildpackPlan } from '../plan/index.js'
+import { Platform }      from '../platform.js'
 
 export class BuildContext {
   constructor(

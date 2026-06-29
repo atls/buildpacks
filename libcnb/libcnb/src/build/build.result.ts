@@ -1,9 +1,9 @@
 import { join }           from 'node:path'
 
-import { Layer }          from '../layers'
-import { Store }          from '../output'
-import { LaunchMetadata } from '../output'
-import { BuildMetadata }  from '../output'
+import { Layer }          from '../layers/index.js'
+import { Store }          from '../output/index.js'
+import { LaunchMetadata } from '../output/index.js'
+import { BuildMetadata }  from '../output/index.js'
 
 export class BuildResult {
   constructor(
@@ -13,7 +13,7 @@ export class BuildResult {
     public readonly buildMetadata: BuildMetadata = new BuildMetadata()
   ) {}
 
-  async toPath(path) {
+  async toPath(path: string) {
     for await (const layer of this.layers) {
       await layer.dump()
     }
