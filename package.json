@@ -11,11 +11,8 @@
     "clipanion": "4.0.0-rc.2"
   },
   "devDependencies": {
-    "@atls/config-jest": "0.1.5",
     "@atls/raijin": "0.5.2",
-    "@jest/core": "29.7.0",
     "@types/eslint": "8",
-    "@types/jest": "29",
     "@types/node": "20.12.3",
     "eslint": "8.57.0",
     "typescript": "5.2.2"
