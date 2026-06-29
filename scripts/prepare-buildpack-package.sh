@@ -33,17 +33,7 @@ if [[ -d "${source_dir}/bin" ]]; then
 fi
 
 if [[ -f "${source_dir}/package.json" ]]; then
-  node -e '
-const { readFileSync, writeFileSync } = require("node:fs")
-
-const source = process.argv[1]
-const target = process.argv[2]
-const { type } = JSON.parse(readFileSync(source, "utf-8"))
-
-if (type) {
-  writeFileSync(target, `${JSON.stringify({ type }, null, 2)}\n`)
-}
-' "${source_dir}/package.json" "${stage_dir}/package.json"
+  cp "${source_dir}/package.json" "${stage_dir}/package.json"
 fi
 
 if [[ -d "${source_dir}/bin" ]] && grep -RqsF "../dist/index" "${source_dir}/bin"; then
