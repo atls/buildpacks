@@ -73,7 +73,17 @@ if [[ -d "${source_dir}/bin" ]] && grep -RqsF "../dist/index" "${source_dir}/bin
   fi
 fi
 
-for unexpected_path in src package.json package.toml; do
+if [[ -f "${source_dir}/package.json" ]]; then
+  if [[ ! -f "${buildpack_root}/package.json" ]]; then
+    echo "packaged package.json is missing" >&2
+    exit 1
+  fi
+elif [[ -e "${buildpack_root}/package.json" ]]; then
+  echo "unexpected packaged source artifact: package.json" >&2
+  exit 1
+fi
+
+for unexpected_path in src package.toml; do
   if [[ -e "${buildpack_root}/${unexpected_path}" ]]; then
     echo "unexpected packaged source artifact: ${unexpected_path}" >&2
     exit 1
