@@ -226,15 +226,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-              - name: curl
-                directory: extensions/curl
-                image-repository: ghcr.io/atls/buildpack-extension-curl
-              - name: htop
-                directory: extensions/htop
-                image-repository: ghcr.io/atls/buildpack-extension-htop
-              - name: graphql-hive
-                directory: extensions/graphql-hive
-                image-repository: ghcr.io/atls/buildpack-extension-graphql-hive
+          - name: curl
+            directory: extensions/curl
+            image-repository: ghcr.io/atls/buildpack-extension-curl
+          - name: htop
+            directory: extensions/htop
+            image-repository: ghcr.io/atls/buildpack-extension-htop
+          - name: graphql-hive
+            directory: extensions/graphql-hive
+            image-repository: ghcr.io/atls/buildpack-extension-graphql-hive
     steps:
       - name: Checkout
         uses: actions/checkout@v6
