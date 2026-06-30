@@ -1,11 +1,7 @@
 import { InvalidCnbEnvironmentError } from '../errors/index.js'
+import type { CnbEnvironment } from './environment.interface.js'
 
-export interface CnbEnvironment {
-  buildpackDir: string
-  stackId: string
-}
-
-const getRequiredEnv = (
+const resolveRequiredEnv = (
   env: NodeJS.ProcessEnv,
   name: string
 ): string => {
@@ -21,6 +17,6 @@ const getRequiredEnv = (
 export const resolveCnbEnvironment = (
   env: NodeJS.ProcessEnv = process.env
 ): CnbEnvironment => ({
-  buildpackDir: getRequiredEnv(env, 'CNB_BUILDPACK_DIR'),
-  stackId: getRequiredEnv(env, 'CNB_STACK_ID'),
+  buildpackDir: resolveRequiredEnv(env, 'CNB_BUILDPACK_DIR'),
+  stackId: resolveRequiredEnv(env, 'CNB_STACK_ID'),
 })

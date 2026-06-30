@@ -6,14 +6,14 @@ import { mkdir }       from 'node:fs/promises'
 import { dirname }     from 'node:path'
 import { join }        from 'node:path'
 
-import type { CnbMetadata } from '../metadata.js'
+import type { CnbMetadata } from '../metadata/value.interface.js'
 
 import { Environment } from './environment.js'
-import { getMetadata } from '../raw/index.js'
-import { getOptionalBoolean } from '../raw/index.js'
-import { getOptionalRecord } from '../raw/index.js'
-import { readTomlRecord } from '../raw/index.js'
-import { writeTomlRecord } from '../raw/index.js'
+import { readMetadata } from '../toml/index.js'
+import { readOptionalBoolean } from '../toml/index.js'
+import { readOptionalTable } from '../toml/index.js'
+import { readTomlFile } from '../toml/index.js'
+import { writeTomlFile } from '../toml/index.js'
 
 export class Layer {
   build: boolean = false
@@ -58,13 +58,13 @@ export class Layer {
 
   async load() {
     if (existsSync(this.metadataFile)) {
-      const metadataFile = await readTomlRecord(this.metadataFile)
-      const types = getOptionalRecord(metadataFile, 'types', this.metadataFile)
+      const metadataFile = await readTomlFile(this.metadataFile)
+      const types = readOptionalTable(metadataFile, 'types', this.metadataFile)
 
-      this.build = getOptionalBoolean(types, 'build', `${this.metadataFile}.types`)
-      this.cache = getOptionalBoolean(types, 'cache', `${this.metadataFile}.types`)
-      this.launch = getOptionalBoolean(types, 'launch', `${this.metadataFile}.types`)
-      this.metadata = getMetadata(metadataFile, 'metadata', this.metadataFile)
+      this.build = readOptionalBoolean(types, 'build', `${this.metadataFile}.types`)
+      this.cache = readOptionalBoolean(types, 'cache', `${this.metadataFile}.types`)
+      this.launch = readOptionalBoolean(types, 'launch', `${this.metadataFile}.types`)
+      this.metadata = readMetadata(metadataFile, 'metadata', this.metadataFile)
     }
 
     this.sharedEnv = await Environment.fromPath(join(this.path, 'env'))
@@ -75,7 +75,7 @@ export class Layer {
   async dump() {
     await mkdir(this.path, { recursive: true })
 
-    await writeTomlRecord(this.metadataFile, {
+    await writeTomlFile(this.metadataFile, {
       metadata: this.metadata,
       types: {
         build: this.build,

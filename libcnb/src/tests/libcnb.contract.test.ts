@@ -83,7 +83,7 @@ test('Buildpack parses buildpack.toml into the public metadata model', async () 
   }
 })
 
-test('BuildpackPlan parses plan.toml entries without leaking raw payload shape', async () => {
+test('BuildpackPlan parses plan.toml entries without leaking TOML payload shape', async () => {
   const rootDir = await createTempDir()
   const planPath = join(rootDir, 'plan.toml')
 
@@ -111,7 +111,7 @@ test('BuildpackPlan parses plan.toml entries without leaking raw payload shape',
   }
 })
 
-test('LaunchMetadata and BuildMetadata roundtrip through CNB TOML output', async () => {
+test('LaunchMetadata and BuildMetadata roundtrip through CNB TOML metadata files', async () => {
   const rootDir = await createTempDir()
   const launchPath = join(rootDir, 'launch.toml')
   const buildPath = join(rootDir, 'build.toml')

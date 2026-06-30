@@ -1,9 +1,9 @@
 import { join }           from 'node:path'
 
 import { Layer }          from '../layers/index.js'
-import { Store }          from '../output/index.js'
-import { LaunchMetadata } from '../output/index.js'
-import { BuildMetadata }  from '../output/index.js'
+import { Store }          from '../layers/index.js'
+import { LaunchMetadata } from '../metadata/index.js'
+import { BuildMetadata }  from '../metadata/index.js'
 
 export class BuildResult {
   constructor(

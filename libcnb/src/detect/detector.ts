@@ -1,5 +1,5 @@
-import type { DetectContext } from './detect.context.js'
-import type { DetectResult }  from './detect.result.js'
+import type { DetectContext } from './context.js'
+import type { DetectResult }  from './result.js'
 
 export interface Detector {
   detect: (context: DetectContext) => Promise<DetectResult>

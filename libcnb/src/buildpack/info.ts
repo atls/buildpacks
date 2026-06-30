@@ -1,4 +1,4 @@
-import type { BuildpackLicense } from './buildpack.license.js'
+import type { BuildpackLicense } from './license.js'
 
 export class BuildpackInfo {
   constructor(

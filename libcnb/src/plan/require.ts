@@ -1,6 +1,6 @@
-import type { CnbMetadata } from '../metadata.js'
+import type { CnbMetadata } from '../metadata/value.interface.js'
 
-export class BuildpackPlanEntry {
+export class BuildPlanRequire {
   constructor(
     public readonly name: string,
     public readonly metadata: CnbMetadata = {}

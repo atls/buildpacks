@@ -1,11 +1,11 @@
 import { access }    from 'node:fs/promises'
 
-import type { CnbMetadata } from '../metadata.js'
+import type { CnbMetadata } from '../metadata/value.interface.js'
 
 import { CnbIoError }       from '../errors/index.js'
-import { getMetadata }      from '../raw/index.js'
-import { readTomlRecord }   from '../raw/index.js'
-import { writeTomlRecord }  from '../raw/index.js'
+import { readMetadata }      from '../toml/index.js'
+import { readTomlFile }   from '../toml/index.js'
+import { writeTomlFile }  from '../toml/index.js'
 
 export class Store {
   constructor(public readonly metadata: CnbMetadata = {}) {}
@@ -21,14 +21,14 @@ export class Store {
       throw new CnbIoError(`Failed to access ${path}`, error)
     }
 
-    const data = await readTomlRecord(path)
+    const data = await readTomlFile(path)
 
-    return new Store(getMetadata(data, 'metadata', 'store.toml'))
+    return new Store(readMetadata(data, 'metadata', 'store.toml'))
   }
 
   async toPath(path: string) {
     if (Object.keys(this.metadata).length > 0) {
-      await writeTomlRecord(path, {
+      await writeTomlFile(path, {
         metadata: this.metadata,
       })
     }

@@ -1,4 +1,4 @@
-export *      from './detect.context.js'
-export *      from './detect.result.js'
+export *      from './context.js'
+export *      from './result.js'
 export type * from './detector.js'
 export *      from './detect.js'

@@ -1,5 +1,5 @@
-import type { BuildPlanProvide } from './build-plan.provide.js'
-import type { BuildPlanRequire } from './build-plan.require.js'
+import type { BuildPlanProvide } from './provide.js'
+import type { BuildPlanRequire } from './require.js'
 
 export class BuildPlan {
   constructor(

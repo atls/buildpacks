@@ -1,34 +1,38 @@
-import type { CnbMetadata } from '../metadata.js'
+import type { CnbMetadata } from '../metadata/value.interface.js'
 
 import { InvalidCnbConfigError } from '../errors/index.js'
 
-export type RawRecord = CnbMetadata
+export type TomlTable = CnbMetadata
 
-export const isRawRecord = (value: unknown): value is RawRecord =>
+export const isTomlTable = (value: unknown): value is TomlTable =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
-export const asRawRecord = (value: unknown, path: string): RawRecord => {
-  if (!isRawRecord(value)) {
+export const asTomlTable = (value: unknown, path: string): TomlTable => {
+  if (!isTomlTable(value)) {
     throw new InvalidCnbConfigError(`${path} must be a table`)
   }
 
   return value
 }
 
-export const getRequiredRecord = (record: RawRecord, key: string, path: string): RawRecord =>
-  asRawRecord(record[key], `${path}.${key}`)
+export const readRequiredTable = (record: TomlTable, key: string, path: string): TomlTable =>
+  asTomlTable(record[key], `${path}.${key}`)
 
-export const getOptionalRecord = (record: RawRecord, key: string, path: string): RawRecord => {
+export const readOptionalTable = (record: TomlTable, key: string, path: string): TomlTable => {
   if (!(key in record)) {
     return {}
   }
 
   const value = record[key]
 
-  return asRawRecord(value, `${path}.${key}`)
+  return asTomlTable(value, `${path}.${key}`)
 }
 
-export const getRecordArray = (record: RawRecord, key: string, path: string): Array<RawRecord> => {
+export const readTableArray = (
+  record: TomlTable,
+  key: string,
+  path: string
+): Array<TomlTable> => {
   if (!(key in record)) {
     return []
   }
@@ -39,10 +43,10 @@ export const getRecordArray = (record: RawRecord, key: string, path: string): Ar
     throw new InvalidCnbConfigError(`${path}.${key} must be an array`)
   }
 
-  return value.map((entry, index) => asRawRecord(entry, `${path}.${key}[${index}]`))
+  return value.map((entry, index) => asTomlTable(entry, `${path}.${key}[${index}]`))
 }
 
-export const getRequiredString = (record: RawRecord, key: string, path: string): string => {
+export const readRequiredString = (record: TomlTable, key: string, path: string): string => {
   const value = record[key]
 
   if (typeof value !== 'string') {
@@ -52,8 +56,8 @@ export const getRequiredString = (record: RawRecord, key: string, path: string):
   return value
 }
 
-export const getOptionalString = (
-  record: RawRecord,
+export const readOptionalString = (
+  record: TomlTable,
   key: string,
   path: string,
   fallback: string = ''
@@ -71,8 +75,8 @@ export const getOptionalString = (
   return value
 }
 
-export const getOptionalBoolean = (
-  record: RawRecord,
+export const readOptionalBoolean = (
+  record: TomlTable,
   key: string,
   path: string,
   fallback: boolean = false
@@ -93,7 +97,7 @@ export const getOptionalBoolean = (
 const isStringArray = (value: unknown): value is Array<string> =>
   Array.isArray(value) && value.every((entry) => typeof entry === 'string')
 
-export const getStringArray = (record: RawRecord, key: string, path: string): Array<string> => {
+export const readStringArray = (record: TomlTable, key: string, path: string): Array<string> => {
   if (!(key in record)) {
     return []
   }
@@ -107,7 +111,7 @@ export const getStringArray = (record: RawRecord, key: string, path: string): Ar
   return value
 }
 
-export const getStringTuple = (record: RawRecord, key: string, path: string): Array<string> => {
+export const readStringTuple = (record: TomlTable, key: string, path: string): Array<string> => {
   const value = record[key]
 
   if (!isStringArray(value)) {
@@ -117,12 +121,12 @@ export const getStringTuple = (record: RawRecord, key: string, path: string): Ar
   return value
 }
 
-export const getMetadata = (record: RawRecord, key: string, path: string): CnbMetadata => {
+export const readMetadata = (record: TomlTable, key: string, path: string): CnbMetadata => {
   if (!(key in record)) {
     return {}
   }
 
   const value = record[key]
 
-  return asRawRecord(value, `${path}.${key}`)
+  return asTomlTable(value, `${path}.${key}`)
 }

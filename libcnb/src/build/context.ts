@@ -1,6 +1,6 @@
 import { Buildpack }     from '../buildpack/index.js'
 import { Layers }        from '../layers/index.js'
-import { Store }         from '../output/index.js'
+import { Store }         from '../layers/index.js'
 import { BuildpackPlan } from '../plan/index.js'
 import { Platform }      from '../platform.js'
 

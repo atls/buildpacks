@@ -1,12 +1,12 @@
 import type { Detector }       from './detector.js'
 
 import { Buildpack }           from '../buildpack/index.js'
-import { resolveCnbEnvironment } from '../execution/index.js'
-import { resolveDetectArguments } from '../execution/index.js'
+import { resolveCnbEnvironment } from '../runtime/index.js'
+import { resolveDetectArguments } from '../runtime/index.js'
 import { ExitHandler }         from '../exit.handler.js'
 import { Platform }            from '../platform.js'
-import { writeTomlRecord }     from '../raw/index.js'
-import { DetectContext }       from './detect.context.js'
+import { writeTomlFile }     from '../toml/index.js'
+import { DetectContext }       from './context.js'
 
 export const detect = async (detector: Detector) => {
   const { buildpackDir, stackId } = resolveCnbEnvironment()
@@ -26,7 +26,7 @@ export const detect = async (detector: Detector) => {
   }
 
   if (result.plans.length > 0) {
-    await writeTomlRecord(planPath, {
+    await writeTomlFile(planPath, {
       provides: result.plans[0].provides.map((provide) => ({
         name: provide.name,
       })),
