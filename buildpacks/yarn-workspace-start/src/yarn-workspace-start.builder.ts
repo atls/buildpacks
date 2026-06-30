@@ -104,8 +104,8 @@ export class YarnWorkspaceStartBuilder implements Builder {
 
     const result = new BuildResult()
 
-    result.launchMetadata.processes.push(new Process('web', ['./run.sh'], [], true))
-    result.layers.push(nodeOptionsLayer)
+    result.addLaunchProcess(new Process('web', ['./run.sh'], [], true))
+    result.addLayer(nodeOptionsLayer)
 
     return result
   }

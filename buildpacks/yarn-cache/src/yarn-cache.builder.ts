@@ -60,6 +60,6 @@ export class YarnCacheBuilder implements Builder {
       env: process.env,
     })
 
-    return new BuildResult([cacheLayer])
+    return new BuildResult().addLayer(cacheLayer)
   }
 }

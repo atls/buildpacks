@@ -1,23 +1,19 @@
-import type { Detector }       from './detector.js'
+import type { Detector }       from './detector.interface.js'
 
-import { Buildpack }           from '../buildpack/index.js'
 import { resolveCnbEnvironment } from '../runtime/index.js'
 import { resolveDetectArguments } from '../runtime/index.js'
 import { ExitHandler }         from '../exit.handler.js'
-import { Platform }            from '../platform.js'
 import { writeTomlFile }     from '../toml/index.js'
-import { DetectContext }       from './context.js'
+import type { DetectContext }  from './context.interface.js'
 
 export const detect = async (detector: Detector) => {
-  const { buildpackDir, stackId } = resolveCnbEnvironment()
-  const { platformDir, planPath } = resolveDetectArguments()
+  const { stackId } = resolveCnbEnvironment()
+  const { planPath } = resolveDetectArguments()
 
-  const context = new DetectContext(
-    process.cwd(),
-    await Buildpack.fromPath(buildpackDir),
-    await Platform.fromPath(platformDir),
-    stackId
-  )
+  const context: DetectContext = {
+    applicationDir: process.cwd(),
+    stackId,
+  }
 
   const result = await detector.detect(context)
 

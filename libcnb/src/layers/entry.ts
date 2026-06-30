@@ -7,6 +7,8 @@ import { dirname }     from 'node:path'
 import { join }        from 'node:path'
 
 import type { CnbMetadata } from '../metadata/value.interface.js'
+import type { CnbMetadataValue } from '../metadata/value.interface.js'
+import type { BuildLayer } from './contract.interface.js'
 
 import { Environment } from './environment.js'
 import { readMetadata } from '../toml/index.js'
@@ -15,7 +17,7 @@ import { readOptionalTable } from '../toml/index.js'
 import { readTomlFile } from '../toml/index.js'
 import { writeTomlFile } from '../toml/index.js'
 
-export class Layer {
+export class Layer implements BuildLayer {
   build: boolean = false
 
   cache: boolean = false
@@ -52,7 +54,7 @@ export class Layer {
     this.metadata[key] = value
   }
 
-  getMetadata(key: string) {
+  getMetadata(key: string): CnbMetadataValue | undefined {
     return this.metadata[key]
   }
 

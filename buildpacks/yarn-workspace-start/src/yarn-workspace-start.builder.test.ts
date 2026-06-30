@@ -1,4 +1,6 @@
 import type { BuildContext }         from '@atls/libcnb'
+import type { BuildLayer }           from '@atls/libcnb'
+import type { LayerEnvironment }     from '@atls/libcnb'
 
 import assert                        from 'node:assert/strict'
 import { mkdtemp }                   from 'node:fs/promises'
@@ -10,9 +12,76 @@ import { tmpdir }                    from 'node:os'
 import { join }                      from 'node:path'
 import { test }                      from 'node:test'
 
-import { Layers }                    from '@atls/libcnb'
-
 import { YarnWorkspaceStartBuilder } from './yarn-workspace-start.builder.js'
+
+interface TestLayerEnvironment extends LayerEnvironment {
+  toPath: (path: string) => Promise<void>
+}
+
+const createTestLayerEnvironment = (): TestLayerEnvironment => {
+  const data: Map<string, string> = new Map()
+
+  return {
+    append: (name: string, value: string, delim: string = ':'): void => {
+      data.set(`${name}.append`, value)
+      data.set(`${name}.delim`, delim)
+    },
+
+    prepend: (name: string, value: string, delim: string = ':'): void => {
+      data.set(`${name}.prepend`, value)
+      data.set(`${name}.delim`, delim)
+    },
+
+    default: (name: string, value: string): void => {
+      data.set(`${name}.default`, value)
+    },
+
+    override: (name: string, value: string): void => {
+      data.set(`${name}.override`, value)
+    },
+
+    toPath: async (path: string): Promise<void> => {
+      await mkdir(path, { recursive: true })
+
+      for await (const [key, value] of data.entries()) {
+        await writeFile(join(path, key), value)
+      }
+    },
+  }
+}
+
+const createTestBuildLayer = (path: string): BuildLayer => {
+  const metadata: Map<string, string> = new Map()
+  const sharedEnv = createTestLayerEnvironment()
+  const buildEnv = createTestLayerEnvironment()
+  const launchEnv = createTestLayerEnvironment()
+
+  return {
+    build: false,
+    buildEnv,
+    cache: false,
+    dump: async (): Promise<void> => {
+      await mkdir(path, { recursive: true })
+      await sharedEnv.toPath(join(path, 'env'))
+      await buildEnv.toPath(join(path, 'env.build'))
+      await launchEnv.toPath(join(path, 'env.launch'))
+    },
+    getMetadata: (key: string): string | undefined => metadata.get(key),
+    launch: false,
+    launchEnv,
+    path,
+    setMetadata: (key: string, value: string | null): void => {
+      if (value === null) {
+        metadata.delete(key)
+
+        return
+      }
+
+      metadata.set(key, value)
+    },
+    sharedEnv,
+  }
+}
 
 const writePackageJson = async (
   applicationDir: string,
@@ -41,8 +110,24 @@ const createContext = async (): Promise<{
     applicationDir,
     context: {
       applicationDir,
-      layers: new Layers(layersDir),
-    } as BuildContext,
+      layers: {
+        get: async (
+          name: string,
+          build: boolean = false,
+          cache: boolean = false,
+          launch: boolean = false
+        ) => {
+          const layer = createTestBuildLayer(join(layersDir, name))
+
+          layer.build = build
+          layer.cache = cache
+          layer.launch = launch
+
+          return layer
+        },
+      },
+      stackId: 'tech.atls.stacks.node',
+    },
     outputDir,
     rootDir,
     runScriptPath: join(rootDir, 'run.sh'),
@@ -73,8 +158,10 @@ test('YarnWorkspaceStartBuilder uses the packaged Yarn release to run scripts.st
       `#!/usr/bin/env bash\numask 0002\nexec node '${join(applicationDir, '.yarn/releases/yarn.mjs')}' start-image`
     )
     assert.equal(runScript.includes('undefined'), false)
-    assert.deepEqual(result.launchMetadata.processes[0].command, ['./run.sh'])
-    assert.equal(result.layers.length, 1)
+    assert.match(
+      await readFile(join(outputDir, 'launch.toml'), 'utf-8'),
+      /command = \[ "\.\/run\.sh" \]/
+    )
     assert.equal(
       await readFile(join(rootDir, 'layers/node-options/env.launch/NODE_OPTIONS.append'), 'utf-8'),
       `--enable-source-maps --require ${join(applicationDir, '.pnp.cjs')} --loader ${join(applicationDir, '.pnp.loader.mjs')}`

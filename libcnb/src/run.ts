@@ -1,5 +1,5 @@
-import type { Builder }  from './build/index.js'
-import type { Detector } from './detect/index.js'
+import type { Builder }  from './build/builder.interface.js'
+import type { Detector } from './detect/detector.interface.js'
 
 import { UnsupportedCnbPhaseError } from './errors/index.js'
 import { ExitHandler }   from './exit.handler.js'

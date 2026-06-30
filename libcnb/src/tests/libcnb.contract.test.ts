@@ -7,21 +7,21 @@ import { tmpdir }             from 'node:os'
 import { join }               from 'node:path'
 import { test }               from 'node:test'
 
-import { BOMEntry }           from '@atls/libcnb'
-import { BuildMetadata }      from '@atls/libcnb'
-import { Buildpack }          from '@atls/libcnb'
-import { BuildpackPlan }      from '@atls/libcnb'
-import { Label }              from '@atls/libcnb'
-import { LaunchMetadata }     from '@atls/libcnb'
-import { Layer }              from '@atls/libcnb'
-import { Process }            from '@atls/libcnb'
-import { Slice }              from '@atls/libcnb'
-import { Store }              from '@atls/libcnb'
-import { UnmetPlanEntry }     from '@atls/libcnb'
+import { Buildpack }          from '../buildpack/descriptor.js'
+import { Layer }              from '../layers/entry.js'
+import { Store }              from '../layers/store.js'
+import { BOMEntry }           from '../metadata/bom.js'
+import { BuildMetadata }      from '../metadata/build.js'
+import { Label }              from '../metadata/label.js'
+import { LaunchMetadata }     from '../metadata/launch.js'
+import { Process }            from '../metadata/process.js'
+import { Slice }              from '../metadata/slice.js'
+import { UnmetPlanEntry }     from '../metadata/unmet.js'
+import { BuildpackPlan }      from '../plan/buildpack-plan.js'
 
 const createTempDir = async (): Promise<string> => mkdtemp(join(tmpdir(), 'libcnb-'))
 
-test('Buildpack parses buildpack.toml into the public metadata model', async () => {
+test('Buildpack parses buildpack.toml into the metadata model', async () => {
   const rootDir = await createTempDir()
 
   try {
