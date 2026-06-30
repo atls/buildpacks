@@ -1,8 +1,8 @@
-import type { CnbMetadata } from '../metadata/value.interface.js'
+import type { Metadata } from '../lifecycle/interfaces.js'
 
 export class BuildpackPlanEntry {
   constructor(
     public readonly name: string,
-    public readonly metadata: CnbMetadata = {}
+    public readonly metadata: Metadata = {}
   ) {}
 }

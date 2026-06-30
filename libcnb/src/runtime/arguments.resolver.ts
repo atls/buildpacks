@@ -1,6 +1,6 @@
-import { InvalidCnbConfigError } from '../errors/index.js'
-import type { BuildArguments } from './arguments.interface.js'
-import type { DetectArguments } from './arguments.interface.js'
+import { InvalidConfigError } from '../errors/index.js'
+import type { BuildArguments } from './interfaces.js'
+import type { DetectArguments } from './interfaces.js'
 
 const resolveRequiredArgument = (
   argv: Array<string>,
@@ -10,7 +10,7 @@ const resolveRequiredArgument = (
   const value = argv[index]
 
   if (!value) {
-    throw new InvalidCnbConfigError(`${name} argument is required`)
+    throw new InvalidConfigError(`${name} argument is required`)
   }
 
   return value

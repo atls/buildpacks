@@ -12,7 +12,7 @@ import { tmpdir }                    from 'node:os'
 import { join }                      from 'node:path'
 import { test }                      from 'node:test'
 
-import { YarnWorkspaceStartBuilder } from './yarn-workspace-start.builder.js'
+import { YarnWorkspaceStartBuilder } from '../src/builder.js'
 
 interface TestLayerEnvironment extends LayerEnvironment {
   toPath: (path: string) => Promise<void>

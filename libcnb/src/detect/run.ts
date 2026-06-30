@@ -1,12 +1,12 @@
-import type { Detector }       from './detector.interface.js'
+import type { Detector }       from './interfaces.js'
 
 import { resolveCnbEnvironment } from '../runtime/index.js'
 import { resolveDetectArguments } from '../runtime/index.js'
 import { ExitHandler }         from '../exit.handler.js'
 import { writeTomlFile }     from '../toml/index.js'
-import type { DetectContext }  from './context.interface.js'
+import type { DetectContext }  from './interfaces.js'
 
-export const detect = async (detector: Detector) => {
+export const runDetect = async (detector: Detector) => {
   const { stackId } = resolveCnbEnvironment()
   const { planPath } = resolveDetectArguments()
 

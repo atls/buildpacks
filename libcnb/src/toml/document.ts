@@ -1,7 +1,7 @@
 import { parse }     from '@iarna/toml'
 import { stringify } from '@iarna/toml'
 
-import { InvalidCnbConfigError } from '../errors/index.js'
+import { InvalidConfigError } from '../errors/index.js'
 import { asTomlTable } from './table.js'
 import type { TomlTable } from './table.js'
 
@@ -9,11 +9,11 @@ export const parseTomlTable = (content: string, path: string): TomlTable => {
   try {
     return asTomlTable(parse(content) as unknown, path)
   } catch (error) {
-    if (error instanceof InvalidCnbConfigError) {
+    if (error instanceof InvalidConfigError) {
       throw error
     }
 
-    throw new InvalidCnbConfigError(`Failed to parse ${path}`, error)
+    throw new InvalidConfigError(`Failed to parse ${path}`, error)
   }
 }
 

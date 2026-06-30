@@ -6,7 +6,7 @@ import { readTableArray } from '../toml/index.js'
 import { readTomlFile } from '../toml/index.js'
 import { writeTomlFile } from '../toml/index.js'
 
-export class BuildMetadata {
+export class BuildFile {
   constructor(
     public readonly bom: Array<BOMEntry> = [],
     public readonly unmet: Array<UnmetPlanEntry> = []
@@ -15,7 +15,7 @@ export class BuildMetadata {
   static async fromPath(path: string) {
     const data = await readTomlFile(path)
 
-    return new BuildMetadata(
+    return new BuildFile(
       readTableArray(data, 'bom', 'build.toml').map(
         (bom) =>
           new BOMEntry(

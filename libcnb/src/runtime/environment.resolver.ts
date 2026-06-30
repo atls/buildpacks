@@ -1,5 +1,5 @@
-import { InvalidCnbEnvironmentError } from '../errors/index.js'
-import type { CnbEnvironment } from './environment.interface.js'
+import { InvalidEnvironmentError } from '../errors/index.js'
+import type { CnbEnvironment } from './interfaces.js'
 
 const resolveRequiredEnv = (
   env: NodeJS.ProcessEnv,
@@ -8,7 +8,7 @@ const resolveRequiredEnv = (
   const value = env[name]
 
   if (!value) {
-    throw new InvalidCnbEnvironmentError(name)
+    throw new InvalidEnvironmentError(name)
   }
 
   return value

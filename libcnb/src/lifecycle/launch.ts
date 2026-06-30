@@ -11,7 +11,7 @@ import { readStringTuple } from '../toml/index.js'
 import { readTomlFile } from '../toml/index.js'
 import { writeTomlFile } from '../toml/index.js'
 
-export class LaunchMetadata {
+export class LaunchFile {
   constructor(
     public readonly labels: Array<Label> = [],
     public readonly processes: Array<Process> = [],
@@ -22,7 +22,7 @@ export class LaunchMetadata {
   static async fromPath(path: string) {
     const data = await readTomlFile(path)
 
-    return new LaunchMetadata(
+    return new LaunchFile(
       readTableArray(data, 'labels', 'launch.toml').map(
         (label) =>
           new Label(

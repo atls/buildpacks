@@ -6,9 +6,9 @@ import { mkdir }       from 'node:fs/promises'
 import { dirname }     from 'node:path'
 import { join }        from 'node:path'
 
-import type { CnbMetadata } from '../metadata/value.interface.js'
-import type { CnbMetadataValue } from '../metadata/value.interface.js'
-import type { BuildLayer } from './contract.interface.js'
+import type { Metadata } from '../lifecycle/interfaces.js'
+import type { MetadataValue } from '../lifecycle/interfaces.js'
+import type { BuildLayer } from './interfaces.js'
 
 import { Environment } from './environment.js'
 import { readMetadata } from '../toml/index.js'
@@ -24,7 +24,7 @@ export class Layer implements BuildLayer {
 
   launch: boolean = false
 
-  metadata: CnbMetadata = {}
+  metadata: Metadata = {}
 
   sharedEnv: Environment = new Environment()
 
@@ -54,7 +54,7 @@ export class Layer implements BuildLayer {
     this.metadata[key] = value
   }
 
-  getMetadata(key: string): CnbMetadataValue | undefined {
+  getMetadata(key: string): MetadataValue | undefined {
     return this.metadata[key]
   }
 

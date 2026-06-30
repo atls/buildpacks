@@ -1,6 +1,6 @@
-import { CnbError } from './cnb.error.js'
+import { CnbError } from './base.js'
 
-export class UnsupportedCnbPhaseError extends CnbError {
+export class UnsupportedPhaseError extends CnbError {
   constructor(phase: string) {
     super('unsupported-phase', `Unsupported phase ${phase}`)
   }

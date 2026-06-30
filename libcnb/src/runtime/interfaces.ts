@@ -8,3 +8,8 @@ export interface BuildArguments {
   platformDir: string
   planPath: string
 }
+
+export interface CnbEnvironment {
+  buildpackDir: string
+  stackId: string
+}

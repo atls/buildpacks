@@ -1,15 +1,15 @@
-import type { CnbMetadata } from '../metadata/value.interface.js'
+import type { Metadata } from '../lifecycle/interfaces.js'
 
-import { InvalidCnbConfigError } from '../errors/index.js'
+import { InvalidConfigError } from '../errors/index.js'
 
-export type TomlTable = CnbMetadata
+export type TomlTable = Metadata
 
 export const isTomlTable = (value: unknown): value is TomlTable =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
 export const asTomlTable = (value: unknown, path: string): TomlTable => {
   if (!isTomlTable(value)) {
-    throw new InvalidCnbConfigError(`${path} must be a table`)
+    throw new InvalidConfigError(`${path} must be a table`)
   }
 
   return value
@@ -40,7 +40,7 @@ export const readTableArray = (
   const value = record[key]
 
   if (!Array.isArray(value)) {
-    throw new InvalidCnbConfigError(`${path}.${key} must be an array`)
+    throw new InvalidConfigError(`${path}.${key} must be an array`)
   }
 
   return value.map((entry, index) => asTomlTable(entry, `${path}.${key}[${index}]`))
@@ -50,7 +50,7 @@ export const readRequiredString = (record: TomlTable, key: string, path: string)
   const value = record[key]
 
   if (typeof value !== 'string') {
-    throw new InvalidCnbConfigError(`${path}.${key} must be a string`)
+    throw new InvalidConfigError(`${path}.${key} must be a string`)
   }
 
   return value
@@ -69,7 +69,7 @@ export const readOptionalString = (
   const value = record[key]
 
   if (typeof value !== 'string') {
-    throw new InvalidCnbConfigError(`${path}.${key} must be a string`)
+    throw new InvalidConfigError(`${path}.${key} must be a string`)
   }
 
   return value
@@ -88,7 +88,7 @@ export const readOptionalBoolean = (
   const value = record[key]
 
   if (typeof value !== 'boolean') {
-    throw new InvalidCnbConfigError(`${path}.${key} must be a boolean`)
+    throw new InvalidConfigError(`${path}.${key} must be a boolean`)
   }
 
   return value
@@ -105,7 +105,7 @@ export const readStringArray = (record: TomlTable, key: string, path: string): A
   const value = record[key]
 
   if (!isStringArray(value)) {
-    throw new InvalidCnbConfigError(`${path}.${key} must be a string array`)
+    throw new InvalidConfigError(`${path}.${key} must be a string array`)
   }
 
   return value
@@ -115,13 +115,13 @@ export const readStringTuple = (record: TomlTable, key: string, path: string): A
   const value = record[key]
 
   if (!isStringArray(value)) {
-    throw new InvalidCnbConfigError(`${path}.${key} must be a string array`)
+    throw new InvalidConfigError(`${path}.${key} must be a string array`)
   }
 
   return value
 }
 
-export const readMetadata = (record: TomlTable, key: string, path: string): CnbMetadata => {
+export const readMetadata = (record: TomlTable, key: string, path: string): Metadata => {
   if (!(key in record)) {
     return {}
   }

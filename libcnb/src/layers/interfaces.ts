@@ -1,4 +1,4 @@
-import type { CnbMetadataValue } from '../metadata/value.interface.js'
+import type { MetadataValue } from '../lifecycle/interfaces.js'
 
 export interface LayerEnvironment {
   append: (name: string, value: string, delim?: string) => void
@@ -16,7 +16,7 @@ export interface BuildLayer {
   readonly buildEnv: LayerEnvironment
   readonly launchEnv: LayerEnvironment
   setMetadata: (key: string, value: string | null) => void
-  getMetadata: (key: string) => CnbMetadataValue | undefined
+  getMetadata: (key: string) => MetadataValue | undefined
   dump: () => Promise<void>
 }
 

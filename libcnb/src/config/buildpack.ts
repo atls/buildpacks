@@ -1,11 +1,11 @@
-import type { CnbMetadata }     from '../metadata/value.interface.js'
+import type { Metadata }     from '../lifecycle/interfaces.js'
 import type { TomlTable }       from '../toml/index.js'
 
-import { BuildpackGroupEntry } from './group-entry.js'
-import { BuildpackInfo }       from './info.js'
-import { BuildpackLicense }    from './license.js'
-import { BuildpackOrder }      from './order.js'
-import { BuildpackStack }      from './stack.js'
+import { BuildpackGroupEntry } from '../buildpack/group-entry.js'
+import { BuildpackInfo }       from '../buildpack/info.js'
+import { BuildpackLicense }    from '../buildpack/license.js'
+import { BuildpackOrder }      from '../buildpack/order.js'
+import { BuildpackStack }      from '../buildpack/stack.js'
 import { readMetadata }        from '../toml/index.js'
 import { readOptionalBoolean }  from '../toml/index.js'
 import { readOptionalString }   from '../toml/index.js'
@@ -15,26 +15,26 @@ import { readTableArray }      from '../toml/index.js'
 import { readStringArray }      from '../toml/index.js'
 import { readTomlFile }        from '../toml/index.js'
 
-export class Buildpack {
+export class BuildpackConfig {
   constructor(
     public readonly api: string,
     public readonly info: BuildpackInfo,
     public readonly path: string,
     public readonly stacks: Array<BuildpackStack> = [],
-    public readonly metadata: CnbMetadata = {},
+    public readonly metadata: Metadata = {},
     public readonly order: Array<BuildpackOrder> = []
   ) {}
 
   static async fromPath(path: string) {
     const data = await readTomlFile(`${path}/buildpack.toml`)
 
-    return Buildpack.fromTomlTable(data, path)
+    return BuildpackConfig.fromTomlTable(data, path)
   }
 
   static fromTomlTable(data: TomlTable, path: string) {
     const buildpack = readRequiredTable(data, 'buildpack', 'buildpack.toml')
 
-    return new Buildpack(
+    return new BuildpackConfig(
       readRequiredString(data, 'api', 'buildpack.toml'),
       new BuildpackInfo(
         readRequiredString(buildpack, 'id', 'buildpack.toml.buildpack'),

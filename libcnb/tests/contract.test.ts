@@ -7,21 +7,21 @@ import { tmpdir }             from 'node:os'
 import { join }               from 'node:path'
 import { test }               from 'node:test'
 
-import { Buildpack }          from '../buildpack/descriptor.js'
-import { Layer }              from '../layers/entry.js'
-import { Store }              from '../layers/store.js'
-import { BOMEntry }           from '../metadata/bom.js'
-import { BuildMetadata }      from '../metadata/build.js'
-import { Label }              from '../metadata/label.js'
-import { LaunchMetadata }     from '../metadata/launch.js'
-import { Process }            from '../metadata/process.js'
-import { Slice }              from '../metadata/slice.js'
-import { UnmetPlanEntry }     from '../metadata/unmet.js'
-import { BuildpackPlan }      from '../plan/buildpack-plan.js'
+import { BuildpackConfig }    from '../src/config/buildpack.js'
+import { Layer }              from '../src/layers/entry.js'
+import { Store }              from '../src/layers/store.js'
+import { BOMEntry }           from '../src/lifecycle/bom.js'
+import { BuildFile }          from '../src/lifecycle/build.js'
+import { Label }              from '../src/lifecycle/label.js'
+import { LaunchFile }         from '../src/lifecycle/launch.js'
+import { Process }            from '../src/lifecycle/process.js'
+import { Slice }              from '../src/lifecycle/slice.js'
+import { UnmetPlanEntry }     from '../src/lifecycle/unmet.js'
+import { BuildpackPlan }      from '../src/plan/buildpack-plan.js'
 
 const createTempDir = async (): Promise<string> => mkdtemp(join(tmpdir(), 'libcnb-'))
 
-test('Buildpack parses buildpack.toml into the metadata model', async () => {
+test('BuildpackConfig parses buildpack.toml into the normalized config shape', async () => {
   const rootDir = await createTempDir()
 
   try {
@@ -62,7 +62,7 @@ test('Buildpack parses buildpack.toml into the metadata model', async () => {
       ].join('\n')
     )
 
-    const buildpack = await Buildpack.fromPath(rootDir)
+    const buildpack = await BuildpackConfig.fromPath(rootDir)
 
     assert.equal(buildpack.api, '0.10')
     assert.equal(buildpack.info.id, 'tech.atls.buildpacks.fixture')
@@ -111,28 +111,28 @@ test('BuildpackPlan parses plan.toml entries without leaking TOML payload shape'
   }
 })
 
-test('LaunchMetadata and BuildMetadata roundtrip through CNB TOML metadata files', async () => {
+test('LaunchFile and BuildFile roundtrip through CNB lifecycle files', async () => {
   const rootDir = await createTempDir()
   const launchPath = join(rootDir, 'launch.toml')
   const buildPath = join(rootDir, 'build.toml')
 
   try {
-    const launchMetadata = new LaunchMetadata(
+    const launchFile = new LaunchFile(
       [new Label('io.buildpacks.stack.id', 'tech.atls.stacks.node')],
       [new Process('web', ['node', 'server.js'], ['--port', '3000'], true)],
       [new Slice(['dist'])],
       [new BOMEntry('node', { version: '26' })]
     )
-    const buildMetadata = new BuildMetadata(
+    const buildFile = new BuildFile(
       [new BOMEntry('yarn', { version: '4.14.1' })],
       [new UnmetPlanEntry('node')]
     )
 
-    await launchMetadata.toPath(launchPath)
-    await buildMetadata.toPath(buildPath)
+    await launchFile.toPath(launchPath)
+    await buildFile.toPath(buildPath)
 
-    assert.deepEqual(await LaunchMetadata.fromPath(launchPath), launchMetadata)
-    assert.deepEqual(await BuildMetadata.fromPath(buildPath), buildMetadata)
+    assert.deepEqual(await LaunchFile.fromPath(launchPath), launchFile)
+    assert.deepEqual(await BuildFile.fromPath(buildPath), buildFile)
   } finally {
     await rm(rootDir, { recursive: true, force: true })
   }

@@ -1,5 +1,4 @@
-export type * from './arguments.interface.js'
+export type * from './interfaces.js'
 export * from './arguments.resolver.js'
-export type * from './environment.interface.js'
 export * from './environment.resolver.js'
 export * from './phase.resolver.js'

@@ -1,6 +1,6 @@
-import type { Metadata } from '../lifecycle/interfaces.js'
+import type { Metadata } from './interfaces.js'
 
-export class BuildPlanRequire {
+export class BOMEntry {
   constructor(
     public readonly name: string,
     public readonly metadata: Metadata = {}

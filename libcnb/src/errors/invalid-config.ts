@@ -1,6 +1,6 @@
-import { CnbError } from './cnb.error.js'
+import { CnbError } from './base.js'
 
-export class InvalidCnbConfigError extends CnbError {
+export class InvalidConfigError extends CnbError {
   constructor(message: string, cause?: unknown) {
     super('invalid-config', message, cause)
   }
