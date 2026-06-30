@@ -1,6 +1,8 @@
 import { join }          from 'node:path'
 
 import { Buildpack }     from '../buildpack/index.js'
+import { resolveBuildArguments } from '../execution/index.js'
+import { resolveCnbEnvironment } from '../execution/index.js'
 import { Layers }        from '../layers/index.js'
 import { Store }         from '../output/index.js'
 import { BuildpackPlan } from '../plan/index.js'
@@ -9,28 +11,20 @@ import { BuildContext }  from './build.context.js'
 import { Builder }       from './builder.js'
 
 export const build = async (builder: Builder) => {
-  if (!process.env.CNB_STACK_ID) {
-    throw new Error('CNB_STACK_ID is not set')
-  }
-
-  if (!process.env.CNB_BUILDPACK_DIR) {
-    throw new Error('CNB_BUILDPACK_DIR is not set')
-  }
-
-  const stackId = process.env.CNB_STACK_ID
-  const buildpackDir = process.env.CNB_BUILDPACK_DIR
+  const { buildpackDir, stackId } = resolveCnbEnvironment()
+  const { layersDir, platformDir, planPath } = resolveBuildArguments()
 
   const context = new BuildContext(
     process.cwd(),
     await Buildpack.fromPath(buildpackDir),
-    new Layers(process.argv[2]),
-    await Store.fromPath(join(process.argv[2], 'store.toml')),
-    await BuildpackPlan.fromPath(process.argv[4]),
-    await Platform.fromPath(process.argv[3]),
+    new Layers(layersDir),
+    await Store.fromPath(join(layersDir, 'store.toml')),
+    await BuildpackPlan.fromPath(planPath),
+    await Platform.fromPath(platformDir),
     stackId
   )
 
   const result = await builder.build(context)
 
-  await result.toPath(process.argv[2])
+  await result.toPath(layersDir)
 }

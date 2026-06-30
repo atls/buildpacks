@@ -3,6 +3,7 @@ import type { Detector } from './detect/index.js'
 
 import { basename }      from 'node:path'
 
+import { UnsupportedCnbPhaseError } from './errors/index.js'
 import { ExitHandler }   from './exit.handler.js'
 import { build }         from './build/index.js'
 import { detect }        from './detect/index.js'
@@ -11,7 +12,7 @@ export const run = async (detector: Detector, builder?: Builder) => {
   const phase = basename(process.argv[1])
 
   if (!['detect', 'build'].includes(phase)) {
-    ExitHandler.error(new Error(`Unsupported phase ${phase}`))
+    ExitHandler.error(new UnsupportedCnbPhaseError(phase))
   }
 
   try {

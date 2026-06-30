@@ -1,4 +1,5 @@
-export * from './exit.handler.js'
+export * from './errors/index.js'
+export type * from './metadata.js'
 export * from './buildpack/index.js'
 export * from './output/index.js'
 export * from './detect/index.js'

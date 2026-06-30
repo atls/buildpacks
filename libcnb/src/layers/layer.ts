@@ -1,0 +1,105 @@
+/* eslint-disable n/no-sync */
+import { existsSync }  from 'node:fs'
+import { rmdir }       from 'node:fs/promises'
+import { unlink }      from 'node:fs/promises'
+import { mkdir }       from 'node:fs/promises'
+import { dirname }     from 'node:path'
+import { join }        from 'node:path'
+
+import type { CnbMetadata } from '../metadata.js'
+
+import { Environment } from './environment.js'
+import { getMetadata } from '../raw/index.js'
+import { getOptionalBoolean } from '../raw/index.js'
+import { getOptionalRecord } from '../raw/index.js'
+import { readTomlRecord } from '../raw/index.js'
+import { writeTomlRecord } from '../raw/index.js'
+
+export class Layer {
+  build: boolean = false
+
+  cache: boolean = false
+
+  launch: boolean = false
+
+  metadata: CnbMetadata = {}
+
+  sharedEnv: Environment = new Environment()
+
+  buildEnv: Environment = new Environment()
+
+  launchEnv: Environment = new Environment()
+
+  constructor(readonly path: string) {}
+
+  get name() {
+    return dirname(this.path)
+  }
+
+  get metadataFile() {
+    return `${this.path}.toml`
+  }
+
+  setMetadata(key: string, value: string | null): void {
+    if (value === null) {
+      this.metadata = Object.fromEntries(
+        Object.entries(this.metadata).filter(([metadataKey]) => metadataKey !== key)
+      )
+
+      return
+    }
+
+    this.metadata[key] = value
+  }
+
+  getMetadata(key: string) {
+    return this.metadata[key]
+  }
+
+  async load() {
+    if (existsSync(this.metadataFile)) {
+      const metadataFile = await readTomlRecord(this.metadataFile)
+      const types = getOptionalRecord(metadataFile, 'types', this.metadataFile)
+
+      this.build = getOptionalBoolean(types, 'build', `${this.metadataFile}.types`)
+      this.cache = getOptionalBoolean(types, 'cache', `${this.metadataFile}.types`)
+      this.launch = getOptionalBoolean(types, 'launch', `${this.metadataFile}.types`)
+      this.metadata = getMetadata(metadataFile, 'metadata', this.metadataFile)
+    }
+
+    this.sharedEnv = await Environment.fromPath(join(this.path, 'env'))
+    this.buildEnv = await Environment.fromPath(join(this.path, 'env.build'))
+    this.launchEnv = await Environment.fromPath(join(this.path, 'env.launch'))
+  }
+
+  async dump() {
+    await mkdir(this.path, { recursive: true })
+
+    await writeTomlRecord(this.metadataFile, {
+      metadata: this.metadata,
+      types: {
+        build: this.build,
+        cache: this.cache,
+        launch: this.launch,
+      },
+    })
+
+    await this.sharedEnv.toPath(join(this.path, 'env'))
+    await this.buildEnv.toPath(join(this.path, 'env.build'))
+    await this.launchEnv.toPath(join(this.path, 'env.launch'))
+  }
+
+  async reset() {
+    if (existsSync(this.metadataFile)) {
+      await unlink(this.metadataFile)
+    }
+
+    if (existsSync(this.path)) {
+      await rmdir(this.path)
+    }
+
+    await mkdir(this.path, { recursive: true })
+
+    await this.load()
+  }
+}

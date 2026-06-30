@@ -194,7 +194,7 @@
         }
       ]
     },
-    "libcnb/libcnb": {
+    "libcnb": {
       "component": "libcnb",
       "include-component-in-tag": true,
       "release-type": "node"

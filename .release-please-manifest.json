@@ -8,5 +8,5 @@
   "extensions/curl": "0.0.4",
   "extensions/graphql-hive": "0.0.4",
   "extensions/htop": "0.0.4",
-  "libcnb/libcnb": "0.2.2"
+  "libcnb": "0.2.2"
 }
