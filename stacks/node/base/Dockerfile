@@ -8,6 +8,8 @@ ARG node_version=26
 ARG corepack_version=0.35.0
 ARG yarn_version=4.1.1
 
+# GHCR release validation.
+# Stack source changes intentionally trigger image publication.
 ENV COREPACK_HOME=/opt/corepack
 
 # Create user and group
