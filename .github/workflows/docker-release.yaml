@@ -341,6 +341,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ needs.validate-release.outputs.default_node_major }}
+          cache: yarn
 
       - name: Install dependencies
         run: |
