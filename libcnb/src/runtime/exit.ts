@@ -1,5 +1,5 @@
 /* eslint-disable n/no-process-exit */
-export class ExitHandler {
+export class Exit {
   static ErrorStatusCode = 1
 
   static FailStatusCode = 100
@@ -7,15 +7,15 @@ export class ExitHandler {
   static PassStatusCode = 0
 
   static pass() {
-    process.exit(ExitHandler.PassStatusCode)
+    process.exit(Exit.PassStatusCode)
   }
 
   static fail() {
-    process.exit(ExitHandler.FailStatusCode)
+    process.exit(Exit.FailStatusCode)
   }
 
   static error(error: unknown) {
     console.error(error) // eslint-disable-line
-    process.exit(ExitHandler.ErrorStatusCode)
+    process.exit(Exit.ErrorStatusCode)
   }
 }

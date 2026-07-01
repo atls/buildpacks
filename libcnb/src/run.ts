@@ -2,7 +2,7 @@ import type { Builder }          from './build/interfaces.js'
 import type { Detector }         from './detect/interfaces.js'
 
 import { UnsupportedPhaseError } from './errors/index.js'
-import { ExitHandler }           from './exit.handler.js'
+import { Exit }                  from './runtime/index.js'
 import { runBuild }              from './build/index.js'
 import { runDetect }             from './detect/index.js'
 import { isCnbPhase }            from './runtime/index.js'
@@ -12,7 +12,7 @@ export const run = async (detector: Detector, builder?: Builder) => {
   const phase = resolveCnbPhase()
 
   if (!isCnbPhase(phase)) {
-    ExitHandler.error(new UnsupportedPhaseError(phase))
+    Exit.error(new UnsupportedPhaseError(phase))
   }
 
   try {
@@ -24,6 +24,6 @@ export const run = async (detector: Detector, builder?: Builder) => {
       }
     }
   } catch (error) {
-    ExitHandler.error(error)
+    Exit.error(error)
   }
 }

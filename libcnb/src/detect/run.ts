@@ -2,8 +2,8 @@ import type { Detector }          from './interfaces.js'
 import type { DetectContext }     from './interfaces.js'
 
 import { BuildpackConfig }        from '../config/index.js'
-import { ExitHandler }            from '../exit.handler.js'
 import { Platform }               from '../platform.js'
+import { Exit }                   from '../runtime/index.js'
 import { resolveCnbEnvironment }  from '../runtime/index.js'
 import { resolveDetectArguments } from '../runtime/index.js'
 import { writeTomlFile }          from '../toml/index.js'
@@ -22,7 +22,7 @@ export const runDetect = async (detector: Detector) => {
   const result = await detector.detect(context)
 
   if (!result.passed) {
-    ExitHandler.fail()
+    Exit.fail()
   }
 
   if (result.plans.length > 0) {
