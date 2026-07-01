@@ -38,7 +38,6 @@ export class LaunchFile {
             readStringTuple(process, 'command', 'launch.toml.processes'),
             readStringArray(process, 'args', 'launch.toml.processes'),
             readOptionalBoolean(process, 'default', 'launch.toml.processes'),
-            readOptionalBoolean(process, 'direct', 'launch.toml.processes'),
             readOptionalString(process, 'working-dir', 'launch.toml.processes'),
             readStringArray(process, 'exec-env', 'launch.toml.processes')
           )
@@ -70,7 +69,6 @@ export class LaunchFile {
         args: process.args,
         command: process.command,
         default: process.default,
-        direct: process.direct,
         ...(process.execEnv.length > 0 ? { 'exec-env': process.execEnv } : {}),
         type: process.type,
         ...(process.workingDir ? { 'working-dir': process.workingDir } : {}),

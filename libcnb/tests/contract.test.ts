@@ -167,7 +167,7 @@ test('LaunchFile and BuildFile roundtrip through CNB lifecycle files', async () 
     const launchFile = new LaunchFile(
       [new Label('io.buildpacks.stack.id', 'tech.atls.stacks.node')],
       [
-        new Process('web', ['node', 'server.js'], ['--port', '3000'], true, true, 'services/api', [
+        new Process('web', ['node', 'server.js'], ['--port', '3000'], true, 'services/api', [
           'production',
         ]),
       ],
