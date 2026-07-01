@@ -28,7 +28,7 @@ const RAW_RUNTIME_STATE =
     },\
     {\
       "name": "@atls/libcnb",\
-      "reference": "workspace:libcnb/libcnb"\
+      "reference": "workspace:libcnb"\
     }\
   ],\
   "enableTopLevelFallback": true,\
@@ -38,7 +38,7 @@ const RAW_RUNTIME_STATE =
     ["@atls/buildpack-yarn-cache", ["workspace:buildpacks/yarn-cache"]],\
     ["@atls/buildpack-yarn-install", ["workspace:buildpacks/yarn-install"]],\
     ["@atls/buildpack-yarn-workspace-start", ["workspace:buildpacks/yarn-workspace-start"]],\
-    ["@atls/libcnb", ["workspace:libcnb/libcnb"]],\
+    ["@atls/libcnb", ["workspace:libcnb"]],\
     ["buildpack", ["workspace:."]]\
   ],\
   "fallbackPool": [\
@@ -82,7 +82,7 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./buildpacks/yarn-cache/",\
         "packageDependencies": [\
           ["@atls/buildpack-yarn-cache", "workspace:buildpacks/yarn-cache"],\
-          ["@atls/libcnb", "workspace:libcnb/libcnb"],\
+          ["@atls/libcnb", "workspace:libcnb"],\
           ["@types/node", "npm:20.12.3"],\
           ["@yarnpkg/core", "npm:4.0.3"],\
           ["@yarnpkg/fslib", "npm:3.0.2"],\
@@ -98,7 +98,7 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./buildpacks/yarn-install/",\
         "packageDependencies": [\
           ["@atls/buildpack-yarn-install", "workspace:buildpacks/yarn-install"],\
-          ["@atls/libcnb", "workspace:libcnb/libcnb"],\
+          ["@atls/libcnb", "workspace:libcnb"],\
           ["@types/node", "npm:20.12.3"],\
           ["@yarnpkg/core", "npm:4.0.3"],\
           ["@yarnpkg/fslib", "npm:3.0.2"],\
@@ -112,7 +112,7 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./buildpacks/yarn-workspace-start/",\
         "packageDependencies": [\
           ["@atls/buildpack-yarn-workspace-start", "workspace:buildpacks/yarn-workspace-start"],\
-          ["@atls/libcnb", "workspace:libcnb/libcnb"],\
+          ["@atls/libcnb", "workspace:libcnb"],\
           ["@types/node", "npm:20.12.3"],\
           ["@yarnpkg/core", "npm:4.0.3"],\
           ["@yarnpkg/fslib", "npm:3.0.2"],\
@@ -180,10 +180,10 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["@atls/libcnb", [\
-      ["workspace:libcnb/libcnb", {\
-        "packageLocation": "./libcnb/libcnb/",\
+      ["workspace:libcnb", {\
+        "packageLocation": "./libcnb/",\
         "packageDependencies": [\
-          ["@atls/libcnb", "workspace:libcnb/libcnb"],\
+          ["@atls/libcnb", "workspace:libcnb"],\
           ["@babel/types", "npm:7.24.0"],\
           ["@iarna/toml", "npm:2.2.5"],\
           ["@types/execa", "npm:2.0.0"],\

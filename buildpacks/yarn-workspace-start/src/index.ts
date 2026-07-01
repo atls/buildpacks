@@ -1,6 +1,6 @@
 import { run }                        from '@atls/libcnb'
 
-import { YarnWorkspaceStartBuilder }  from './yarn-workspace-start.builder.js'
-import { YarnWorkspaceStartDetector } from './yarn-workspace-start.detector.js'
+import { YarnWorkspaceStartBuilder }  from './builder.js'
+import { YarnWorkspaceStartDetector } from './detector.js'
 
 run(new YarnWorkspaceStartDetector(), new YarnWorkspaceStartBuilder())

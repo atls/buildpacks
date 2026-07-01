@@ -103,9 +103,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atls/libcnb@workspace:*, @atls/libcnb@workspace:libcnb/libcnb":
+"@atls/libcnb@workspace:*, @atls/libcnb@workspace:libcnb":
   version: 0.0.0-use.local
-  resolution: "@atls/libcnb@workspace:libcnb/libcnb"
+  resolution: "@atls/libcnb@workspace:libcnb"
   dependencies:
     "@babel/types": "npm:7.24.0"
     "@iarna/toml": "npm:2.2.5"
