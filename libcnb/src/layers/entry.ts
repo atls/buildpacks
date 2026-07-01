@@ -3,7 +3,7 @@ import { existsSync }  from 'node:fs'
 import { rmdir }       from 'node:fs/promises'
 import { unlink }      from 'node:fs/promises'
 import { mkdir }       from 'node:fs/promises'
-import { dirname }     from 'node:path'
+import { basename }    from 'node:path'
 import { join }        from 'node:path'
 
 import type { Metadata } from '../lifecycle/interfaces.js'
@@ -35,7 +35,7 @@ export class Layer implements BuildLayer {
   constructor(readonly path: string) {}
 
   get name() {
-    return dirname(this.path)
+    return basename(this.path)
   }
 
   get metadataFile() {

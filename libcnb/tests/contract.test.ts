@@ -146,6 +146,8 @@ test('Layer and Store persist typed metadata and environment files', async () =>
   try {
     const layer = new Layer(layerPath)
 
+    assert.equal(layer.name, 'node-options')
+
     layer.build = true
     layer.launch = true
     layer.setMetadata('locksum', 'abc123')
