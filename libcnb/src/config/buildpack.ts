@@ -6,6 +6,7 @@ import { BuildpackInfo }       from '../buildpack/info.js'
 import { BuildpackLicense }    from '../buildpack/license.js'
 import { BuildpackOrder }      from '../buildpack/order.js'
 import { BuildpackStack }      from '../buildpack/stack.js'
+import { BuildpackTarget }     from '../buildpack/target.js'
 import { readMetadata }        from '../toml/index.js'
 import { readOptionalBoolean }  from '../toml/index.js'
 import { readOptionalString }   from '../toml/index.js'
@@ -21,6 +22,7 @@ export class BuildpackConfig {
     public readonly info: BuildpackInfo,
     public readonly path: string,
     public readonly stacks: Array<BuildpackStack> = [],
+    public readonly targets: Array<BuildpackTarget> = [],
     public readonly metadata: Metadata = {},
     public readonly order: Array<BuildpackOrder> = []
   ) {}
@@ -58,6 +60,13 @@ export class BuildpackConfig {
           new BuildpackStack(
             readRequiredString(stack, 'id', 'buildpack.toml.stacks'),
             readStringArray(stack, 'mixins', 'buildpack.toml.stacks')
+          )
+      ),
+      readTableArray(data, 'targets', 'buildpack.toml').map(
+        (target) =>
+          new BuildpackTarget(
+            readRequiredString(target, 'os', 'buildpack.toml.targets'),
+            readRequiredString(target, 'arch', 'buildpack.toml.targets')
           )
       ),
       readMetadata(data, 'metadata', 'buildpack.toml'),

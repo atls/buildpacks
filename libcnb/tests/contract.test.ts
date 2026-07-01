@@ -8,6 +8,7 @@ import { join }               from 'node:path'
 import { test }               from 'node:test'
 
 import { BuildpackConfig }    from '../src/config/buildpack.js'
+import { BuildResult }        from '../src/build/result.js'
 import { Layer }              from '../src/layers/entry.js'
 import { Store }              from '../src/layers/store.js'
 import { BOMEntry }           from '../src/lifecycle/bom.js'
@@ -47,6 +48,10 @@ test('BuildpackConfig parses buildpack.toml into the normalized config shape', a
         'id = "tech.atls.stacks.node"',
         'mixins = ["ca-certificates"]',
         '',
+        '[[targets]]',
+        'os = "linux"',
+        'arch = "amd64"',
+        '',
         '[metadata]',
         'owner = "atls"',
         '',
@@ -77,7 +82,39 @@ test('BuildpackConfig parses buildpack.toml into the normalized config shape', a
     })
     assert.equal(buildpack.stacks[0].id, 'tech.atls.stacks.node')
     assert.deepEqual(buildpack.stacks[0].mixins, ['ca-certificates'])
+    assert.equal(buildpack.targets[0].os, 'linux')
+    assert.equal(buildpack.targets[0].arch, 'amd64')
     assert.equal(buildpack.order[0].group[0].optional, true)
+  } finally {
+    await rm(rootDir, { recursive: true, force: true })
+  }
+})
+
+test('BuildResult writes explicit lifecycle outputs', async () => {
+  const rootDir = await createTempDir()
+
+  try {
+    const result = new BuildResult()
+      .setStoreMetadata('node', '26')
+      .addLaunchLabel('io.buildpacks.stack.id', 'tech.atls.stacks.node')
+      .addLaunchSlice(['dist'])
+      .addLaunchBOM('node', { version: '26' })
+      .addBuildBOM('yarn', { version: '4.14.1' })
+      .addUnmetPlanEntry('node')
+
+    await result.toPath(rootDir)
+
+    assert.deepEqual(await Store.fromPath(join(rootDir, 'store.toml')), new Store({ node: '26' }))
+    assert.deepEqual(await LaunchFile.fromPath(join(rootDir, 'launch.toml')), new LaunchFile(
+      [new Label('io.buildpacks.stack.id', 'tech.atls.stacks.node')],
+      [],
+      [new Slice(['dist'])],
+      [new BOMEntry('node', { version: '26' })]
+    ))
+    assert.deepEqual(await BuildFile.fromPath(join(rootDir, 'build.toml')), new BuildFile(
+      [new BOMEntry('yarn', { version: '4.14.1' })],
+      [new UnmetPlanEntry('node')]
+    ))
   } finally {
     await rm(rootDir, { recursive: true, force: true })
   }
