@@ -1,6 +1,6 @@
 import { join }           from 'node:path'
 
-import type { BuildLayer } from '../layers/index.js'
+import type { BuildOutput } from './interfaces.js'
 import type { Metadata }   from '../lifecycle/index.js'
 import type { MetadataValue } from '../lifecycle/index.js'
 import { Store }          from '../layers/index.js'
@@ -12,15 +12,19 @@ import { Process }        from '../lifecycle/index.js'
 import { Slice }          from '../lifecycle/index.js'
 import { UnmetPlanEntry } from '../lifecycle/index.js'
 
-export class BuildResult {
+interface ResultLayer {
+  dump: () => Promise<void>
+}
+
+export class BuildResult implements BuildOutput {
   constructor(
-    private readonly layers: Array<BuildLayer> = [],
+    private readonly layers: Array<ResultLayer> = [],
     private readonly store: Store = new Store(),
     private readonly launchFile: LaunchFile = new LaunchFile(),
     private readonly buildFile: BuildFile = new BuildFile()
   ) {}
 
-  addLayer(layer: BuildLayer): this {
+  addLayer(layer: ResultLayer): this {
     this.layers.push(layer)
 
     return this

@@ -1,8 +1,8 @@
-import type { BuildPlan } from '../plan/index.js'
+import type { DetectOutput } from './interfaces.js'
 
-export class DetectResult {
+export class DetectResult implements DetectOutput {
   constructor(
     public passed: boolean = false,
-    public readonly plans: Array<BuildPlan> = []
+    public readonly plans: DetectOutput['plans'] = []
   ) {}
 }

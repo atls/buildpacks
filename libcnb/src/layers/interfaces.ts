@@ -1,4 +1,22 @@
-import type { MetadataValue } from '../lifecycle/interfaces.js'
+type LayerMetadataArray =
+  | Array<boolean>
+  | Array<Date>
+  | Array<LayerMetadata>
+  | Array<number>
+  | Array<string>
+
+type LayerMetadataValue =
+  | Array<LayerMetadataArray>
+  | Date
+  | LayerMetadata
+  | LayerMetadataArray
+  | boolean
+  | number
+  | string
+
+interface LayerMetadata {
+  [key: string]: LayerMetadataValue
+}
 
 export interface LayerEnvironment {
   append: (name: string, value: string, delim?: string) => void
@@ -16,7 +34,7 @@ export interface BuildLayer {
   readonly buildEnv: LayerEnvironment
   readonly launchEnv: LayerEnvironment
   setMetadata: (key: string, value: string | null) => void
-  getMetadata: (key: string) => MetadataValue | undefined
+  getMetadata: (key: string) => LayerMetadataValue | undefined
   dump: () => Promise<void>
 }
 
