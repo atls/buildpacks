@@ -52,6 +52,11 @@ test('BuildpackConfig parses buildpack.toml into the normalized config shape', a
         'os = "linux"',
         'arch = "amd64"',
         '',
+        '[[targets]]',
+        'os = "linux"',
+        'distro.name = "ubuntu"',
+        'distro.version = "24.04"',
+        '',
         '[metadata]',
         'owner = "atls"',
         '',
@@ -84,6 +89,15 @@ test('BuildpackConfig parses buildpack.toml into the normalized config shape', a
     assert.deepEqual(buildpack.stacks[0].mixins, ['ca-certificates'])
     assert.equal(buildpack.targets[0].os, 'linux')
     assert.equal(buildpack.targets[0].arch, 'amd64')
+    assert.equal(buildpack.targets[1].os, 'linux')
+    assert.equal(buildpack.targets[1].arch, '')
+    assert.deepEqual(buildpack.targets[1].metadata, {
+      distro: {
+        name: 'ubuntu',
+        version: '24.04',
+      },
+      os: 'linux',
+    })
     assert.equal(buildpack.order[0].group[0].optional, true)
   } finally {
     await rm(rootDir, { recursive: true, force: true })
@@ -156,7 +170,17 @@ test('LaunchFile and BuildFile roundtrip through CNB lifecycle files', async () 
   try {
     const launchFile = new LaunchFile(
       [new Label('io.buildpacks.stack.id', 'tech.atls.stacks.node')],
-      [new Process('web', ['node', 'server.js'], ['--port', '3000'], true)],
+      [
+        new Process(
+          'web',
+          ['node', 'server.js'],
+          ['--port', '3000'],
+          true,
+          true,
+          'services/api',
+          ['production']
+        ),
+      ],
       [new Slice(['dist'])],
       [new BOMEntry('node', { version: '26' })]
     )
@@ -188,6 +212,8 @@ test('Layer and Store persist typed metadata and environment files', async () =>
     layer.build = true
     layer.launch = true
     layer.setMetadata('locksum', 'abc123')
+    layer.setMetadata('exec-env', ['production'])
+    layer.setMetadata('checksum', { sha: 'abc123' })
     layer.launchEnv.append('NODE_OPTIONS', '--enable-source-maps')
 
     await layer.dump()
@@ -201,6 +227,8 @@ test('Layer and Store persist typed metadata and environment files', async () =>
     assert.equal(loadedLayer.cache, false)
     assert.equal(loadedLayer.launch, true)
     assert.equal(loadedLayer.getMetadata('locksum'), 'abc123')
+    assert.deepEqual(loadedLayer.getMetadata('exec-env'), ['production'])
+    assert.deepEqual(loadedLayer.getMetadata('checksum'), { sha: 'abc123' })
     assert.equal(
       await readFile(join(layerPath, 'env.launch/NODE_OPTIONS.append'), 'utf-8'),
       '--enable-source-maps'

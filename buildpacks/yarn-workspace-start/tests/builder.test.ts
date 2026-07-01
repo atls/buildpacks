@@ -51,7 +51,7 @@ const createTestLayerEnvironment = (): TestLayerEnvironment => {
 }
 
 const createTestBuildLayer = (path: string): BuildLayer => {
-  const metadata: Map<string, string> = new Map()
+  const metadata: Map<string, ReturnType<BuildLayer['getMetadata']>> = new Map()
   const sharedEnv = createTestLayerEnvironment()
   const buildEnv = createTestLayerEnvironment()
   const launchEnv = createTestLayerEnvironment()
@@ -66,11 +66,11 @@ const createTestBuildLayer = (path: string): BuildLayer => {
       await buildEnv.toPath(join(path, 'env.build'))
       await launchEnv.toPath(join(path, 'env.launch'))
     },
-    getMetadata: (key: string): string | undefined => metadata.get(key),
+    getMetadata: (key: string) => metadata.get(key),
     launch: false,
     launchEnv,
     path,
-    setMetadata: (key: string, value: string | null): void => {
+    setMetadata: (key: string, value: Parameters<BuildLayer['setMetadata']>[1]): void => {
       if (value === null) {
         metadata.delete(key)
 

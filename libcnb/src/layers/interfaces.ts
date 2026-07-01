@@ -33,7 +33,7 @@ export interface BuildLayer {
   readonly sharedEnv: LayerEnvironment
   readonly buildEnv: LayerEnvironment
   readonly launchEnv: LayerEnvironment
-  setMetadata: (key: string, value: string | null) => void
+  setMetadata: (key: string, value: LayerMetadataValue | null) => void
   getMetadata: (key: string) => LayerMetadataValue | undefined
   dump: () => Promise<void>
 }

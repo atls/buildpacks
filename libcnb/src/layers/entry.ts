@@ -42,7 +42,7 @@ export class Layer implements BuildLayer {
     return `${this.path}.toml`
   }
 
-  setMetadata(key: string, value: string | null): void {
+  setMetadata(key: string, value: MetadataValue | null): void {
     if (value === null) {
       this.metadata = Object.fromEntries(
         Object.entries(this.metadata).filter(([metadataKey]) => metadataKey !== key)

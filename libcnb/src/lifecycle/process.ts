@@ -8,7 +8,10 @@ export class Process {
     public readonly type: string,
     public readonly command: Array<string>,
     public readonly args: Array<string>,
-    default_: boolean = false
+    default_: boolean = false,
+    public readonly direct: boolean = false,
+    public readonly workingDir: string = '',
+    public readonly execEnv: Array<string> = []
   ) {
     this.default = default_
   }

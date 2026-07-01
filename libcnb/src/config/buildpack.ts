@@ -65,8 +65,9 @@ export class BuildpackConfig {
       readTableArray(data, 'targets', 'buildpack.toml').map(
         (target) =>
           new BuildpackTarget(
-            readRequiredString(target, 'os', 'buildpack.toml.targets'),
-            readRequiredString(target, 'arch', 'buildpack.toml.targets')
+            readOptionalString(target, 'os', 'buildpack.toml.targets'),
+            readOptionalString(target, 'arch', 'buildpack.toml.targets'),
+            target
           )
       ),
       readMetadata(data, 'metadata', 'buildpack.toml'),

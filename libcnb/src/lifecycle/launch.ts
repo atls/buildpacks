@@ -4,6 +4,7 @@ import { Process }   from './process.js'
 import { Slice }     from './slice.js'
 import { readMetadata } from '../toml/index.js'
 import { readOptionalBoolean } from '../toml/index.js'
+import { readOptionalString } from '../toml/index.js'
 import { readTableArray } from '../toml/index.js'
 import { readRequiredString } from '../toml/index.js'
 import { readStringArray } from '../toml/index.js'
@@ -36,7 +37,10 @@ export class LaunchFile {
             readRequiredString(process, 'type', 'launch.toml.processes'),
             readStringTuple(process, 'command', 'launch.toml.processes'),
             readStringArray(process, 'args', 'launch.toml.processes'),
-            readOptionalBoolean(process, 'default', 'launch.toml.processes')
+            readOptionalBoolean(process, 'default', 'launch.toml.processes'),
+            readOptionalBoolean(process, 'direct', 'launch.toml.processes'),
+            readOptionalString(process, 'working-dir', 'launch.toml.processes'),
+            readStringArray(process, 'exec-env', 'launch.toml.processes')
           )
       ),
       readTableArray(data, 'slices', 'launch.toml').map(
@@ -66,7 +70,10 @@ export class LaunchFile {
         args: process.args,
         command: process.command,
         default: process.default,
+        direct: process.direct,
+        ...(process.execEnv.length > 0 ? { 'exec-env': process.execEnv } : {}),
         type: process.type,
+        ...(process.workingDir ? { 'working-dir': process.workingDir } : {}),
       })),
       slices: this.slices.map((slice) => ({
         paths: slice.paths,

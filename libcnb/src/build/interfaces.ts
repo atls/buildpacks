@@ -1,4 +1,22 @@
-type BuildMetadata = Record<string, unknown>
+type BuildMetadataArray =
+  | Array<boolean>
+  | Array<Date>
+  | Array<BuildMetadata>
+  | Array<number>
+  | Array<string>
+
+type BuildMetadataValue =
+  | Array<BuildMetadataArray>
+  | Date
+  | BuildMetadata
+  | BuildMetadataArray
+  | boolean
+  | number
+  | string
+
+interface BuildMetadata {
+  [key: string]: BuildMetadataValue
+}
 
 interface BuildpackInfo {
   readonly clearEnv: boolean
@@ -45,8 +63,8 @@ interface BuildLayer {
   readonly sharedEnv: LayerEnvironment
   readonly buildEnv: LayerEnvironment
   readonly launchEnv: LayerEnvironment
-  setMetadata: (key: string, value: string | null) => void
-  getMetadata: (key: string) => unknown
+  setMetadata: (key: string, value: BuildMetadataValue | null) => void
+  getMetadata: (key: string) => BuildMetadataValue | undefined
   dump: () => Promise<void>
 }
 
