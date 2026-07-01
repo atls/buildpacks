@@ -1,7 +1,7 @@
-import type { BuildArguments }  from './interfaces.js'
-import type { DetectArguments } from './interfaces.js'
+import type { BuildArguments }  from '../interfaces.js'
+import type { DetectArguments } from '../interfaces.js'
 
-import { InvalidConfigError }   from '../errors/index.js'
+import { InvalidConfigError }   from '../../errors/index.js'
 
 const resolveRequiredArgument = (argv: Array<string>, index: number, name: string): string => {
   const value = argv[index]
