@@ -8,8 +8,8 @@ ARG node_version=26
 ARG corepack_version=0.35.0
 ARG yarn_version=4.1.1
 
-# GHCR release validation.
-# Stack source changes intentionally trigger image publication.
+# GHCR release trigger.
+# This stack source change validates the release workflow after workflow-only fixes.
 ENV COREPACK_HOME=/opt/corepack
 
 # Create user and group
