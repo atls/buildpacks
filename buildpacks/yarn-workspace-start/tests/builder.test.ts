@@ -2,6 +2,10 @@ import type { BuildContext }         from '@atls/libcnb'
 import type { BuildLayer }           from '@atls/libcnb'
 import type { LayerEnvironment }     from '@atls/libcnb'
 
+import { BuildpackConfig }           from '@atls/libcnb'
+import { BuildpackPlan }             from '@atls/libcnb'
+import { Platform }                  from '@atls/libcnb'
+import { Store }                     from '@atls/libcnb'
 import assert                        from 'node:assert/strict'
 import { mkdtemp }                   from 'node:fs/promises'
 import { mkdir }                     from 'node:fs/promises'
@@ -105,11 +109,22 @@ const createContext = async (): Promise<{
   await mkdir(applicationDir)
   await mkdir(layersDir)
   await mkdir(outputDir)
+  await writeFile(
+    join(rootDir, 'buildpack.toml'),
+    [
+      'api = "0.10"',
+      '',
+      '[buildpack]',
+      'id = "tech.atls.buildpacks.yarn-workspace-start"',
+      'version = "0.0.0"',
+    ].join('\n')
+  )
 
   return {
     applicationDir,
     context: {
       applicationDir,
+      buildpack: await BuildpackConfig.fromPath(rootDir),
       layers: {
         get: async (
           name: string,
@@ -126,6 +141,9 @@ const createContext = async (): Promise<{
           return layer
         },
       },
+      store: new Store(),
+      plan: new BuildpackPlan(),
+      platform: new Platform(rootDir),
       stackId: 'tech.atls.stacks.node',
     },
     outputDir,
