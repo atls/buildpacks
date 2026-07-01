@@ -128,6 +128,7 @@ const createContext = async (): Promise<{
           homepage: '',
           id: 'tech.atls.buildpacks.yarn-workspace-start',
           keywords: [],
+          licenses: [],
           name: '',
           version: '0.0.0',
         },

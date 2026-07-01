@@ -24,7 +24,23 @@ interface BuildpackInfo {
   readonly homepage: string
   readonly id: string
   readonly keywords: Array<string>
+  readonly licenses: Array<BuildpackLicense>
   readonly name: string
+  readonly version: string
+}
+
+interface BuildpackLicense {
+  readonly type: string
+  readonly uri: string
+}
+
+interface BuildpackOrder {
+  readonly group: Array<BuildpackOrderEntry>
+}
+
+interface BuildpackOrderEntry {
+  readonly id: string
+  readonly optional: boolean
   readonly version: string
 }
 
@@ -35,6 +51,7 @@ interface BuildpackStack {
 
 interface BuildpackTarget {
   readonly arch?: string
+  readonly metadata: DetectMetadata
   readonly os?: string
 }
 
@@ -42,7 +59,7 @@ interface Buildpack {
   readonly api: string
   readonly info: BuildpackInfo
   readonly metadata: DetectMetadata
-  readonly order: Array<unknown>
+  readonly order: Array<BuildpackOrder>
   readonly path: string
   readonly stacks: Array<BuildpackStack>
   readonly targets: Array<BuildpackTarget>
