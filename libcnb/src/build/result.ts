@@ -1,16 +1,17 @@
-import { join }           from 'node:path'
-
-import type { BuildOutput } from './interfaces.js'
-import type { Metadata }   from '../lifecycle/index.js'
+import type { Metadata }      from '../lifecycle/index.js'
 import type { MetadataValue } from '../lifecycle/index.js'
-import { Store }          from '../layers/index.js'
-import { BOMEntry }       from '../lifecycle/index.js'
-import { LaunchFile }     from '../lifecycle/index.js'
-import { BuildFile }      from '../lifecycle/index.js'
-import { Label }          from '../lifecycle/index.js'
-import { Process }        from '../lifecycle/index.js'
-import { Slice }          from '../lifecycle/index.js'
-import { UnmetPlanEntry } from '../lifecycle/index.js'
+import type { BuildOutput }   from './interfaces.js'
+
+import { join }               from 'node:path'
+
+import { Store }              from '../layers/index.js'
+import { BOMEntry }           from '../lifecycle/index.js'
+import { LaunchFile }         from '../lifecycle/index.js'
+import { BuildFile }          from '../lifecycle/index.js'
+import { Label }              from '../lifecycle/index.js'
+import { Process }            from '../lifecycle/index.js'
+import { Slice }              from '../lifecycle/index.js'
+import { UnmetPlanEntry }     from '../lifecycle/index.js'
 
 interface ResultLayer {
   dump: () => Promise<void>

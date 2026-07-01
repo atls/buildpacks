@@ -33,11 +33,11 @@ zero-install Yarn workspace application for build and launch.
 
 ## Images
 
-| Image | Use it for |
-| --- | --- |
-| ghcr.io/atls/builder-base | Building application images with the ATLS Node stack. |
-| ghcr.io/atls/buildpack-yarn-workspace | Building Yarn workspace applications. |
-| ghcr.io/atls/stack-node | Stack base, build and run images used by the builder. |
+| Image                                 | Use it for                                            |
+| ------------------------------------- | ----------------------------------------------------- |
+| ghcr.io/atls/builder-base             | Building application images with the ATLS Node stack. |
+| ghcr.io/atls/buildpack-yarn-workspace | Building Yarn workspace applications.                 |
+| ghcr.io/atls/stack-node               | Stack base, build and run images used by the builder. |
 
 All release images are published for linux/amd64 and linux/arm64.
 

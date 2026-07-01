@@ -1,14 +1,15 @@
-import { join }                 from 'node:path'
+import type { BuildContext }     from './interfaces.js'
+import type { Builder }          from './interfaces.js'
 
+import { join }                  from 'node:path'
+
+import { BuildpackConfig }       from '../config/index.js'
+import { Layers }                from '../layers/index.js'
+import { Store }                 from '../layers/index.js'
+import { BuildpackPlan }         from '../plan/index.js'
+import { Platform }              from '../platform.js'
 import { resolveBuildArguments } from '../runtime/index.js'
 import { resolveCnbEnvironment } from '../runtime/index.js'
-import { BuildpackConfig }       from '../config/index.js'
-import { Layers }        from '../layers/index.js'
-import { Store }         from '../layers/index.js'
-import { BuildpackPlan } from '../plan/index.js'
-import { Platform }      from '../platform.js'
-import type { BuildContext } from './interfaces.js'
-import type { Builder }      from './interfaces.js'
 
 export const runBuild = async (builder: Builder) => {
   const { buildpackDir, stackId } = resolveCnbEnvironment()

@@ -1,11 +1,11 @@
-import { access }    from 'node:fs/promises'
-
 import type { Metadata } from '../lifecycle/interfaces.js'
 
+import { access }        from 'node:fs/promises'
+
 import { IoError }       from '../errors/index.js'
-import { readMetadata }      from '../toml/index.js'
-import { readTomlFile }   from '../toml/index.js'
-import { writeTomlFile }  from '../toml/index.js'
+import { readMetadata }  from '../toml/index.js'
+import { readTomlFile }  from '../toml/index.js'
+import { writeTomlFile } from '../toml/index.js'
 
 export class Store {
   constructor(public readonly metadata: Metadata = {}) {}

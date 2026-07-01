@@ -4,12 +4,11 @@ import type { PortablePath } from '@yarnpkg/fslib'
 
 import { createHash }        from 'node:crypto'
 
+import { BuildResult }       from '@atls/libcnb'
 import { execUtils }         from '@yarnpkg/core'
 import { xfs }               from '@yarnpkg/fslib'
 import { ppath }             from '@yarnpkg/fslib'
 import YAML                  from 'yaml'
-
-import { BuildResult }       from '@atls/libcnb'
 
 export class YarnCacheBuilder implements Builder {
   async build(ctx: BuildContext): Promise<BuildResult> {

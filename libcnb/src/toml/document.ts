@@ -1,9 +1,10 @@
-import { parse }     from '@iarna/toml'
-import { stringify } from '@iarna/toml'
+import type { TomlTable }     from './table.js'
+
+import { parse }              from '@iarna/toml'
+import { stringify }          from '@iarna/toml'
 
 import { InvalidConfigError } from '../errors/index.js'
-import { asTomlTable } from './table.js'
-import type { TomlTable } from './table.js'
+import { asTomlTable }        from './table.js'
 
 export const parseTomlTable = (content: string, path: string): TomlTable => {
   try {

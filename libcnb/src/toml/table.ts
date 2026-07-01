@@ -1,4 +1,4 @@
-import type { Metadata } from '../lifecycle/interfaces.js'
+import type { Metadata }      from '../lifecycle/interfaces.js'
 
 import { InvalidConfigError } from '../errors/index.js'
 
@@ -28,11 +28,7 @@ export const readOptionalTable = (record: TomlTable, key: string, path: string):
   return asTomlTable(value, `${path}.${key}`)
 }
 
-export const readTableArray = (
-  record: TomlTable,
-  key: string,
-  path: string
-): Array<TomlTable> => {
+export const readTableArray = (record: TomlTable, key: string, path: string): Array<TomlTable> => {
   if (!(key in record)) {
     return []
   }

@@ -1,12 +1,9 @@
-import { InvalidConfigError } from '../errors/index.js'
-import type { BuildArguments } from './interfaces.js'
+import type { BuildArguments }  from './interfaces.js'
 import type { DetectArguments } from './interfaces.js'
 
-const resolveRequiredArgument = (
-  argv: Array<string>,
-  index: number,
-  name: string
-): string => {
+import { InvalidConfigError }   from '../errors/index.js'
+
+const resolveRequiredArgument = (argv: Array<string>, index: number, name: string): string => {
   const value = argv[index]
 
   if (!value) {

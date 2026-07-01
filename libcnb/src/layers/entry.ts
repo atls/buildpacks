@@ -1,21 +1,21 @@
+import type { Metadata }       from '../lifecycle/interfaces.js'
+import type { MetadataValue }  from '../lifecycle/interfaces.js'
+import type { BuildLayer }     from './interfaces.js'
+
 /* eslint-disable n/no-sync */
-import { existsSync }  from 'node:fs'
-import { rmdir }       from 'node:fs/promises'
-import { unlink }      from 'node:fs/promises'
-import { mkdir }       from 'node:fs/promises'
-import { basename }    from 'node:path'
-import { join }        from 'node:path'
+import { existsSync }          from 'node:fs'
+import { rmdir }               from 'node:fs/promises'
+import { unlink }              from 'node:fs/promises'
+import { mkdir }               from 'node:fs/promises'
+import { basename }            from 'node:path'
+import { join }                from 'node:path'
 
-import type { Metadata } from '../lifecycle/interfaces.js'
-import type { MetadataValue } from '../lifecycle/interfaces.js'
-import type { BuildLayer } from './interfaces.js'
-
-import { Environment } from './environment.js'
-import { readMetadata } from '../toml/index.js'
+import { Environment }         from './environment.js'
+import { readMetadata }        from '../toml/index.js'
 import { readOptionalBoolean } from '../toml/index.js'
-import { readOptionalTable } from '../toml/index.js'
-import { readTomlFile } from '../toml/index.js'
-import { writeTomlFile } from '../toml/index.js'
+import { readOptionalTable }   from '../toml/index.js'
+import { readTomlFile }        from '../toml/index.js'
+import { writeTomlFile }       from '../toml/index.js'
 
 export class Layer implements BuildLayer {
   build: boolean = false

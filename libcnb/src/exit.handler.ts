@@ -16,7 +16,6 @@ export class ExitHandler {
 
   static error(error: unknown) {
     console.error(error) // eslint-disable-line
-
     process.exit(ExitHandler.ErrorStatusCode)
   }
 }

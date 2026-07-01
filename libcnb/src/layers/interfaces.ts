@@ -39,10 +39,5 @@ export interface BuildLayer {
 }
 
 export interface LayerCollection {
-  get: (
-    name: string,
-    build?: boolean,
-    cache?: boolean,
-    launch?: boolean
-  ) => Promise<BuildLayer>
+  get: (name: string, build?: boolean, cache?: boolean, launch?: boolean) => Promise<BuildLayer>
 }

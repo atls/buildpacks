@@ -1,10 +1,10 @@
-import { BOMEntry }       from './bom.js'
-import { UnmetPlanEntry } from './unmet.js'
-import { readMetadata }    from '../toml/index.js'
+import { BOMEntry }           from './bom.js'
+import { UnmetPlanEntry }     from './unmet.js'
+import { readMetadata }       from '../toml/index.js'
 import { readRequiredString } from '../toml/index.js'
-import { readTableArray } from '../toml/index.js'
-import { readTomlFile } from '../toml/index.js'
-import { writeTomlFile } from '../toml/index.js'
+import { readTableArray }     from '../toml/index.js'
+import { readTomlFile }       from '../toml/index.js'
+import { writeTomlFile }      from '../toml/index.js'
 
 export class BuildFile {
   constructor(

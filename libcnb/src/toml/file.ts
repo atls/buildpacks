@@ -1,10 +1,10 @@
-import type { TomlTable } from './table.js'
+import type { TomlTable }     from './table.js'
 
-import { readFile }       from 'node:fs/promises'
-import { writeFile }      from 'node:fs/promises'
+import { readFile }           from 'node:fs/promises'
+import { writeFile }          from 'node:fs/promises'
 
-import { IoError }     from '../errors/index.js'
-import { parseTomlTable } from './document.js'
+import { IoError }            from '../errors/index.js'
+import { parseTomlTable }     from './document.js'
 import { stringifyTomlTable } from './document.js'
 
 export const readTomlFile = async (path: string): Promise<TomlTable> => {
