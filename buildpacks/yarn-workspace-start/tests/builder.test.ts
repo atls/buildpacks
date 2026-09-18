@@ -90,7 +90,10 @@ const writePackageJson = async (
   applicationDir: string,
   scripts: Record<string, string>
 ): Promise<void> => {
-  await writeFile(join(applicationDir, 'package.json'), JSON.stringify({ scripts }, null, 2))
+  await writeFile(
+    join(applicationDir, 'package.json'),
+    JSON.stringify({ type: 'module', scripts }, null, 2)
+  )
 }
 
 const createContext = async (): Promise<{
@@ -182,14 +185,14 @@ test('YarnWorkspaceStartBuilder uses the packaged Yarn release to run scripts.st
     })
     await mkdir(join(applicationDir, '.yarn'))
     await mkdir(join(applicationDir, '.yarn/releases'))
-    await writeFile(join(applicationDir, '.yarnrc.yml'), 'yarnPath: .yarn/releases/yarn.mjs\n')
+    await writeFile(join(applicationDir, '.yarnrc.yml'), 'yarnPath: .yarn/releases/yarn.js\n')
     await copyFile(
-      new URL('../../../.yarn/releases/yarn.mjs', import.meta.url),
-      join(applicationDir, '.yarn/releases/yarn.mjs')
+      new URL('../../../.yarn/releases/yarn.js', import.meta.url),
+      join(applicationDir, '.yarn/releases/yarn.js')
     )
     await execa(
       process.execPath,
-      [join(applicationDir, '.yarn/releases/yarn.mjs'), 'install', '--no-immutable'],
+      [join(applicationDir, '.yarn/releases/yarn.js'), 'install', '--no-immutable'],
       {
         cwd: applicationDir,
       }
@@ -201,7 +204,7 @@ test('YarnWorkspaceStartBuilder uses the packaged Yarn release to run scripts.st
 
     assert.match(
       await readFile(join(outputDir, 'launch.toml'), 'utf-8'),
-      /command = \[\s+"node",\s+"[^"]+yarn\.mjs",\s+"run",\s+"start"\s+\]/
+      /command = \[\s+"node",\s+"[^"]+yarn\.js",\s+"run",\s+"start"\s+\]/
     )
     await assert.rejects(readFile(join(applicationDir, 'run.sh')), { code: 'ENOENT' })
     assert.equal(
@@ -271,7 +274,7 @@ test('YarnWorkspaceStartBuilder builds and launches the selected workspace witho
     await mkdir(join(applicationDir, 'app'))
     await writeFile(
       join(applicationDir, 'package.json'),
-      JSON.stringify({ name: 'proof', private: true, workspaces: ['app'] })
+      JSON.stringify({ name: 'proof', private: true, type: 'module', workspaces: ['app'] })
     )
     await writeFile(
       join(applicationDir, 'app/package.json'),
@@ -286,11 +289,11 @@ test('YarnWorkspaceStartBuilder builds and launches the selected workspace witho
       "require('node:fs').writeFileSync('built.js', \"console.log('selected workspace')\")"
     )
     await copyFile(
-      new URL('../../../.yarn/releases/yarn.mjs', import.meta.url),
-      join(applicationDir, 'yarn.mjs')
+      new URL('../../../.yarn/releases/yarn.js', import.meta.url),
+      join(applicationDir, 'yarn.js')
     )
-    await writeFile(join(applicationDir, '.yarnrc.yml'), 'yarnPath: ./yarn.mjs\n')
-    await execa(process.execPath, [join(applicationDir, 'yarn.mjs'), 'install', '--no-immutable'], {
+    await writeFile(join(applicationDir, '.yarnrc.yml'), 'yarnPath: ./yarn.js\n')
+    await execa(process.execPath, [join(applicationDir, 'yarn.js'), 'install', '--no-immutable'], {
       cwd: applicationDir,
     })
 
@@ -309,7 +312,7 @@ test('YarnWorkspaceStartBuilder builds and launches the selected workspace witho
 
     const { stdout } = await execa(
       process.execPath,
-      [join(applicationDir, 'yarn.mjs'), 'run', 'start'],
+      [join(applicationDir, 'yarn.js'), 'run', 'start'],
       {
         cwd: join(applicationDir, 'app'),
       }
