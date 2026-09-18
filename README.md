@@ -55,7 +55,9 @@ The buildpack installs dependencies even when the source project
 uses a global cache outside its directory. A CNB cache layer supplies the Yarn
 global-folder location for build and launch without rewriting `.yarnrc.yml`.
 An environment override of `YARN_GLOBAL_FOLDER` pointing elsewhere is rejected
-before installation, so dependencies cannot escape the retained cache layer.
+before installation. With global caching disabled, Yarn's effective `cacheFolder`
+must stay inside the application or that layer; external paths are rejected
+before installation as well.
 
 The project remains the application context. Production focus does not remove
 unrelated source files or guarantee a minimal image. Without `WORKSPACE`, the

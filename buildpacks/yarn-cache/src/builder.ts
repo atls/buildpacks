@@ -5,6 +5,7 @@ import { BuildResult }       from '@atls/libcnb'
 import { Configuration }     from '@yarnpkg/core'
 import { execUtils }         from '@yarnpkg/core'
 import { npath }             from '@yarnpkg/fslib'
+import { ppath }             from '@yarnpkg/fslib'
 
 export class YarnCacheBuilder implements Builder {
   async build(ctx: BuildContext): Promise<BuildResult> {
@@ -22,6 +23,16 @@ export class YarnCacheBuilder implements Builder {
 
     if (globalFolder !== undefined && globalFolder !== cacheLayer.path) {
       throw new Error('YARN_GLOBAL_FOLDER must use the buildpack cache layer')
+    }
+
+    const cacheFolder = configuration.get('cacheFolder')
+
+    if (
+      !configuration.get('enableGlobalCache') &&
+      ppath.contains(applicationDir, cacheFolder) === null &&
+      ppath.contains(npath.toPortablePath(cacheLayer.path), cacheFolder) === null
+    ) {
+      throw new Error('Yarn cacheFolder must be inside the application or buildpack cache layer')
     }
 
     const environment = { YARN_GLOBAL_FOLDER: cacheLayer.path }
