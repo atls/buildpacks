@@ -1,11 +1,11 @@
 [buildpack]
-uri = "."
+uri = "${BUILDPACK_DIR}"
 
 [[dependencies]]
-uri = "docker://ghcr.io/atls/buildpack-require-extension:0.2.2" # x-release-please-version
+uri = "docker://ghcr.io/atls/buildpack-require-extension:${RELEASE_VERSION}"
 
 [[dependencies]]
-uri = "docker://ghcr.io/atls/buildpack-yarn-cache:0.2.2" # x-release-please-version
+uri = "docker://ghcr.io/atls/buildpack-yarn-cache:${RELEASE_VERSION}"
 
 [[dependencies]]
-uri = "docker://ghcr.io/atls/buildpack-yarn-workspace-start:0.2.2" # x-release-please-version
+uri = "docker://ghcr.io/atls/buildpack-yarn-workspace-start:${RELEASE_VERSION}"

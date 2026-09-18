@@ -11,6 +11,8 @@ source_dir="$1"
 stage_dir="$2"
 package_config="$3"
 
+: "${RELEASE_VERSION:?RELEASE_VERSION must be supplied by semantic-release}"
+
 if [[ ! -f "${source_dir}/buildpack.toml" || ! -f "${source_dir}/package.toml" ]]; then
   echo "buildpack.toml and package.toml are required in ${source_dir}" >&2
   exit 1
@@ -26,7 +28,7 @@ package_config="${config_parent}/$(basename "${package_config}")"
 rm -rf "${stage_dir}"
 mkdir -p "${stage_dir}"
 
-cp "${source_dir}/buildpack.toml" "${stage_dir}/buildpack.toml"
+envsubst "\${RELEASE_VERSION}" < "${source_dir}/buildpack.toml" > "${stage_dir}/buildpack.toml"
 
 if [[ -d "${source_dir}/bin" ]]; then
   cp -R "${source_dir}/bin" "${stage_dir}/bin"
@@ -47,41 +49,5 @@ if [[ -d "${source_dir}/bin" ]] && grep -RqsF "../dist/index" "${source_dir}/bin
   cp -R "${source_dir}/dist" "${stage_dir}/dist"
 fi
 
-awk -v uri="${stage_dir}" '
-  BEGIN {
-    in_buildpack = 0
-    replaced = 0
-  }
-
-  /^\[buildpack\]$/ {
-    in_buildpack = 1
-    print
-    next
-  }
-
-  /^\[/ {
-    in_buildpack = 0
-  }
-
-  in_buildpack && !replaced && /^uri[[:space:]]*=/ {
-    print "uri = \"" uri "\""
-    replaced = 1
-    next
-  }
-
-  {
-    print
-  }
-
-  END {
-    if (!replaced) {
-      exit 42
-    }
-  }
-' "${source_dir}/package.toml" > "${package_config}.tmp" || {
-  rm -f "${package_config}.tmp"
-  echo "failed to rewrite [buildpack] uri in ${source_dir}/package.toml" >&2
-  exit 1
-}
-
-mv "${package_config}.tmp" "${package_config}"
+export BUILDPACK_DIR="${stage_dir}"
+envsubst "\${RELEASE_VERSION} \${BUILDPACK_DIR}" < "${source_dir}/package.toml" > "${package_config}"

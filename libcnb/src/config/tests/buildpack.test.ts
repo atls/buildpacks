@@ -53,7 +53,7 @@ test('BuildpackConfig parses buildpack.toml into the normalized config shape', a
         '',
         '[[order]]',
         '[[order.group]]',
-        'id = "tech.atls.buildpacks.yarn-install"',
+        'id = "tech.atls.buildpacks.yarn-cache"',
         'version = "1.0.0"',
         'optional = true',
         '',
