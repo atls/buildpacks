@@ -298,14 +298,29 @@ test('YarnWorkspaceStartBuilder builds and launches the selected workspace witho
       cwd: applicationDir,
     })
 
-    await new YarnWorkspaceStartBuilder(runScriptPath).build({
+    const selectedContext = {
       ...context,
       platform: { ...context.platform, env: new Map([['BP_YARN_WORKSPACE', '@proof/app']]) },
-    })
+    }
+
+    await new YarnWorkspaceStartBuilder(runScriptPath).build(selectedContext)
 
     const { stdout } = await execa('bash', [runScriptPath], { cwd: applicationDir })
 
     assert.equal(stdout, 'selected workspace')
+
+    await writeFile(
+      join(applicationDir, 'app/package.json'),
+      JSON.stringify({
+        name: '@proof/app',
+        private: true,
+        scripts: { build: 'node -e "process.exit(99)"' },
+      })
+    )
+    await assert.rejects(
+      new YarnWorkspaceStartBuilder(runScriptPath).build(selectedContext),
+      /Missing required package.json script "start-image"/
+    )
   } finally {
     await rm(rootDir, { recursive: true, force: true })
   }

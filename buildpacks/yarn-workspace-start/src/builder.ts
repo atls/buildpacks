@@ -11,6 +11,10 @@ import { isAbsolute }        from 'node:path'
 
 import { BuildResult }       from '@atls/libcnb'
 import { Process }           from '@atls/libcnb'
+import { Configuration }     from '@yarnpkg/core'
+import { Project }           from '@yarnpkg/core'
+import { structUtils }       from '@yarnpkg/core'
+import { npath }             from '@yarnpkg/fslib'
 import execa                 from 'execa'
 
 const RUN_SCRIPT_PATH = '/workspace/run.sh'
@@ -82,9 +86,19 @@ export class YarnWorkspaceStartBuilder implements Builder {
     const workspace = ctx.platform.env.get('BP_YARN_WORKSPACE')
     const pkgjson = JSON.parse(readFileSync(join(ctx.applicationDir, 'package.json'), 'utf-8'))
 
-    const command = pkgjson.scripts?.[START_IMAGE_SCRIPT]
+    let command = pkgjson.scripts?.[START_IMAGE_SCRIPT]
 
-    if (!workspace && (typeof command !== 'string' || command.trim().length === 0)) {
+    if (workspace) {
+      const applicationDir = npath.toPortablePath(ctx.applicationDir)
+      const configuration = await Configuration.find(applicationDir, null, { strict: false })
+      const { project } = await Project.find(configuration, applicationDir)
+
+      command = project
+        .getWorkspaceByIdent(structUtils.parseIdent(workspace))
+        .manifest.scripts.get(START_IMAGE_SCRIPT)
+    }
+
+    if (typeof command !== 'string' || command.trim().length === 0) {
       throw new Error(
         `Missing required package.json script "${START_IMAGE_SCRIPT}" for launch command`
       )
