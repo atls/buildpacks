@@ -1,6 +1,7 @@
 name: GHCR image release
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -13,6 +14,7 @@ on:
       - 'extensions/**'
       - 'libcnb/**'
       - 'package.json'
+      - 'release.config.js'
       - 'scripts/**'
       - 'stacks/**'
       - 'tsconfig.json'
@@ -29,46 +31,26 @@ concurrency:
 jobs:
   validate-release:
     name: Validate release
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     outputs:
       base_image: ${{ steps.release-config.outputs.base_image }}
       default_node_major: ${{ steps.release-config.outputs.default_node_major }}
       image_prefix: ${{ steps.release-config.outputs.image_prefix }}
-      node_lines: ${{ steps.release-config.outputs.node_lines }}
+      node_lines: ${{ steps.release-matrix.outputs.node_lines }}
       node_majors: ${{ steps.release-config.outputs.node_majors }}
       platforms_csv: ${{ steps.release-config.outputs.platforms_csv }}
       platforms_json: ${{ steps.release-config.outputs.platforms_json }}
-      release_enabled: ${{ steps.release-eligibility.outputs.release_enabled }}
+      release_enabled: ${{ steps.release-version.outputs.version != '' }}
+      release_version: ${{ steps.release-version.outputs.version }}
       stack_id: ${{ steps.release-config.outputs.stack_id }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Resolve release eligibility
-        id: release-eligibility
-        run: |
-          release_enabled=true
-          before="${{ github.event.before }}"
-
-          if [[ "${{ github.actor }}" == "atlantis-terraformer-bot[bot]" ]]; then
-            if [[ "${before}" =~ ^0+$ ]] || ! git cat-file -e "${before}^{commit}" 2>/dev/null; then
-              changed_files="$(git diff-tree --no-commit-id --name-only -r "${GITHUB_SHA}")"
-            else
-              changed_files="$(git diff --name-only "${before}" "${GITHUB_SHA}")"
-            fi
-
-            non_workflow_changes="$(printf '%s\n' "${changed_files}" | grep -vx '.github/workflows/docker-release.yaml' || true)"
-            if [[ -z "${non_workflow_changes}" ]]; then
-              release_enabled=false
-              echo "::notice::Skipping GHCR image release for Terraform-managed workflow-only update."
-            fi
-          fi
-
-          echo "release_enabled=${release_enabled}" >> "${GITHUB_OUTPUT}"
 
       - name: Resolve release configuration
         id: release-config
@@ -95,21 +77,43 @@ jobs:
           base_image="$(jq -r '.baseImage' "${release_config}")"
           platforms_csv="$(jq -r '.platforms | join(",")' "${release_config}")"
           platforms_json="$(jq -c '.platforms' "${release_config}")"
-          node_lines="$(jq -c --arg sha "${GITHUB_SHA::12}" '.supportedNodeMajors | map(. as $major | {"node_major": ($major | tostring), "release_tag": (($major | tostring) + "-" + $sha)})' "${release_config}")"
           node_majors="$(jq -r '.supportedNodeMajors | map(tostring) | join(",")' "${release_config}")"
 
           {
             echo "base_image=${base_image}"
             echo "default_node_major=${default_node_major}"
             echo "image_prefix=${image_prefix}"
-            echo "node_lines=${node_lines}"
             echo "node_majors=${node_majors}"
             echo "platforms_csv=${platforms_csv}"
             echo "platforms_json=${platforms_json}"
             echo "stack_id=${stack_id}"
           } >> "${GITHUB_OUTPUT}"
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ steps.release-config.outputs.default_node_major }}
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Select release version
+        id: release-version
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: yarn semantic-release --dry-run
+
+      - name: Resolve release matrix
+        if: steps.release-version.outputs.version != ''
+        id: release-matrix
+        env:
+          RELEASE_VERSION: ${{ steps.release-version.outputs.version }}
+        run: |
+          node_lines="$(jq -c --arg version "$RELEASE_VERSION" '.supportedNodeMajors | map(. as $major | {"node_major": ($major | tostring), "release_tag": (($major | tostring) + "-" + $version)})' stacks/node/ghcr-release.json)"
+          echo "node_lines=${node_lines}" >> "$GITHUB_OUTPUT"
+
       - name: Verify base image manifest before publishing
+        if: steps.release-version.outputs.version != ''
         env:
           BASE_IMAGE: ${{ steps.release-config.outputs.base_image }}
         run: docker buildx imagetools inspect "${BASE_IMAGE}" > /dev/null
@@ -158,6 +162,8 @@ jobs:
           push: true
 
   publish-extensions:
+    env:
+      RELEASE_VERSION: ${{ needs.validate-release.outputs.release_version }}
     name: Publish extension ${{ matrix.name }}
     needs: validate-release
     if: needs.validate-release.outputs.release_enabled == 'true'
@@ -199,48 +205,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare extension metadata
+        run: |
+          stage_dir="${RUNNER_TEMP}/${{ matrix.name }}-extension"
+          cp -R "${{ matrix.directory }}" "${stage_dir}"
+          envsubst "\${RELEASE_VERSION}" < "${{ matrix.directory }}/extension.toml" > "${stage_dir}/extension.toml"
+
       - name: Resolve extension image
         id: extension-image
         working-directory: ${{ matrix.directory }}
         env:
           IMAGE_REPOSITORY: ${{ matrix.image_repository }}
-        run: |
-          version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' extension.toml)"
-          [[ -n "${version}" ]]
-
-          echo "image=${IMAGE_REPOSITORY}:${version}" >> "${GITHUB_OUTPUT}"
-
-      - name: Check extension version change
-        id: release-change
-        env:
-          IMAGE: ${{ steps.extension-image.outputs.image }}
-          VERSION_FILE: ${{ matrix.directory }}/extension.toml
-        run: |
-          before="${{ github.event.before }}"
-          current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
-
-          if [[ "${before}" =~ ^0+$ ]]; then
-            changed=true
-          elif git cat-file -e "${before}:${VERSION_FILE}" 2>/dev/null; then
-            previous_version="$(git show "${before}:${VERSION_FILE}" | awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }')"
-            if [[ "${previous_version}" != "${current_version}" ]]; then
-              changed=true
-            else
-              changed=false
-            fi
-          else
-            changed=true
-          fi
-
-          if [[ "${changed}" == "false" ]] && ! docker buildx imagetools inspect "${IMAGE}" > /dev/null 2>&1; then
-            changed=true
-          fi
-
-          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+        run: echo "image=${IMAGE_REPOSITORY}:${RELEASE_VERSION}" >> "${GITHUB_OUTPUT}"
 
       - name: Publish ${{ steps.extension-image.outputs.image }}
-        if: steps.release-change.outputs.changed == 'true'
-        working-directory: ${{ matrix.directory }}
+        working-directory: ${{ runner.temp }}/${{ matrix.name }}-extension
         env:
           PLATFORMS: ${{ needs.validate-release.outputs.platforms_csv }}
         run: |
@@ -253,7 +232,6 @@ jobs:
           pack extension package ${{ steps.extension-image.outputs.image }} "${targets[@]}" --publish
 
       - name: Verify linux/amd64 and linux/arm64
-        if: steps.release-change.outputs.changed == 'true'
         env:
           EXPECTED_PLATFORMS: ${{ needs.validate-release.outputs.platforms_json }}
           IMAGE: ${{ steps.extension-image.outputs.image }}
@@ -265,6 +243,8 @@ jobs:
           ' <<< "${manifest}" > /dev/null
 
   publish-buildpack-components:
+    env:
+      RELEASE_VERSION: ${{ needs.validate-release.outputs.release_version }}
     name: Publish buildpack ${{ matrix.name }}
     needs: validate-release
     if: needs.validate-release.outputs.release_enabled == 'true'
@@ -279,9 +259,6 @@ jobs:
           - name: require-extension
             directory: buildpacks/require-extension
             image_repository: ghcr.io/atls/buildpack-require-extension
-          - name: yarn-install
-            directory: buildpacks/yarn-install
-            image_repository: ghcr.io/atls/buildpack-yarn-install
           - name: yarn-cache
             directory: buildpacks/yarn-cache
             image_repository: ghcr.io/atls/buildpack-yarn-cache
@@ -298,12 +275,21 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ needs.validate-release.outputs.default_node_major }}
-          cache: yarn
+
+      - name: Yarn cache directory
+        id: yarn-cache-dir-path
+        run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Yarn dependencies
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
 
       - name: Install dependencies
-        run: |
-          corepack enable
-          yarn install --immutable
+        run: yarn install --immutable
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v4.0.0
@@ -325,42 +311,9 @@ jobs:
         working-directory: ${{ matrix.directory }}
         env:
           IMAGE_REPOSITORY: ${{ matrix.image_repository }}
-        run: |
-          version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' buildpack.toml)"
-          [[ -n "${version}" ]]
-
-          echo "image=${IMAGE_REPOSITORY}:${version}" >> "${GITHUB_OUTPUT}"
-
-      - name: Check buildpack version change
-        id: release-change
-        env:
-          IMAGE: ${{ steps.buildpack-image.outputs.image }}
-          VERSION_FILE: ${{ matrix.directory }}/buildpack.toml
-        run: |
-          before="${{ github.event.before }}"
-          current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
-
-          if [[ "${before}" =~ ^0+$ ]]; then
-            changed=true
-          elif git cat-file -e "${before}:${VERSION_FILE}" 2>/dev/null; then
-            previous_version="$(git show "${before}:${VERSION_FILE}" | awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }')"
-            if [[ "${previous_version}" != "${current_version}" ]]; then
-              changed=true
-            else
-              changed=false
-            fi
-          else
-            changed=true
-          fi
-
-          if [[ "${changed}" == "false" ]] && ! docker buildx imagetools inspect "${IMAGE}" > /dev/null 2>&1; then
-            changed=true
-          fi
-
-          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+        run: echo "image=${IMAGE_REPOSITORY}:${RELEASE_VERSION}" >> "${GITHUB_OUTPUT}"
 
       - name: Prepare buildpack package
-        if: steps.release-change.outputs.changed == 'true'
         id: buildpack-package
         env:
           BUILDPACK_DIRECTORY: ${{ matrix.directory }}
@@ -372,12 +325,12 @@ jobs:
           ./scripts/prepare-buildpack-package.sh "${BUILDPACK_DIRECTORY}" "${stage_dir}" "${package_config}"
 
           echo "config=${package_config}" >> "${GITHUB_OUTPUT}"
+          echo "directory=${stage_dir}" >> "${GITHUB_OUTPUT}"
 
       - name: Verify buildpack package content
-        if: steps.release-change.outputs.changed == 'true'
         env:
           BUILDPACK_ARCHIVE: ${{ runner.temp }}/${{ matrix.name }}
-          BUILDPACK_DIRECTORY: ${{ matrix.directory }}
+          BUILDPACK_DIRECTORY: ${{ steps.buildpack-package.outputs.directory }}
           PACKAGE_CONFIG: ${{ steps.buildpack-package.outputs.config }}
           PLATFORMS: ${{ needs.validate-release.outputs.platforms_csv }}
         run: |
@@ -395,7 +348,6 @@ jobs:
           done
 
       - name: Publish ${{ steps.buildpack-image.outputs.image }}
-        if: steps.release-change.outputs.changed == 'true'
         env:
           PLATFORMS: ${{ needs.validate-release.outputs.platforms_csv }}
         run: |
@@ -408,7 +360,6 @@ jobs:
           pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ${{ steps.buildpack-package.outputs.config }} "${targets[@]}" --publish --pull-policy if-not-present
 
       - name: Verify linux/amd64 and linux/arm64
-        if: steps.release-change.outputs.changed == 'true'
         env:
           EXPECTED_PLATFORMS: ${{ needs.validate-release.outputs.platforms_json }}
           IMAGE: ${{ steps.buildpack-image.outputs.image }}
@@ -420,6 +371,8 @@ jobs:
           ' <<< "${manifest}" > /dev/null
 
   publish-buildpack-group:
+    env:
+      RELEASE_VERSION: ${{ needs.validate-release.outputs.release_version }}
     name: Publish buildpack group
     needs:
       - publish-buildpack-components
@@ -457,42 +410,9 @@ jobs:
         working-directory: buildpacks/yarn-workspace
         env:
           IMAGE_PREFIX: ${{ needs.validate-release.outputs.image_prefix }}
-        run: |
-          version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' buildpack.toml)"
-          [[ -n "${version}" ]]
-
-          echo "image=${IMAGE_PREFIX}/buildpack-yarn-workspace:${version}" >> "${GITHUB_OUTPUT}"
-
-      - name: Check buildpack group version change
-        id: release-change
-        env:
-          IMAGE: ${{ steps.buildpack-image.outputs.image }}
-          VERSION_FILE: buildpacks/yarn-workspace/buildpack.toml
-        run: |
-          before="${{ github.event.before }}"
-          current_version="$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "${VERSION_FILE}")"
-
-          if [[ "${before}" =~ ^0+$ ]]; then
-            changed=true
-          elif git cat-file -e "${before}:${VERSION_FILE}" 2>/dev/null; then
-            previous_version="$(git show "${before}:${VERSION_FILE}" | awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }')"
-            if [[ "${previous_version}" != "${current_version}" ]]; then
-              changed=true
-            else
-              changed=false
-            fi
-          else
-            changed=true
-          fi
-
-          if [[ "${changed}" == "false" ]] && ! docker buildx imagetools inspect "${IMAGE}" > /dev/null 2>&1; then
-            changed=true
-          fi
-
-          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+        run: echo "image=${IMAGE_PREFIX}/buildpack-yarn-workspace:${RELEASE_VERSION}" >> "${GITHUB_OUTPUT}"
 
       - name: Prepare buildpack package
-        if: steps.release-change.outputs.changed == 'true'
         id: buildpack-package
         run: |
           package_config="${RUNNER_TEMP}/yarn-workspace-package.toml"
@@ -501,9 +421,9 @@ jobs:
           ./scripts/prepare-buildpack-package.sh buildpacks/yarn-workspace "${stage_dir}" "${package_config}"
 
           echo "config=${package_config}" >> "${GITHUB_OUTPUT}"
+          echo "directory=${stage_dir}" >> "${GITHUB_OUTPUT}"
 
       - name: Verify buildpack package content
-        if: steps.release-change.outputs.changed == 'true'
         env:
           BUILDPACK_ARCHIVE: ${{ runner.temp }}/yarn-workspace
           PACKAGE_CONFIG: ${{ steps.buildpack-package.outputs.config }}
@@ -519,11 +439,10 @@ jobs:
 
           for platform in "${platforms[@]}"; do
             platform_id="${platform//\//-}"
-            ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-${platform_id}.cnb" buildpacks/yarn-workspace
+            ./scripts/verify-buildpack-package.sh "${BUILDPACK_ARCHIVE}-${platform_id}.cnb" "${{ steps.buildpack-package.outputs.directory }}"
           done
 
       - name: Publish ${{ steps.buildpack-image.outputs.image }}
-        if: steps.release-change.outputs.changed == 'true'
         env:
           PLATFORMS: ${{ needs.validate-release.outputs.platforms_csv }}
         run: |
@@ -536,7 +455,6 @@ jobs:
           pack buildpack package ${{ steps.buildpack-image.outputs.image }} --config ${{ steps.buildpack-package.outputs.config }} "${targets[@]}" --publish --pull-policy if-not-present
 
       - name: Verify linux/amd64 and linux/arm64
-        if: steps.release-change.outputs.changed == 'true'
         env:
           EXPECTED_PLATFORMS: ${{ needs.validate-release.outputs.platforms_json }}
           IMAGE: ${{ steps.buildpack-image.outputs.image }}
@@ -590,6 +508,8 @@ jobs:
           done
 
   publish-builder:
+    env:
+      RELEASE_VERSION: ${{ needs.validate-release.outputs.release_version }}
     name: Publish builder Node ${{ matrix.node_line.node_major }}
     needs:
       - build-stack
@@ -632,7 +552,7 @@ jobs:
           PLATFORMS: ${{ needs.validate-release.outputs.platforms_csv }}
           RELEASE_TAG: ${{ matrix.node_line.release_tag }}
         run: |
-          envsubst "\${IMAGE_PREFIX} \${RELEASE_TAG}" < builders/base/builder.release.toml > "${BUILDER_CONFIG}"
+          envsubst "\${IMAGE_PREFIX} \${RELEASE_TAG} \${RELEASE_VERSION}" < builders/base/builder.release.toml > "${BUILDER_CONFIG}"
 
           targets=()
           IFS=',' read -r -a platforms <<< "${PLATFORMS}"
@@ -856,15 +776,49 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
         run: docker run --rm --pull always --platform "${PLATFORM}" --entrypoint node "${IMAGE}" --version | grep "^v${EXPECTED_NODE_MAJOR}\\."
 
+  complete-release:
+    name: Publish GitHub release
+    needs:
+      - validate-release
+      - verify-node
+      - verify-builder-node
+    if: needs.validate-release.outputs.release_enabled == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      released: ${{ steps.release.outputs.released }}
+    steps:
+      - name: Checkout accepted source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ needs.validate-release.outputs.default_node_major }}
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Release buildpacks
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.validate-release.outputs.release_version }}
+        run: yarn semantic-release
+
   promote-release-images:
     name: Promote release images Node ${{ matrix.node_line.node_major }}
     needs:
+      - complete-release
       - publish-buildpack-group
       - scan-release-images
       - validate-release
       - verify-builder-node
       - verify-node
-    if: needs.validate-release.outputs.release_enabled == 'true'
+    if: needs.complete-release.outputs.released == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
