@@ -19,10 +19,6 @@ const RAW_RUNTIME_STATE =
       "reference": "workspace:buildpacks/yarn-cache"\
     },\
     {\
-      "name": "@atls/buildpack-yarn-install",\
-      "reference": "workspace:buildpacks/yarn-install"\
-    },\
-    {\
       "name": "@atls/buildpack-yarn-workspace-start",\
       "reference": "workspace:buildpacks/yarn-workspace-start"\
     },\
@@ -36,7 +32,6 @@ const RAW_RUNTIME_STATE =
   "pnpZipBackend": "libzip",\
   "fallbackExclusionList": [\
     ["@atls/buildpack-yarn-cache", ["workspace:buildpacks/yarn-cache"]],\
-    ["@atls/buildpack-yarn-install", ["workspace:buildpacks/yarn-install"]],\
     ["@atls/buildpack-yarn-workspace-start", ["workspace:buildpacks/yarn-workspace-start"]],\
     ["@atls/libcnb", ["workspace:libcnb"]],\
     ["buildpack", ["workspace:."]]\
@@ -135,20 +130,6 @@ const RAW_RUNTIME_STATE =
           ["@yarnpkg/fslib", "npm:3.0.2"],\
           ["execa", "npm:5.1.1"],\
           ["tempy", "npm:1.0.1"]\
-        ],\
-        "linkType": "SOFT"\
-      }]\
-    ]],\
-    ["@atls/buildpack-yarn-install", [\
-      ["workspace:buildpacks/yarn-install", {\
-        "packageLocation": "./buildpacks/yarn-install/",\
-        "packageDependencies": [\
-          ["@atls/buildpack-yarn-install", "workspace:buildpacks/yarn-install"],\
-          ["@atls/libcnb", "workspace:libcnb"],\
-          ["@types/node", "npm:20.12.3"],\
-          ["@yarnpkg/core", "npm:4.0.3"],\
-          ["@yarnpkg/fslib", "npm:3.0.2"],\
-          ["execa", "npm:5.1.1"]\
         ],\
         "linkType": "SOFT"\
       }]\

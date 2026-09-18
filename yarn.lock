@@ -70,18 +70,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@atls/buildpack-yarn-install@workspace:buildpacks/yarn-install":
-  version: 0.0.0-use.local
-  resolution: "@atls/buildpack-yarn-install@workspace:buildpacks/yarn-install"
-  dependencies:
-    "@atls/libcnb": "workspace:*"
-    "@types/node": "npm:20.12.3"
-    "@yarnpkg/core": "npm:4.0.3"
-    "@yarnpkg/fslib": "npm:3.0.2"
-    execa: "npm:5.1.1"
-  languageName: unknown
-  linkType: soft
-
 "@atls/buildpack-yarn-workspace-start@workspace:buildpacks/yarn-workspace-start":
   version: 0.0.0-use.local
   resolution: "@atls/buildpack-yarn-workspace-start@workspace:buildpacks/yarn-workspace-start"

@@ -184,7 +184,6 @@ application buildpack image for the selected Node line.
 
 Component buildpacks and extensions are also published in GHCR:
 
-- buildpack-yarn-install
 - buildpack-yarn-cache
 - buildpack-yarn-workspace-start
 - buildpack-require-extension
