@@ -17,6 +17,13 @@ export class YarnCacheBuilder implements Builder {
     }
 
     const cacheLayer = await ctx.layers.get('yarn-cache', true, true, true)
+    const globalFolder =
+      ctx.platform.env.get('YARN_GLOBAL_FOLDER') ?? process.env.YARN_GLOBAL_FOLDER
+
+    if (globalFolder !== undefined && globalFolder !== cacheLayer.path) {
+      throw new Error('YARN_GLOBAL_FOLDER must use the buildpack cache layer')
+    }
+
     const environment = { YARN_GLOBAL_FOLDER: cacheLayer.path }
 
     cacheLayer.sharedEnv.default('YARN_GLOBAL_FOLDER', cacheLayer.path)
