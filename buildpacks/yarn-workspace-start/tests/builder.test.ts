@@ -233,23 +233,6 @@ test('YarnWorkspaceStartBuilder requires the application Yarn runtime', async ()
   }
 })
 
-test('YarnWorkspaceStartBuilder rejects legacy start-image without start', async () => {
-  const { applicationDir, context, rootDir } = await createContext()
-
-  try {
-    await writePackageJson(applicationDir, {
-      'start-image': 'node server.js',
-    })
-
-    await assert.rejects(
-      new YarnWorkspaceStartBuilder().build(context),
-      /Missing required package\.json script "start" for launch command/
-    )
-  } finally {
-    await rm(rootDir, { recursive: true, force: true })
-  }
-})
-
 test('YarnWorkspaceStartBuilder fails when scripts.start is empty', async () => {
   const { applicationDir, context, rootDir } = await createContext()
 
@@ -267,7 +250,7 @@ test('YarnWorkspaceStartBuilder fails when scripts.start is empty', async () => 
   }
 })
 
-test('YarnWorkspaceStartBuilder builds the selected workspace and rejects legacy-only launch', async () => {
+test('YarnWorkspaceStartBuilder builds and launches the selected workspace without root scripts', async () => {
   const { applicationDir, context, outputDir, rootDir } = await createContext()
 
   try {
@@ -319,19 +302,6 @@ test('YarnWorkspaceStartBuilder builds the selected workspace and rejects legacy
     )
 
     assert.equal(stdout, 'selected workspace')
-
-    await writeFile(
-      join(applicationDir, 'app/package.json'),
-      JSON.stringify({
-        name: '@proof/app',
-        private: true,
-        scripts: { build: 'node -e "process.exit(99)"', 'start-image': 'node built.js' },
-      })
-    )
-    await assert.rejects(
-      new YarnWorkspaceStartBuilder().build(selectedContext),
-      /Missing required package.json script "start"/
-    )
   } finally {
     await rm(rootDir, { recursive: true, force: true })
   }

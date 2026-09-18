@@ -113,7 +113,7 @@ buildpack-yarn-workspace is the application buildpack for Yarn Plug'n'Play
 workspace projects, with either provided local caches or a global cache.
 
 The application supplies its production launch command as `scripts.start` in
-package.json. A separate `start-image` script is not used.
+package.json.
 
 Yarn configures Plug'n'Play for the application process. The buildpack registers
 a direct CNB process running the checked Yarn runtime through Node, without a
