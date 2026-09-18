@@ -79,7 +79,7 @@ export class YarnWorkspaceStartBuilder implements Builder {
   constructor(private readonly runScriptPath: string = RUN_SCRIPT_PATH) {}
 
   async build(ctx: BuildContext): Promise<BuildResult> {
-    const workspace = ctx.platform.env.get('WORKSPACE')
+    const workspace = ctx.platform.env.get('BP_YARN_WORKSPACE')
     const pkgjson = JSON.parse(readFileSync(join(ctx.applicationDir, 'package.json'), 'utf-8'))
 
     const command = pkgjson.scripts?.[START_IMAGE_SCRIPT]

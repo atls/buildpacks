@@ -189,7 +189,10 @@ test('YarnWorkspaceStartBuilder uses the packaged Yarn release to run scripts.st
     await writeFile(join(applicationDir, '.pnp.cjs'), '')
     await writeFile(join(applicationDir, '.pnp.loader.mjs'), '')
 
-    const result = await new YarnWorkspaceStartBuilder(runScriptPath).build(context)
+    const result = await new YarnWorkspaceStartBuilder(runScriptPath).build({
+      ...context,
+      platform: { ...context.platform, env: new Map([['WORKSPACE', '@legacy/app']]) },
+    })
     const runScript = await readFile(runScriptPath, 'utf-8')
 
     await result.toPath(outputDir)
@@ -297,7 +300,7 @@ test('YarnWorkspaceStartBuilder builds and launches the selected workspace witho
 
     await new YarnWorkspaceStartBuilder(runScriptPath).build({
       ...context,
-      platform: { ...context.platform, env: new Map([['WORKSPACE', '@proof/app']]) },
+      platform: { ...context.platform, env: new Map([['BP_YARN_WORKSPACE', '@proof/app']]) },
     })
 
     const { stdout } = await execa('bash', [runScriptPath], { cwd: applicationDir })

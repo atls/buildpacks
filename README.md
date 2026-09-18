@@ -41,7 +41,7 @@ pack build my-app \
   --path . \
   --builder ghcr.io/atls/builder-base:24 \
   --buildpack ghcr.io/atls/buildpack-yarn-workspace:24 \
-  --env WORKSPACE=@example/app
+  --env BP_YARN_WORKSPACE=@example/app
 ```
 
 The selected workspace supplies `build` and `start-image` scripts. Yarn runs its
@@ -51,8 +51,9 @@ dependencies, patches and Plug'n'Play state; the buildpack does not create a
 standalone package or rewrite dependency resolutions.
 
 The project remains the application context. Production focus does not remove
-unrelated source files or guarantee a minimal image. Without `WORKSPACE`, the
-existing root `start-image` launch remains unchanged.
+unrelated source files or guarantee a minimal image. Without `BP_YARN_WORKSPACE`,
+the existing root `start-image` launch remains unchanged, including callers that
+already pass the older, unused `WORKSPACE` variable with a prebuilt application.
 
 ## Images
 
