@@ -10,6 +10,12 @@ export class YarnCacheDetector implements Detector {
   async detect(ctx: DetectContext): Promise<DetectResult> {
     const result = new DetectResult()
 
+    if (ctx.platform.env.get('BP_YARN_WORKSPACE')) {
+      result.passed = true
+
+      return result
+    }
+
     try {
       await access(join(ctx.applicationDir, 'yarn.lock'))
       await access(join(ctx.applicationDir, '.yarn/cache'))

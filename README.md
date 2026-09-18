@@ -50,6 +50,10 @@ The root package does not need either script. Yarn retains ownership of workspac
 dependencies, patches and Plug'n'Play state; the buildpack does not create a
 standalone package or rewrite dependency resolutions.
 
+The selected-workspace mode installs dependencies even when the source project
+uses a global cache outside its directory. A CNB cache layer supplies the Yarn
+global-folder location for build and launch without rewriting `.yarnrc.yml`.
+
 The project remains the application context. Production focus does not remove
 unrelated source files or guarantee a minimal image. Without `BP_YARN_WORKSPACE`,
 the existing root `start-image` launch remains unchanged, including callers that

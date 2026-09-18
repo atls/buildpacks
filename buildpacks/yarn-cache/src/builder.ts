@@ -5,6 +5,7 @@ import type { PortablePath } from '@yarnpkg/fslib'
 import { createHash }        from 'node:crypto'
 
 import { BuildResult }       from '@atls/libcnb'
+import { Configuration }     from '@yarnpkg/core'
 import { execUtils }         from '@yarnpkg/core'
 import { xfs }               from '@yarnpkg/fslib'
 import { ppath }             from '@yarnpkg/fslib'
@@ -13,6 +14,35 @@ import YAML                  from 'yaml'
 export class YarnCacheBuilder implements Builder {
   async build(ctx: BuildContext): Promise<BuildResult> {
     const applicationDir = ctx.applicationDir as PortablePath
+
+    if (ctx.platform.env.get('BP_YARN_WORKSPACE')) {
+      const cacheLayer = await ctx.layers.get('yarn-cache', true, true, true)
+      const configuration = await Configuration.find(applicationDir, null, { strict: false })
+      const yarnPath = configuration.get('yarnPath')
+      const environment = {
+        YARN_GLOBAL_FOLDER: cacheLayer.path,
+      }
+
+      for (const [name, value] of Object.entries(environment)) {
+        cacheLayer.sharedEnv.default(name, value)
+      }
+
+      await execUtils.pipevp(
+        yarnPath ? process.execPath : 'yarn',
+        [...(yarnPath ? [yarnPath] : []), 'install', '--immutable', '--inline-builds'],
+        {
+          cwd: applicationDir,
+          stdin: process.stdin,
+          stdout: process.stdout,
+          stderr: process.stderr,
+          env: { ...environment, ...process.env },
+          strict: true,
+        }
+      )
+
+      return new BuildResult().addLayer(cacheLayer)
+    }
+
     const yarnCachePath = ppath.join(applicationDir, '.yarn/cache' as PortablePath)
 
     const yarnLock = await xfs.readFilePromise(
