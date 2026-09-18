@@ -233,7 +233,7 @@ test('YarnWorkspaceStartBuilder requires the application Yarn runtime', async ()
   }
 })
 
-test('YarnWorkspaceStartBuilder fails when scripts.start is missing', async () => {
+test('YarnWorkspaceStartBuilder rejects legacy start-image without start', async () => {
   const { applicationDir, context, rootDir } = await createContext()
 
   try {
@@ -267,7 +267,7 @@ test('YarnWorkspaceStartBuilder fails when scripts.start is empty', async () => 
   }
 })
 
-test('YarnWorkspaceStartBuilder builds and launches the selected workspace without root scripts', async () => {
+test('YarnWorkspaceStartBuilder builds the selected workspace and rejects legacy-only launch', async () => {
   const { applicationDir, context, outputDir, rootDir } = await createContext()
 
   try {
