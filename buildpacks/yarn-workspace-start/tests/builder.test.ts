@@ -98,7 +98,6 @@ const createContext = async (): Promise<{
   context: BuildContext
   outputDir: string
   rootDir: string
-  runScriptPath: string
 }> => {
   const rootDir = await mkdtemp(join(tmpdir(), 'yarn-workspace-start-'))
   const applicationDir = join(rootDir, 'workspace')
@@ -171,97 +170,94 @@ const createContext = async (): Promise<{
     },
     outputDir,
     rootDir,
-    runScriptPath: join(rootDir, 'run.sh'),
   }
 }
 
-test('YarnWorkspaceStartBuilder uses the packaged Yarn release to run scripts.start-image', async () => {
-  const { applicationDir, context, outputDir, rootDir, runScriptPath } = await createContext()
+test('YarnWorkspaceStartBuilder uses the packaged Yarn release to run scripts.start', async () => {
+  const { applicationDir, context, outputDir, rootDir } = await createContext()
 
   try {
     await writePackageJson(applicationDir, {
-      'start-image': 'astro preview --host 0.0.0.0 --port 3000',
+      start: 'astro preview --host 0.0.0.0 --port 3000',
     })
     await mkdir(join(applicationDir, '.yarn'))
     await mkdir(join(applicationDir, '.yarn/releases'))
     await writeFile(join(applicationDir, '.yarnrc.yml'), 'yarnPath: .yarn/releases/yarn.mjs\n')
-    await writeFile(join(applicationDir, '.yarn/releases/yarn.mjs'), '')
-    await writeFile(join(applicationDir, '.pnp.cjs'), '')
-    await writeFile(join(applicationDir, '.pnp.loader.mjs'), '')
+    await copyFile(
+      new URL('../../../.yarn/releases/yarn.mjs', import.meta.url),
+      join(applicationDir, '.yarn/releases/yarn.mjs')
+    )
+    await execa(
+      process.execPath,
+      [join(applicationDir, '.yarn/releases/yarn.mjs'), 'install', '--no-immutable'],
+      {
+        cwd: applicationDir,
+      }
+    )
 
-    const result = await new YarnWorkspaceStartBuilder(runScriptPath).build({
-      ...context,
-      platform: { ...context.platform, env: new Map([['WORKSPACE', '@legacy/app']]) },
-    })
-    const runScript = await readFile(runScriptPath, 'utf-8')
+    const result = await new YarnWorkspaceStartBuilder().build(context)
 
     await result.toPath(outputDir)
 
-    assert.equal(
-      runScript,
-      `#!/usr/bin/env bash\numask 0002\nexec node '${join(applicationDir, '.yarn/releases/yarn.mjs')}' start-image`
-    )
-    assert.equal(runScript.includes('undefined'), false)
     assert.match(
       await readFile(join(outputDir, 'launch.toml'), 'utf-8'),
-      /command = \[ "\.\/run\.sh" \]/
+      /command = \[\s+"node",\s+"[^"]+yarn\.mjs",\s+"run",\s+"start"\s+\]/
     )
+    await assert.rejects(readFile(join(applicationDir, 'run.sh')), { code: 'ENOENT' })
     assert.equal(
       await readFile(join(rootDir, 'layers/node-options/env.launch/NODE_OPTIONS.append'), 'utf-8'),
-      `--enable-source-maps --require ${join(applicationDir, '.pnp.cjs')} --loader ${join(applicationDir, '.pnp.loader.mjs')}`
+      '--enable-source-maps'
     )
   } finally {
     await rm(rootDir, { recursive: true, force: true })
   }
 })
 
-test('YarnWorkspaceStartBuilder falls back to global Yarn when no packaged Yarn release exists', async () => {
-  const { applicationDir, context, rootDir, runScriptPath } = await createContext()
+test('YarnWorkspaceStartBuilder requires the application Yarn runtime', async () => {
+  const { applicationDir, context, rootDir } = await createContext()
+
+  try {
+    await writePackageJson(applicationDir, {
+      start: 'node server.js',
+    })
+
+    await assert.rejects(
+      new YarnWorkspaceStartBuilder().build(context),
+      /Missing required yarnPath/
+    )
+  } finally {
+    await rm(rootDir, { recursive: true, force: true })
+  }
+})
+
+test('YarnWorkspaceStartBuilder fails when scripts.start is missing', async () => {
+  const { applicationDir, context, rootDir } = await createContext()
 
   try {
     await writePackageJson(applicationDir, {
       'start-image': 'node server.js',
     })
 
-    await new YarnWorkspaceStartBuilder(runScriptPath).build(context)
-
-    assert.equal(
-      await readFile(runScriptPath, 'utf-8'),
-      '#!/usr/bin/env bash\numask 0002\nexec yarn start-image'
+    await assert.rejects(
+      new YarnWorkspaceStartBuilder().build(context),
+      /Missing required package\.json script "start" for launch command/
     )
   } finally {
     await rm(rootDir, { recursive: true, force: true })
   }
 })
 
-test('YarnWorkspaceStartBuilder fails when scripts.start-image is missing', async () => {
-  const { applicationDir, context, rootDir, runScriptPath } = await createContext()
+test('YarnWorkspaceStartBuilder fails when scripts.start is empty', async () => {
+  const { applicationDir, context, rootDir } = await createContext()
 
   try {
     await writePackageJson(applicationDir, {
-      start: 'yarn start',
+      start: '   ',
     })
 
     await assert.rejects(
-      new YarnWorkspaceStartBuilder(runScriptPath).build(context),
-      /Missing required package\.json script "start-image" for launch command/
-    )
-  } finally {
-    await rm(rootDir, { recursive: true, force: true })
-  }
-})
-
-test('YarnWorkspaceStartBuilder fails when scripts.start-image is empty', async () => {
-  const { applicationDir, context, rootDir, runScriptPath } = await createContext()
-
-  try {
-    await writePackageJson(applicationDir, {
-      'start-image': '   ',
-    })
-
-    await assert.rejects(
-      new YarnWorkspaceStartBuilder(runScriptPath).build(context),
-      /Missing required package\.json script "start-image" for launch command/
+      new YarnWorkspaceStartBuilder().build(context),
+      /Missing required package\.json script "start" for launch command/
     )
   } finally {
     await rm(rootDir, { recursive: true, force: true })
@@ -269,7 +265,7 @@ test('YarnWorkspaceStartBuilder fails when scripts.start-image is empty', async 
 })
 
 test('YarnWorkspaceStartBuilder builds and launches the selected workspace without root scripts', async () => {
-  const { applicationDir, context, rootDir, runScriptPath } = await createContext()
+  const { applicationDir, context, outputDir, rootDir } = await createContext()
 
   try {
     await mkdir(join(applicationDir, 'app'))
@@ -282,7 +278,7 @@ test('YarnWorkspaceStartBuilder builds and launches the selected workspace witho
       JSON.stringify({
         name: '@proof/app',
         private: true,
-        scripts: { build: 'node build.js', 'start-image': 'node built.js' },
+        scripts: { build: 'node build.js', start: 'node built.js' },
       })
     )
     await writeFile(
@@ -300,12 +296,24 @@ test('YarnWorkspaceStartBuilder builds and launches the selected workspace witho
 
     const selectedContext = {
       ...context,
-      platform: { ...context.platform, env: new Map([['BP_YARN_WORKSPACE', '@proof/app']]) },
+      platform: { ...context.platform, env: new Map([['WORKSPACE', '@proof/app']]) },
     }
 
-    await new YarnWorkspaceStartBuilder(runScriptPath).build(selectedContext)
+    const result = await new YarnWorkspaceStartBuilder().build(selectedContext)
 
-    const { stdout } = await execa('bash', [runScriptPath], { cwd: applicationDir })
+    await result.toPath(outputDir)
+    assert.match(
+      await readFile(join(outputDir, 'launch.toml'), 'utf-8'),
+      /working-dir = "[^"]+\/app"/
+    )
+
+    const { stdout } = await execa(
+      process.execPath,
+      [join(applicationDir, 'yarn.mjs'), 'run', 'start'],
+      {
+        cwd: join(applicationDir, 'app'),
+      }
+    )
 
     assert.equal(stdout, 'selected workspace')
 
@@ -314,12 +322,12 @@ test('YarnWorkspaceStartBuilder builds and launches the selected workspace witho
       JSON.stringify({
         name: '@proof/app',
         private: true,
-        scripts: { build: 'node -e "process.exit(99)"' },
+        scripts: { build: 'node -e "process.exit(99)"', 'start-image': 'node built.js' },
       })
     )
     await assert.rejects(
-      new YarnWorkspaceStartBuilder(runScriptPath).build(selectedContext),
-      /Missing required package.json script "start-image"/
+      new YarnWorkspaceStartBuilder().build(selectedContext),
+      /Missing required package.json script "start"/
     )
   } finally {
     await rm(rootDir, { recursive: true, force: true })

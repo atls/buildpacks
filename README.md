@@ -9,8 +9,8 @@ builder and buildpack images.
 
 ## Build An Application
 
-These examples assume a Yarn zero-install Plug'n'Play workspace with a
-start-image script in package.json.
+These examples assume a Yarn project with a checked runtime selected by
+`yarnPath` and a production `start` script in package.json.
 
 Use Node 26 for new applications:
 
@@ -29,7 +29,7 @@ pack build my-app \
 ```
 
 The builder provides the Node stack and CNB lifecycle. The buildpack prepares a
-zero-install Yarn workspace application for build and launch.
+Yarn workspace application for build and launch.
 
 ## Select An Application Workspace
 
@@ -41,23 +41,23 @@ pack build my-app \
   --path . \
   --builder ghcr.io/atls/builder-base:24 \
   --buildpack ghcr.io/atls/buildpack-yarn-workspace:24 \
-  --env BP_YARN_WORKSPACE=@example/app
+  --env WORKSPACE=@example/app
 ```
 
-The selected workspace supplies `build` and `start-image` scripts. Yarn runs its
-build, focuses production dependencies, and launches its `start-image` script.
-The root package does not need either script. Yarn retains ownership of workspace
+`WORKSPACE` selects an application in this buildpack; it is not a Yarn or CNB
+standard variable. The selected workspace supplies a production `start` script.
+Yarn runs its `build` script when present, focuses production dependencies, and
+launches `start`. The root package does not need either script. Yarn retains ownership of workspace
 dependencies, patches and Plug'n'Play state; the buildpack does not create a
 standalone package or rewrite dependency resolutions.
 
-The selected-workspace mode installs dependencies even when the source project
+The buildpack installs dependencies even when the source project
 uses a global cache outside its directory. A CNB cache layer supplies the Yarn
 global-folder location for build and launch without rewriting `.yarnrc.yml`.
 
 The project remains the application context. Production focus does not remove
-unrelated source files or guarantee a minimal image. Without `BP_YARN_WORKSPACE`,
-the existing root `start-image` launch remains unchanged, including callers that
-already pass the older, unused `WORKSPACE` variable with a prebuilt application.
+unrelated source files or guarantee a minimal image. Without `WORKSPACE`, the
+same build, production focus and launch sequence applies to the root workspace.
 
 ## Images
 
@@ -107,32 +107,29 @@ builder-base:26 and buildpack-yarn-workspace:26.
 
 ## Yarn Workspace Buildpack
 
-buildpack-yarn-workspace is the application buildpack for Yarn zero-install
-Plug'n'Play workspace projects.
+buildpack-yarn-workspace is the application buildpack for Yarn Plug'n'Play
+workspace projects, with either provided local caches or a global cache.
 
-The buildpack-specific launch contract is a start-image script in package.json.
+The application supplies its production launch command as `scripts.start` in
+package.json. A separate `start-image` script is not used.
 
-For Yarn Plug'n'Play applications, the buildpack prepares launch-time Node
-options:
-
-- loads .pnp.cjs with --require;
-- loads .pnp.loader.mjs with --loader;
-- enables source maps.
-
-Because the buildpack owns these launch options, the application launch script
-can stay simple:
+Yarn configures Plug'n'Play for the application process. The buildpack registers
+a direct CNB process running the checked Yarn runtime through Node, without a
+generated shell launcher, and enables Node source maps. The application launch
+script can stay simple:
 
 ```json
 {
   "scripts": {
-    "start-image": "node server.js"
+    "start": "node server.js"
   }
 }
 ```
 
-The image start buildpack runs yarn start-image. That script should start the
-application entrypoint. Do not duplicate Plug'n'Play loader flags in it unless
-the application intentionally overrides the buildpack behavior.
+The image start buildpack runs yarn run start. That script should start the
+application entrypoint. Do not duplicate Yarn's Plug'n'Play loader flags in it.
+The runtime is executed directly, so an ESM Yarn bundle with top-level await does
+not need a CommonJS compatibility wrapper or a globally installed Yarn.
 
 ## Builder And Buildpack
 

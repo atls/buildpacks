@@ -1,93 +1,38 @@
 import type { Builder }      from '@atls/libcnb'
 import type { BuildContext } from '@atls/libcnb'
-import type { PortablePath } from '@yarnpkg/fslib'
-
-import { createHash }        from 'node:crypto'
 
 import { BuildResult }       from '@atls/libcnb'
 import { Configuration }     from '@yarnpkg/core'
 import { execUtils }         from '@yarnpkg/core'
-import { xfs }               from '@yarnpkg/fslib'
-import { ppath }             from '@yarnpkg/fslib'
-import YAML                  from 'yaml'
+import { npath }             from '@yarnpkg/fslib'
 
 export class YarnCacheBuilder implements Builder {
   async build(ctx: BuildContext): Promise<BuildResult> {
-    const applicationDir = ctx.applicationDir as PortablePath
+    const applicationDir = npath.toPortablePath(ctx.applicationDir)
+    const configuration = await Configuration.find(applicationDir, null, { strict: false })
+    const yarnPath = configuration.get('yarnPath')
 
-    if (ctx.platform.env.get('BP_YARN_WORKSPACE')) {
-      const cacheLayer = await ctx.layers.get('yarn-cache', true, true, true)
-      const configuration = await Configuration.find(applicationDir, null, { strict: false })
-      const yarnPath = configuration.get('yarnPath')
-      const environment = {
-        YARN_GLOBAL_FOLDER: cacheLayer.path,
-      }
-
-      for (const [name, value] of Object.entries(environment)) {
-        cacheLayer.sharedEnv.default(name, value)
-      }
-
-      await execUtils.pipevp(
-        yarnPath ? process.execPath : 'yarn',
-        [...(yarnPath ? [yarnPath] : []), 'install', '--immutable', '--inline-builds'],
-        {
-          cwd: applicationDir,
-          stdin: process.stdin,
-          stdout: process.stdout,
-          stderr: process.stderr,
-          env: { ...environment, ...process.env },
-          strict: true,
-        }
-      )
-
-      return new BuildResult().addLayer(cacheLayer)
+    if (!yarnPath) {
+      throw new Error('Missing required yarnPath for the application Yarn runtime')
     }
-
-    const yarnCachePath = ppath.join(applicationDir, '.yarn/cache' as PortablePath)
-
-    const yarnLock = await xfs.readFilePromise(
-      ppath.join(applicationDir, 'yarn.lock' as PortablePath)
-    )
-    const yarnLockCheckSum = createHash('md5').update(yarnLock).digest('hex')
 
     const cacheLayer = await ctx.layers.get('yarn-cache', true, true, true)
+    const environment = { YARN_GLOBAL_FOLDER: cacheLayer.path }
 
-    if (yarnLockCheckSum !== cacheLayer.getMetadata('locksum')) {
-      for await (const file of await xfs.readdirPromise(yarnCachePath)) {
-        await xfs.copyPromise(
-          ppath.join(cacheLayer.path as PortablePath, file),
-          ppath.join(yarnCachePath, file)
-        )
-        await xfs.removePromise(ppath.join(cacheLayer.path as PortablePath, file))
+    cacheLayer.sharedEnv.default('YARN_GLOBAL_FOLDER', cacheLayer.path)
+
+    await execUtils.pipevp(
+      process.execPath,
+      [npath.fromPortablePath(yarnPath), 'install', '--immutable', '--inline-builds'],
+      {
+        cwd: applicationDir,
+        stdin: process.stdin,
+        stdout: process.stdout,
+        stderr: process.stderr,
+        env: { ...environment, ...process.env },
+        strict: true,
       }
-
-      cacheLayer.setMetadata('locksum', yarnLockCheckSum.toString())
-    }
-
-    await xfs.removePromise(yarnCachePath)
-
-    const yarnrc = await xfs.readFilePromise(
-      ppath.join(applicationDir, '.yarnrc.yml' as PortablePath)
     )
-
-    const yarnrcContent = YAML.parse(yarnrc.toString())
-
-    await xfs.writeFilePromise(
-      ppath.join(applicationDir, '.yarnrc.yml' as PortablePath),
-      YAML.stringify({
-        ...yarnrcContent,
-        cacheFolder: ppath.relative(applicationDir, cacheLayer.path as PortablePath),
-        enableGlobalCache: false,
-      })
-    )
-
-    await execUtils.pipevp('yarn', ['install', '--immutable'], {
-      cwd: applicationDir,
-      stdin: process.stdin,
-      stdout: process.stdout,
-      stderr: process.stderr,
-      env: process.env,
-    })
 
     return new BuildResult().addLayer(cacheLayer)
   }

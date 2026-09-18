@@ -5,9 +5,6 @@ uri = "."
 uri = "docker://ghcr.io/atls/buildpack-require-extension:0.2.2" # x-release-please-version
 
 [[dependencies]]
-uri = "docker://ghcr.io/atls/buildpack-yarn-install:0.2.2" # x-release-please-version
-
-[[dependencies]]
 uri = "docker://ghcr.io/atls/buildpack-yarn-cache:0.2.2" # x-release-please-version
 
 [[dependencies]]

@@ -87,8 +87,7 @@ const RAW_RUNTIME_STATE =
           ["@yarnpkg/core", "npm:4.0.3"],\
           ["@yarnpkg/fslib", "npm:3.0.2"],\
           ["execa", "npm:5.1.1"],\
-          ["tempy", "npm:1.0.1"],\
-          ["yaml", "npm:1.10.2"]\
+          ["tempy", "npm:1.0.1"]\
         ],\
         "linkType": "SOFT"\
       }]\
@@ -7426,15 +7425,6 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "../.yarn/berry/cache/yallist-npm-4.0.0-b493d9e907-10.zip/node_modules/yallist/",\
         "packageDependencies": [\
           ["yallist", "npm:4.0.0"]\
-        ],\
-        "linkType": "HARD"\
-      }]\
-    ]],\
-    ["yaml", [\
-      ["npm:1.10.2", {\
-        "packageLocation": "../.yarn/berry/cache/yaml-npm-1.10.2-0e780aebdf-10.zip/node_modules/yaml/",\
-        "packageDependencies": [\
-          ["yaml", "npm:1.10.2"]\
         ],\
         "linkType": "HARD"\
       }]\
