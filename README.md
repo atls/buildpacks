@@ -109,6 +109,31 @@ the default Node line, which is Node 26:
 For application configuration, prefer explicit Node-line tags such as
 builder-base:26 and buildpack-yarn-workspace:26.
 
+## Releases
+
+The repository uses one semantic-release version for buildpack components,
+extensions and their composite. Conventional Commits select the next version;
+release PRs and committed version-bump records are not used. Existing
+`buildpack-root-<version>` tags provide the release history, including releases
+created before this transition. Existing component tags remain historical.
+
+The GHCR workflow first asks semantic-release for a dry-run version. It uses that
+version for component tags and `<node-major>-<version>` builder/stack
+tags, builds both supported architectures, and runs the existing manifest,
+security and runtime checks. Only then does semantic-release create the GitHub
+release. The Node 24/26 channels are promoted after that release succeeds.
+
+CNB TOML files are packaging templates. The existing packaging step substitutes
+the supplied `RELEASE_VERSION` with `envsubst`; it does not calculate a version,
+rewrite dependency resolutions or commit generated metadata. For a local package,
+provide an explicit test version to `scripts/prepare-buildpack-package.sh` and
+pass the generated package config to `pack buildpack package`. Builder templates
+also require `IMAGE_PREFIX` and `RELEASE_TAG` when rendered.
+
+A failed publication may leave immutable artifacts behind. There is no custom
+retry engine or promise of an atomic cross-provider release. A green version
+preview alone is not a completed release.
+
 ## Yarn Workspace Buildpack
 
 buildpack-yarn-workspace is the application buildpack for Yarn Plug'n'Play

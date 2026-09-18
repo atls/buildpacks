@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "allowJs": true,
     "lib": ["dom", "dom.iterable", "esnext"],
     "declaration": false,
     "emitDecoratorMetadata": true,
@@ -25,5 +26,6 @@
     "types": ["node"],
     "jsx": "react"
   },
-  "include": ["project.types.d.ts", "buildpacks/**/*", "libcnb/**/*"]
+  "include": ["project.types.d.ts", "release.config.js", "buildpacks/**/*", "libcnb/**/*"],
+  "exclude": ["**/dist/**"]
 }
