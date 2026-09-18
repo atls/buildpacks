@@ -1,112 +1,51 @@
 import type { Builder }      from '@atls/libcnb'
 import type { BuildContext } from '@atls/libcnb'
 
-/* eslint-disable n/no-sync */
-import { readFileSync }      from 'node:fs'
-import { writeFile }         from 'node:fs/promises'
-import { chmod }             from 'node:fs/promises'
-import { access }            from 'node:fs/promises'
-import { join }              from 'node:path'
-import { isAbsolute }        from 'node:path'
-
 import { BuildResult }       from '@atls/libcnb'
 import { Process }           from '@atls/libcnb'
-
-const RUN_SCRIPT_PATH = '/workspace/run.sh'
-const START_IMAGE_SCRIPT = 'start-image'
-const PNP_CJS = '.pnp.cjs'
-const PNP_ESM_LOADER = '.pnp.loader.mjs'
-const YARN_RC = '.yarnrc.yml'
-
-const fileExists = async (path: string): Promise<boolean> => {
-  try {
-    await access(path)
-
-    return true
-  } catch {
-    return false
-  }
-}
-
-const shellQuote = (value: string): string => `'${value.replace(/'/g, `'\\''`)}'`
-
-const parseYarnPath = (content: string): string | undefined => {
-  const match = content.match(/^\s*yarnPath:\s*(.+?)\s*$/m)
-
-  return match?.[1]?.replace(/^['"]|['"]$/g, '')
-}
-
-const resolveYarnPath = async (applicationDir: string): Promise<string | undefined> => {
-  const yarnRcPath = join(applicationDir, YARN_RC)
-
-  if (!(await fileExists(yarnRcPath))) {
-    return undefined
-  }
-
-  const yarnPath = parseYarnPath(readFileSync(yarnRcPath, 'utf-8'))
-
-  if (!yarnPath) {
-    return undefined
-  }
-
-  const resolvedPath = isAbsolute(yarnPath) ? yarnPath : join(applicationDir, yarnPath)
-
-  if (!(await fileExists(resolvedPath))) {
-    return undefined
-  }
-
-  return resolvedPath
-}
-
-const resolveLaunchCommand = async (applicationDir: string): Promise<string> => {
-  const yarnPath = await resolveYarnPath(applicationDir)
-
-  if (yarnPath) {
-    return `exec node ${shellQuote(yarnPath)} ${START_IMAGE_SCRIPT}`
-  }
-
-  return `exec yarn ${START_IMAGE_SCRIPT}`
-}
+import { Configuration }     from '@yarnpkg/core'
+import { Project }           from '@yarnpkg/core'
+import { structUtils }       from '@yarnpkg/core'
+import { npath }             from '@yarnpkg/fslib'
+import execa                 from 'execa'
 
 export class YarnWorkspaceStartBuilder implements Builder {
-  constructor(private readonly runScriptPath: string = RUN_SCRIPT_PATH) {}
-
   async build(ctx: BuildContext): Promise<BuildResult> {
-    const pkgjson = JSON.parse(readFileSync(join(ctx.applicationDir, 'package.json'), 'utf-8'))
+    const applicationDir = npath.toPortablePath(ctx.applicationDir)
+    const configuration = await Configuration.find(applicationDir, null, { strict: false })
+    const { project } = await Project.find(configuration, applicationDir)
+    const workspaceName = ctx.platform.env.get('WORKSPACE')
+    const workspace = workspaceName
+      ? project.getWorkspaceByIdent(structUtils.parseIdent(workspaceName))
+      : project.topLevelWorkspace
+    const start = workspace.manifest.scripts.get('start')
 
-    const command = pkgjson.scripts?.[START_IMAGE_SCRIPT]
-
-    if (typeof command !== 'string' || command.trim().length === 0) {
-      throw new Error(
-        `Missing required package.json script "${START_IMAGE_SCRIPT}" for launch command`
-      )
+    if (!start?.trim()) {
+      throw new Error('Missing required package.json script "start" for launch command')
     }
 
-    await writeFile(
-      this.runScriptPath,
-      `#!/usr/bin/env bash\numask 0002\n${await resolveLaunchCommand(ctx.applicationDir)}`
-    )
-    await chmod(this.runScriptPath, '755')
+    const yarnPath = configuration.get('yarnPath')
 
-    const nodeOptionsLayer = await ctx.layers.get('node-options', true, true, true)
-
-    const nodeOptions: Array<string> = ['--enable-source-maps']
-
-    if (await fileExists(join(ctx.applicationDir, PNP_CJS))) {
-      nodeOptions.push('--require', join(ctx.applicationDir, PNP_CJS))
+    if (!yarnPath) {
+      throw new Error('Missing required yarnPath for the application Yarn runtime')
     }
 
-    if (await fileExists(join(ctx.applicationDir, PNP_ESM_LOADER))) {
-      nodeOptions.push('--loader', join(ctx.applicationDir, PNP_ESM_LOADER))
+    const cwd = npath.fromPortablePath(workspace.cwd)
+    const runtime = npath.fromPortablePath(yarnPath)
+    const options = { cwd, stdio: 'inherit' as const }
+
+    if (workspace.manifest.scripts.has('build')) {
+      await execa(process.execPath, [runtime, 'run', 'build'], options)
     }
 
-    nodeOptionsLayer.launchEnv.append('NODE_OPTIONS', nodeOptions.join(' '), ' ')
+    await execa(process.execPath, [runtime, 'workspaces', 'focus', '--production'], options)
 
-    const result = new BuildResult()
+    const nodeOptionsLayer = await ctx.layers.get('node-options', false, false, true)
 
-    result.addLaunchProcess(new Process('web', ['./run.sh'], [], true))
-    result.addLayer(nodeOptionsLayer)
+    nodeOptionsLayer.launchEnv.append('NODE_OPTIONS', '--enable-source-maps', ' ')
 
-    return result
+    return new BuildResult()
+      .addLaunchProcess(new Process('web', ['node', runtime, 'run', 'start'], [], true, cwd))
+      .addLayer(nodeOptionsLayer)
   }
 }

@@ -10,13 +10,7 @@ include-files = ["buildpack.toml"]
 
 [[order]]
 [[order.group]]
-id = "tech.atls.buildpacks.yarn-install"
-optional = true
-version = "0.2.2" # x-release-please-version
-
-[[order.group]]
 id = "tech.atls.buildpacks.yarn-cache"
-optional = true
 version = "0.2.2" # x-release-please-version
 
 [[order.group]]

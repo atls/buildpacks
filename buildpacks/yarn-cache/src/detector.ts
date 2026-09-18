@@ -12,7 +12,6 @@ export class YarnCacheDetector implements Detector {
 
     try {
       await access(join(ctx.applicationDir, 'yarn.lock'))
-      await access(join(ctx.applicationDir, '.yarn/cache'))
     } catch {
       return result
     }

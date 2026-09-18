@@ -1,63 +1,56 @@
 import type { Builder }      from '@atls/libcnb'
 import type { BuildContext } from '@atls/libcnb'
-import type { PortablePath } from '@yarnpkg/fslib'
-
-import { createHash }        from 'node:crypto'
 
 import { BuildResult }       from '@atls/libcnb'
+import { Configuration }     from '@yarnpkg/core'
 import { execUtils }         from '@yarnpkg/core'
-import { xfs }               from '@yarnpkg/fslib'
+import { npath }             from '@yarnpkg/fslib'
 import { ppath }             from '@yarnpkg/fslib'
-import YAML                  from 'yaml'
 
 export class YarnCacheBuilder implements Builder {
   async build(ctx: BuildContext): Promise<BuildResult> {
-    const applicationDir = ctx.applicationDir as PortablePath
-    const yarnCachePath = ppath.join(applicationDir, '.yarn/cache' as PortablePath)
+    const applicationDir = npath.toPortablePath(ctx.applicationDir)
+    const configuration = await Configuration.find(applicationDir, null, { strict: false })
+    const yarnPath = configuration.get('yarnPath')
 
-    const yarnLock = await xfs.readFilePromise(
-      ppath.join(applicationDir, 'yarn.lock' as PortablePath)
-    )
-    const yarnLockCheckSum = createHash('md5').update(yarnLock).digest('hex')
-
-    const cacheLayer = await ctx.layers.get('yarn-cache', true, true, true)
-
-    if (yarnLockCheckSum !== cacheLayer.getMetadata('locksum')) {
-      for await (const file of await xfs.readdirPromise(yarnCachePath)) {
-        await xfs.copyPromise(
-          ppath.join(cacheLayer.path as PortablePath, file),
-          ppath.join(yarnCachePath, file)
-        )
-        await xfs.removePromise(ppath.join(cacheLayer.path as PortablePath, file))
-      }
-
-      cacheLayer.setMetadata('locksum', yarnLockCheckSum.toString())
+    if (!yarnPath) {
+      throw new Error('Missing required yarnPath for the application Yarn runtime')
     }
 
-    await xfs.removePromise(yarnCachePath)
+    const cacheLayer = await ctx.layers.get('yarn-cache', true, true, true)
+    const globalFolder =
+      ctx.platform.env.get('YARN_GLOBAL_FOLDER') ?? process.env.YARN_GLOBAL_FOLDER
 
-    const yarnrc = await xfs.readFilePromise(
-      ppath.join(applicationDir, '.yarnrc.yml' as PortablePath)
+    if (globalFolder !== undefined && globalFolder !== cacheLayer.path) {
+      throw new Error('YARN_GLOBAL_FOLDER must use the buildpack cache layer')
+    }
+
+    const cacheFolder = configuration.get('cacheFolder')
+
+    if (
+      !configuration.get('enableGlobalCache') &&
+      ppath.contains(applicationDir, cacheFolder) === null &&
+      ppath.contains(npath.toPortablePath(cacheLayer.path), cacheFolder) === null
+    ) {
+      throw new Error('Yarn cacheFolder must be inside the application or buildpack cache layer')
+    }
+
+    const environment = { YARN_GLOBAL_FOLDER: cacheLayer.path }
+
+    cacheLayer.sharedEnv.default('YARN_GLOBAL_FOLDER', cacheLayer.path)
+
+    await execUtils.pipevp(
+      process.execPath,
+      [npath.fromPortablePath(yarnPath), 'install', '--immutable', '--inline-builds'],
+      {
+        cwd: applicationDir,
+        stdin: process.stdin,
+        stdout: process.stdout,
+        stderr: process.stderr,
+        env: { ...environment, ...process.env },
+        strict: true,
+      }
     )
-
-    const yarnrcContent = YAML.parse(yarnrc.toString())
-
-    await xfs.writeFilePromise(
-      ppath.join(applicationDir, '.yarnrc.yml' as PortablePath),
-      YAML.stringify({
-        ...yarnrcContent,
-        cacheFolder: ppath.relative(applicationDir, cacheLayer.path as PortablePath),
-        enableGlobalCache: false,
-      })
-    )
-
-    await execUtils.pipevp('yarn', ['install', '--immutable'], {
-      cwd: applicationDir,
-      stdin: process.stdin,
-      stdout: process.stdout,
-      stderr: process.stderr,
-      env: process.env,
-    })
 
     return new BuildResult().addLayer(cacheLayer)
   }
