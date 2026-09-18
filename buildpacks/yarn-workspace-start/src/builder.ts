@@ -11,6 +11,7 @@ import { isAbsolute }        from 'node:path'
 
 import { BuildResult }       from '@atls/libcnb'
 import { Process }           from '@atls/libcnb'
+import execa                 from 'execa'
 
 const RUN_SCRIPT_PATH = '/workspace/run.sh'
 const START_IMAGE_SCRIPT = 'start-image'
@@ -58,33 +59,50 @@ const resolveYarnPath = async (applicationDir: string): Promise<string | undefin
   return resolvedPath
 }
 
-const resolveLaunchCommand = async (applicationDir: string): Promise<string> => {
+const resolveLaunchCommand = async (
+  applicationDir: string,
+  workspace?: string
+): Promise<string> => {
   const yarnPath = await resolveYarnPath(applicationDir)
+  const command = workspace
+    ? `workspace ${shellQuote(workspace)} run ${START_IMAGE_SCRIPT}`
+    : START_IMAGE_SCRIPT
 
   if (yarnPath) {
-    return `exec node ${shellQuote(yarnPath)} ${START_IMAGE_SCRIPT}`
+    return `exec node ${shellQuote(yarnPath)} ${command}`
   }
 
-  return `exec yarn ${START_IMAGE_SCRIPT}`
+  return `exec yarn ${command}`
 }
 
 export class YarnWorkspaceStartBuilder implements Builder {
   constructor(private readonly runScriptPath: string = RUN_SCRIPT_PATH) {}
 
   async build(ctx: BuildContext): Promise<BuildResult> {
+    const workspace = ctx.platform.env.get('WORKSPACE')
     const pkgjson = JSON.parse(readFileSync(join(ctx.applicationDir, 'package.json'), 'utf-8'))
 
     const command = pkgjson.scripts?.[START_IMAGE_SCRIPT]
 
-    if (typeof command !== 'string' || command.trim().length === 0) {
+    if (!workspace && (typeof command !== 'string' || command.trim().length === 0)) {
       throw new Error(
         `Missing required package.json script "${START_IMAGE_SCRIPT}" for launch command`
       )
     }
 
+    if (workspace) {
+      const yarnPath = await resolveYarnPath(ctx.applicationDir)
+      const executable = yarnPath ? process.execPath : 'yarn'
+      const args = yarnPath ? [yarnPath] : []
+      const options = { cwd: ctx.applicationDir, stdio: 'inherit' as const }
+
+      await execa(executable, [...args, 'workspace', workspace, 'run', 'build'], options)
+      await execa(executable, [...args, 'workspaces', 'focus', workspace, '--production'], options)
+    }
+
     await writeFile(
       this.runScriptPath,
-      `#!/usr/bin/env bash\numask 0002\n${await resolveLaunchCommand(ctx.applicationDir)}`
+      `#!/usr/bin/env bash\numask 0002\n${await resolveLaunchCommand(ctx.applicationDir, workspace)}`
     )
     await chmod(this.runScriptPath, '755')
 

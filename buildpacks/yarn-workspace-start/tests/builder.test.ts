@@ -8,9 +8,12 @@ import { mkdir }                     from 'node:fs/promises'
 import { readFile }                  from 'node:fs/promises'
 import { rm }                        from 'node:fs/promises'
 import { writeFile }                 from 'node:fs/promises'
+import { copyFile }                  from 'node:fs/promises'
 import { tmpdir }                    from 'node:os'
 import { join }                      from 'node:path'
 import { test }                      from 'node:test'
+
+import execa                         from 'execa'
 
 import { YarnWorkspaceStartBuilder } from '../src/builder.js'
 
@@ -257,6 +260,49 @@ test('YarnWorkspaceStartBuilder fails when scripts.start-image is empty', async 
       new YarnWorkspaceStartBuilder(runScriptPath).build(context),
       /Missing required package\.json script "start-image" for launch command/
     )
+  } finally {
+    await rm(rootDir, { recursive: true, force: true })
+  }
+})
+
+test('YarnWorkspaceStartBuilder builds and launches the selected workspace without root scripts', async () => {
+  const { applicationDir, context, rootDir, runScriptPath } = await createContext()
+
+  try {
+    await mkdir(join(applicationDir, 'app'))
+    await writeFile(
+      join(applicationDir, 'package.json'),
+      JSON.stringify({ name: 'proof', private: true, workspaces: ['app'] })
+    )
+    await writeFile(
+      join(applicationDir, 'app/package.json'),
+      JSON.stringify({
+        name: '@proof/app',
+        private: true,
+        scripts: { build: 'node build.js', 'start-image': 'node built.js' },
+      })
+    )
+    await writeFile(
+      join(applicationDir, 'app/build.js'),
+      "require('node:fs').writeFileSync('built.js', \"console.log('selected workspace')\")"
+    )
+    await copyFile(
+      new URL('../../../.yarn/releases/yarn.mjs', import.meta.url),
+      join(applicationDir, 'yarn.mjs')
+    )
+    await writeFile(join(applicationDir, '.yarnrc.yml'), 'yarnPath: ./yarn.mjs\n')
+    await execa(process.execPath, [join(applicationDir, 'yarn.mjs'), 'install', '--no-immutable'], {
+      cwd: applicationDir,
+    })
+
+    await new YarnWorkspaceStartBuilder(runScriptPath).build({
+      ...context,
+      platform: { ...context.platform, env: new Map([['WORKSPACE', '@proof/app']]) },
+    })
+
+    const { stdout } = await execa('bash', [runScriptPath], { cwd: applicationDir })
+
+    assert.equal(stdout, 'selected workspace')
   } finally {
     await rm(rootDir, { recursive: true, force: true })
   }

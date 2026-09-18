@@ -31,6 +31,29 @@ pack build my-app \
 The builder provides the Node stack and CNB lifecycle. The buildpack prepares a
 zero-install Yarn workspace application for build and launch.
 
+## Select An Application Workspace
+
+Pass the project root and the exact workspace name when building an application
+inside a monorepo:
+
+```bash
+pack build my-app \
+  --path . \
+  --builder ghcr.io/atls/builder-base:24 \
+  --buildpack ghcr.io/atls/buildpack-yarn-workspace:24 \
+  --env WORKSPACE=@example/app
+```
+
+The selected workspace supplies `build` and `start-image` scripts. Yarn runs its
+build, focuses production dependencies, and launches its `start-image` script.
+The root package does not need either script. Yarn retains ownership of workspace
+dependencies, patches and Plug'n'Play state; the buildpack does not create a
+standalone package or rewrite dependency resolutions.
+
+The project remains the application context. Production focus does not remove
+unrelated source files or guarantee a minimal image. Without `WORKSPACE`, the
+existing root `start-image` launch remains unchanged.
+
 ## Images
 
 | Image                                 | Use it for                                            |
