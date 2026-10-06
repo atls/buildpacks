@@ -47,3 +47,5 @@ package.tgz
 .idea
 *.iml
 .run/
+.vscode/
+/.yarn/sdks/
