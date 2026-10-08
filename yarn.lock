@@ -132,9 +132,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@atls/raijin@npm:1.1.1":
-  version: 1.1.1
-  resolution: "@atls/raijin@npm:1.1.1"
+"@atls/raijin@npm:2.1.0":
+  version: 2.1.0
+  resolution: "@atls/raijin@npm:2.1.0"
   dependencies:
     "@angular-devkit/core": "npm:22.1.8"
     "@angular-devkit/schematics": "npm:22.1.8"
@@ -167,7 +167,7 @@ __metadata:
   bin:
     raijin: bin/raijin.js
     raijin-hooks: bin/raijin-hooks.js
-  checksum: 10/280c04bc1eb4ba68d075bd31d4e1743666f588169fb6a649cd45bf60b0ada198ba266bc86198f9b6d37ce5ff9c5892394e863834405887b2710a47e3f16d5a40
+  checksum: 10/949cd26efb7ecc3fd6ec14f10504a99e0ec1e9fbb69ae5656f87a310d1fbd9b2780450955dd07414d813d343eef66bc0241ba252da9559bc414831b7cf7cb72b
   languageName: node
   linkType: hard
 
@@ -2568,7 +2568,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "buildpack@workspace:."
   dependencies:
-    "@atls/raijin": "npm:1.1.1"
+    "@atls/raijin": "npm:2.1.0"
     "@semantic-release/commit-analyzer": "npm:13.0.1"
     "@semantic-release/exec": "npm:7.1.0"
     "@semantic-release/github": "npm:12.0.9"
