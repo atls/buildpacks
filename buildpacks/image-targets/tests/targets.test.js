@@ -77,4 +77,23 @@ test('conflicting image names fail before either image can be published', () => 
       }),
     /Image repository name collision: a-b-c/
   )
+  assert.throws(
+    () =>
+      resolveImageTargets({
+        workspaces: collidingWorkspaces,
+        changedLocations: ['a'],
+        manifests: collidingManifests,
+      }),
+    /Image repository name collision: a-b-c/
+  )
+  assert.throws(
+    () =>
+      resolveImageTargets({
+        workspaces: collidingWorkspaces,
+        changedLocations: [],
+        explicitLocations: ['a'],
+        manifests: collidingManifests,
+      }),
+    /Image repository name collision: a-b-c/
+  )
 })

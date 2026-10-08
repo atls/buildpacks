@@ -27,36 +27,39 @@ export const resolveImageTargets = ({
     }
   }
 
-  const targets = workspaces
-    .filter((workspace) => selected.has(workspace.location))
-    .flatMap((workspace) => {
-      const manifest = manifests.get(workspace.location)
+  const eligible = workspaces.flatMap((workspace) => {
+    const manifest = manifests.get(workspace.location)
 
-      if (!manifest?.name || !hasStart(manifest.scripts?.start)) {
-        return []
-      }
+    if (!manifest?.name || !hasStart(manifest.scripts?.start)) {
+      return []
+    }
 
-      return [
-        {
-          workspace: manifest.name,
-          imageName: manifest.name.replace(/^@/, '').replaceAll('/', '-'),
-        },
-      ]
-    })
-    .sort((left, right) => left.workspace.localeCompare(right.workspace))
-
-  if (targets.length === 0) {
-    throw new Error('No eligible image workspaces')
-  }
+    return [
+      {
+        location: workspace.location,
+        workspace: manifest.name,
+        imageName: manifest.name.replace(/^@/, '').replaceAll('/', '-'),
+      },
+    ]
+  })
 
   const imageNames = new Set()
 
-  for (const target of targets) {
+  for (const target of eligible) {
     if (imageNames.has(target.imageName)) {
       throw new Error(`Image repository name collision: ${target.imageName}`)
     }
 
     imageNames.add(target.imageName)
+  }
+
+  const targets = eligible
+    .filter(({ location }) => selected.has(location))
+    .map(({ workspace, imageName }) => ({ workspace, imageName }))
+    .sort((left, right) => left.workspace.localeCompare(right.workspace))
+
+  if (targets.length === 0) {
+    throw new Error('No eligible image workspaces')
   }
 
   return targets
