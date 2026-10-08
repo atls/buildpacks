@@ -2480,7 +2480,7 @@ const RAW_RUNTIME_STATE =
           ["camelcase", "npm:5.3.1"],\
           ["chalk", "npm:3.0.0"],\
           ["ci-info", "npm:3.9.0"],\
-          ["clipanion", "virtual:b80567f1f726ad28b5f69c2f4d583115762754ed5e643c8ffc700d555267034c078163b8acf27ac9e54b95573c3afeb591dde0dc0755beb1e2c159d60551a612#npm:4.0.0-rc.2"],\
+          ["clipanion", "virtual:b80567f1f726ad28b5f69c2f4d583115762754ed5e643c8ffc700d555267034c078163b8acf27ac9e54b95573c3afeb591dde0dc0755beb1e2c159d60551a612#npm:4.0.0-rc.4"],\
           ["cross-spawn", "npm:7.0.3"],\
           ["diff", "npm:5.2.0"],\
           ["dotenv", "npm:16.4.5"],\
@@ -2513,7 +2513,7 @@ const RAW_RUNTIME_STATE =
           ["camelcase", "npm:5.3.1"],\
           ["chalk", "npm:4.1.2"],\
           ["ci-info", "npm:4.4.0"],\
-          ["clipanion", "virtual:b80567f1f726ad28b5f69c2f4d583115762754ed5e643c8ffc700d555267034c078163b8acf27ac9e54b95573c3afeb591dde0dc0755beb1e2c159d60551a612#npm:4.0.0-rc.2"],\
+          ["clipanion", "virtual:b80567f1f726ad28b5f69c2f4d583115762754ed5e643c8ffc700d555267034c078163b8acf27ac9e54b95573c3afeb591dde0dc0755beb1e2c159d60551a612#npm:4.0.0-rc.4"],\
           ["cross-spawn", "npm:7.0.3"],\
           ["diff", "npm:5.2.0"],\
           ["dotenv", "npm:16.4.5"],\
@@ -2625,7 +2625,7 @@ const RAW_RUNTIME_STATE =
           ["@yarnpkg/parsers", "npm:3.0.0"],\
           ["@yarnpkg/shell", "npm:4.0.0"],\
           ["chalk", "npm:3.0.0"],\
-          ["clipanion", "virtual:b80567f1f726ad28b5f69c2f4d583115762754ed5e643c8ffc700d555267034c078163b8acf27ac9e54b95573c3afeb591dde0dc0755beb1e2c159d60551a612#npm:4.0.0-rc.2"],\
+          ["clipanion", "virtual:b80567f1f726ad28b5f69c2f4d583115762754ed5e643c8ffc700d555267034c078163b8acf27ac9e54b95573c3afeb591dde0dc0755beb1e2c159d60551a612#npm:4.0.0-rc.4"],\
           ["cross-spawn", "npm:7.0.3"],\
           ["fast-glob", "npm:3.3.2"],\
           ["micromatch", "npm:4.0.5"],\
@@ -2640,7 +2640,7 @@ const RAW_RUNTIME_STATE =
           ["@yarnpkg/parsers", "npm:3.1.0"],\
           ["@yarnpkg/shell", "npm:4.1.3"],\
           ["chalk", "npm:4.1.2"],\
-          ["clipanion", "virtual:b80567f1f726ad28b5f69c2f4d583115762754ed5e643c8ffc700d555267034c078163b8acf27ac9e54b95573c3afeb591dde0dc0755beb1e2c159d60551a612#npm:4.0.0-rc.2"],\
+          ["clipanion", "virtual:b80567f1f726ad28b5f69c2f4d583115762754ed5e643c8ffc700d555267034c078163b8acf27ac9e54b95573c3afeb591dde0dc0755beb1e2c159d60551a612#npm:4.0.0-rc.4"],\
           ["cross-spawn", "npm:7.0.3"],\
           ["fast-glob", "npm:3.3.2"],\
           ["micromatch", "npm:4.0.5"],\
@@ -3522,18 +3522,18 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["clipanion", [\
-      ["npm:4.0.0-rc.2", {\
-        "packageLocation": "../.yarn/berry/cache/clipanion-npm-4.0.0-rc.2-ad27d804c4-10.zip/node_modules/clipanion/",\
+      ["npm:4.0.0-rc.4", {\
+        "packageLocation": "../.yarn/berry/cache/clipanion-npm-4.0.0-rc.4-40deb7eb3b-10.zip/node_modules/clipanion/",\
         "packageDependencies": [\
-          ["clipanion", "npm:4.0.0-rc.2"]\
+          ["clipanion", "npm:4.0.0-rc.4"]\
         ],\
         "linkType": "SOFT"\
       }],\
-      ["virtual:b80567f1f726ad28b5f69c2f4d583115762754ed5e643c8ffc700d555267034c078163b8acf27ac9e54b95573c3afeb591dde0dc0755beb1e2c159d60551a612#npm:4.0.0-rc.2", {\
-        "packageLocation": "./.yarn/__virtual__/clipanion-virtual-973bc78e69/2/.yarn/berry/cache/clipanion-npm-4.0.0-rc.2-ad27d804c4-10.zip/node_modules/clipanion/",\
+      ["virtual:b80567f1f726ad28b5f69c2f4d583115762754ed5e643c8ffc700d555267034c078163b8acf27ac9e54b95573c3afeb591dde0dc0755beb1e2c159d60551a612#npm:4.0.0-rc.4", {\
+        "packageLocation": "./.yarn/__virtual__/clipanion-virtual-4a3c099085/2/.yarn/berry/cache/clipanion-npm-4.0.0-rc.4-40deb7eb3b-10.zip/node_modules/clipanion/",\
         "packageDependencies": [\
           ["@types/typanion", null],\
-          ["clipanion", "virtual:b80567f1f726ad28b5f69c2f4d583115762754ed5e643c8ffc700d555267034c078163b8acf27ac9e54b95573c3afeb591dde0dc0755beb1e2c159d60551a612#npm:4.0.0-rc.2"],\
+          ["clipanion", "virtual:b80567f1f726ad28b5f69c2f4d583115762754ed5e643c8ffc700d555267034c078163b8acf27ac9e54b95573c3afeb591dde0dc0755beb1e2c159d60551a612#npm:4.0.0-rc.4"],\
           ["typanion", "npm:3.14.0"]\
         ],\
         "packagePeers": [\

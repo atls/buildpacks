@@ -3,7 +3,8 @@ description: Resolve buildable Yarn workspaces for the ATLS image publisher
 inputs:
   base:
     description: Exact Git comparison commit for the default changed-workspace mode
-    required: true
+    required: false
+    default: ''
   include:
     description: Comma-separated workspace names or globs to include from all workspaces
     required: false

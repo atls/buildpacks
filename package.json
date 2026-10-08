@@ -8,8 +8,14 @@
     "buildpacks/*",
     "libcnb"
   ],
-  "resolutions": {
-    "clipanion": "4.0.0-rc.2"
+  "lint-staged": {
+    "*.{json,md,yml,yaml}": "yarn format",
+    "*.{js,jsx,ts,tsx}": [
+      "yarn format",
+      "yarn lint"
+    ],
+    "*.{ts,tsx}": "yarn typecheck",
+    "*.{test,spec}.{js,ts,tsx}": "yarn test unit"
   },
   "devDependencies": {
     "@atls/raijin": "1.1.1",
