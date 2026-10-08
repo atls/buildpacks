@@ -46,8 +46,7 @@ if [[ -d "${source_dir}/bin" ]] && grep -RqsF "../dist/index" "${source_dir}/bin
     exit 1
   fi
 
-  yarn node "$(dirname "$0")/bundle-buildpack-runtime.js" \
-    "${source_dir}/dist/index.js" "${stage_dir}/dist"
+  cp -R "${source_dir}/dist" "${stage_dir}/dist"
 fi
 
 export BUILDPACK_DIR="${stage_dir}"
