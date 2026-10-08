@@ -15,6 +15,10 @@ const RAW_RUNTIME_STATE =
       "reference": "workspace:."\
     },\
     {\
+      "name": "@atls/buildpack-image-targets",\
+      "reference": "workspace:buildpacks/image-targets"\
+    },\
+    {\
       "name": "@atls/buildpack-yarn-cache",\
       "reference": "workspace:buildpacks/yarn-cache"\
     },\
@@ -31,6 +35,7 @@ const RAW_RUNTIME_STATE =
   "ignorePatternData": "(^(?:\\\\.yarn\\\\/sdks(?:\\\\/(?!\\\\.{1,2}(?:\\\\/|$))(?:(?:(?!(?:^|\\\\/)\\\\.{1,2}(?:\\\\/|$)).)*?)|$))$)",\
   "pnpZipBackend": "libzip",\
   "fallbackExclusionList": [\
+    ["@atls/buildpack-image-targets", ["workspace:buildpacks/image-targets"]],\
     ["@atls/buildpack-yarn-cache", ["workspace:buildpacks/yarn-cache"]],\
     ["@atls/buildpack-yarn-workspace-start", ["workspace:buildpacks/yarn-workspace-start"]],\
     ["@atls/libcnb", ["workspace:libcnb"]],\
@@ -117,6 +122,15 @@ const RAW_RUNTIME_STATE =
           ["grapheme-splitter", "npm:1.0.4"]\
         ],\
         "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@atls/buildpack-image-targets", [\
+      ["workspace:buildpacks/image-targets", {\
+        "packageLocation": "./buildpacks/image-targets/",\
+        "packageDependencies": [\
+          ["@atls/buildpack-image-targets", "workspace:buildpacks/image-targets"]\
+        ],\
+        "linkType": "SOFT"\
       }]\
     ]],\
     ["@atls/buildpack-yarn-cache", [\

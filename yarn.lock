@@ -57,6 +57,12 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@atls/buildpack-image-targets@workspace:buildpacks/image-targets":
+  version: 0.0.0-use.local
+  resolution: "@atls/buildpack-image-targets@workspace:buildpacks/image-targets"
+  languageName: unknown
+  linkType: soft
+
 "@atls/buildpack-yarn-cache@workspace:buildpacks/yarn-cache":
   version: 0.0.0-use.local
   resolution: "@atls/buildpack-yarn-cache@workspace:buildpacks/yarn-cache"

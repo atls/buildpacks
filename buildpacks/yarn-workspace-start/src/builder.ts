@@ -9,6 +9,8 @@ import { structUtils }       from '@yarnpkg/core'
 import { npath }             from '@yarnpkg/fslib'
 import execa                 from 'execa'
 
+import { hasStart }          from './eligibility.js'
+
 export class YarnWorkspaceStartBuilder implements Builder {
   async build(ctx: BuildContext): Promise<BuildResult> {
     const applicationDir = npath.toPortablePath(ctx.applicationDir)
@@ -20,7 +22,7 @@ export class YarnWorkspaceStartBuilder implements Builder {
       : project.topLevelWorkspace
     const start = workspace.manifest.scripts.get('start')
 
-    if (!start?.trim()) {
+    if (!hasStart(start)) {
       throw new Error('Missing required package.json script "start" for launch command')
     }
 
