@@ -48,7 +48,7 @@ export class YarnCacheBuilder implements Builder {
         stdin: process.stdin,
         stdout: process.stdout,
         stderr: process.stderr,
-        env: { ...environment, ...process.env },
+        env: { ...environment, ...process.env, HUSKY: '0' },
         strict: true,
       }
     )

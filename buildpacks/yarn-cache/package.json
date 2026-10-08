@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "prebuild": "yarn clean",
-    "build": "yarn service build",
+    "build": "yarn service build --standalone",
     "clean": "rm -r -f dist"
   },
   "devDependencies": {
