@@ -21,8 +21,9 @@ on:
       - 'yarn.lock'
 
 env:
-  PACK_VERSION: 0.40.4
+  PACK_VERSION: 0.40.9
   REGISTRY: ghcr.io
+  TOOLING_NODE_MAJOR: '24'
 
 concurrency:
   group: docker-release
@@ -48,7 +49,7 @@ jobs:
       stack_id: ${{ steps.release-config.outputs.stack_id }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
@@ -90,9 +91,9 @@ jobs:
           } >> "${GITHUB_OUTPUT}"
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7.1.0
         with:
-          node-version: ${{ steps.release-config.outputs.default_node_major }}
+          node-version: ${{ env.TOOLING_NODE_MAJOR }}
 
       - name: Install dependencies
         run: yarn install --immutable
@@ -132,23 +133,23 @@ jobs:
         node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v4.0.0
+        uses: docker/setup-qemu-action@v4.4.0
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v4.0.0
+        uses: docker/setup-buildx-action@v4.4.1
 
       - name: Login to GHCR
-        uses: docker/login-action@v4.1.0
+        uses: docker/login-action@v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish stack images
-        uses: docker/bake-action@v6
+        uses: docker/bake-action@v7.4.0
         env:
           BASE_IMAGE: ${{ needs.validate-release.outputs.base_image }}
           IMAGE_PREFIX: ${{ needs.validate-release.outputs.image_prefix }}
@@ -186,20 +187,20 @@ jobs:
             image_repository: ghcr.io/atls/buildpack-extension-graphql-hive
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v4.0.0
+        uses: docker/setup-buildx-action@v4.4.1
 
       - name: Setup pack
-        uses: buildpacks/github-actions/setup-pack@v5.12.1
+        uses: buildpacks/github-actions/setup-pack@v6.1.1
         with:
           pack-version: ${{ env.PACK_VERSION }}
 
       - name: Login to GHCR
-        uses: docker/login-action@v4.1.0
+        uses: docker/login-action@v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -267,21 +268,21 @@ jobs:
             image_repository: ghcr.io/atls/buildpack-yarn-workspace-start
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7.1.0
         with:
-          node-version: ${{ needs.validate-release.outputs.default_node_major }}
+          node-version: ${{ env.TOOLING_NODE_MAJOR }}
 
       - name: Yarn cache directory
         id: yarn-cache-dir-path
         run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Yarn dependencies
-        uses: actions/cache@v6
+        uses: actions/cache@v6.1.0
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
@@ -292,15 +293,15 @@ jobs:
         run: yarn install --immutable
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v4.0.0
+        uses: docker/setup-buildx-action@v4.4.1
 
       - name: Setup pack
-        uses: buildpacks/github-actions/setup-pack@v5.12.1
+        uses: buildpacks/github-actions/setup-pack@v6.1.1
         with:
           pack-version: ${{ env.PACK_VERSION }}
 
       - name: Login to GHCR
-        uses: docker/login-action@v4.1.0
+        uses: docker/login-action@v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -386,20 +387,20 @@ jobs:
       image: ${{ steps.buildpack-image.outputs.image }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v4.0.0
+        uses: docker/setup-buildx-action@v4.4.1
 
       - name: Setup pack
-        uses: buildpacks/github-actions/setup-pack@v5.12.1
+        uses: buildpacks/github-actions/setup-pack@v6.1.1
         with:
           pack-version: ${{ env.PACK_VERSION }}
 
       - name: Login to GHCR
-        uses: docker/login-action@v4.1.0
+        uses: docker/login-action@v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -481,7 +482,7 @@ jobs:
         node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
     steps:
       - name: Login to GHCR
-        uses: docker/login-action@v4.1.0
+        uses: docker/login-action@v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -528,10 +529,10 @@ jobs:
         node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
 
       - name: Setup pack
-        uses: buildpacks/github-actions/setup-pack@v5.12.1
+        uses: buildpacks/github-actions/setup-pack@v6.1.1
         with:
           pack-version: ${{ env.PACK_VERSION }}
 
@@ -539,7 +540,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes gettext-base
 
       - name: Login to GHCR
-        uses: docker/login-action@v4.1.0
+        uses: docker/login-action@v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -578,7 +579,7 @@ jobs:
         node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
     steps:
       - name: Login to GHCR
-        uses: docker/login-action@v4.1.0
+        uses: docker/login-action@v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -620,7 +621,7 @@ jobs:
           - stack-node-run
     steps:
       - name: Login to GHCR
-        uses: docker/login-action@v4.1.0
+        uses: docker/login-action@v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -689,7 +690,7 @@ jobs:
           limit-severities-for-sarif: true
 
       - name: Upload vulnerability report
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v4.38.2
         with:
           sarif_file: ${{ steps.scan-image.outputs.sarif }}
           category: ${{ steps.scan-image.outputs.category }}
@@ -727,10 +728,10 @@ jobs:
           - run
     steps:
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v4.0.0
+        uses: docker/setup-qemu-action@v4.4.0
 
       - name: Login to GHCR
-        uses: docker/login-action@v4.1.0
+        uses: docker/login-action@v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -760,10 +761,10 @@ jobs:
         platform: ${{ fromJson(needs.validate-release.outputs.platforms_json) }}
     steps:
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v4.0.0
+        uses: docker/setup-qemu-action@v4.4.0
 
       - name: Login to GHCR
-        uses: docker/login-action@v4.1.0
+        uses: docker/login-action@v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -790,14 +791,14 @@ jobs:
       released: ${{ steps.release.outputs.released }}
     steps:
       - name: Checkout accepted source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.sha }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7.1.0
         with:
-          node-version: ${{ needs.validate-release.outputs.default_node_major }}
+          node-version: ${{ env.TOOLING_NODE_MAJOR }}
 
       - name: Install dependencies
         run: yarn install --immutable
@@ -829,10 +830,10 @@ jobs:
         node_line: ${{ fromJson(needs.validate-release.outputs.node_lines) }}
     steps:
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v4.0.0
+        uses: docker/setup-buildx-action@v4.4.1
 
       - name: Login to GHCR
-        uses: docker/login-action@v4.1.0
+        uses: docker/login-action@v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
