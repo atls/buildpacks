@@ -12,17 +12,14 @@
     "clipanion": "4.0.0-rc.2"
   },
   "devDependencies": {
-    "@atls/raijin": "0.5.2",
+    "@atls/raijin": "1.1.1",
     "@semantic-release/commit-analyzer": "13.0.1",
     "@semantic-release/exec": "7.1.0",
     "@semantic-release/github": "12.0.9",
     "@semantic-release/release-notes-generator": "14.1.1",
-    "@types/eslint": "8",
-    "@types/node": "20.12.3",
+    "@types/node": "24.19.1",
     "conventional-changelog-conventionalcommits": "9.3.1",
-    "eslint": "8.57.0",
-    "semantic-release": "25.0.9",
-    "typescript": "5.2.2"
+    "semantic-release": "25.0.9"
   },
-  "packageManager": "yarn@4.14.1"
+  "packageManager": "yarn@4.18.0"
 }

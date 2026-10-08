@@ -1,18 +1,15 @@
 type DetectMetadataArray =
-  | Array<boolean>
-  | Array<Date>
-  | Array<DetectMetadata>
-  | Array<number>
-  | Array<string>
+  Array<boolean> | Array<Date> | Array<DetectMetadata> | Array<number> | Array<string>
 
 type DetectMetadataValue =
-  | Array<DetectMetadataArray>
-  | Date
-  | DetectMetadata
-  | DetectMetadataArray
-  | boolean
-  | number
-  | string
+
+    | Array<DetectMetadataArray>
+    | Date
+    | DetectMetadata
+    | DetectMetadataArray
+    | boolean
+    | number
+    | string
 
 interface DetectMetadata {
   [key: string]: DetectMetadataValue

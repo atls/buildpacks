@@ -1,13 +1,16 @@
 import type { Builder }      from '@atls/libcnb'
 import type { BuildContext } from '@atls/libcnb'
 
-import { BuildResult }       from '@atls/libcnb'
-import { Process }           from '@atls/libcnb'
 import { Configuration }     from '@yarnpkg/core'
 import { Project }           from '@yarnpkg/core'
 import { structUtils }       from '@yarnpkg/core'
 import { npath }             from '@yarnpkg/fslib'
 import execa                 from 'execa'
+
+import { BuildResult }       from '@atls/libcnb'
+import { Process }           from '@atls/libcnb'
+
+import { hasStart }          from './eligibility.js'
 
 export class YarnWorkspaceStartBuilder implements Builder {
   async build(ctx: BuildContext): Promise<BuildResult> {
@@ -20,7 +23,7 @@ export class YarnWorkspaceStartBuilder implements Builder {
       : project.topLevelWorkspace
     const start = workspace.manifest.scripts.get('start')
 
-    if (!start?.trim()) {
+    if (!hasStart(start)) {
       throw new Error('Missing required package.json script "start" for launch command')
     }
 

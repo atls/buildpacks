@@ -8,7 +8,7 @@ import { asTomlTable }        from './readers/index.js'
 
 export const parseTomlTable = (content: string, path: string): TomlTable => {
   try {
-    return asTomlTable(parse(content) as unknown, path)
+    return asTomlTable(parse(content), path)
   } catch (error) {
     if (error instanceof InvalidConfigError) {
       throw error

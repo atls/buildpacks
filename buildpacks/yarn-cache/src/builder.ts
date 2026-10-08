@@ -1,11 +1,12 @@
 import type { Builder }      from '@atls/libcnb'
 import type { BuildContext } from '@atls/libcnb'
 
-import { BuildResult }       from '@atls/libcnb'
 import { Configuration }     from '@yarnpkg/core'
 import { execUtils }         from '@yarnpkg/core'
 import { npath }             from '@yarnpkg/fslib'
 import { ppath }             from '@yarnpkg/fslib'
+
+import { BuildResult }       from '@atls/libcnb'
 
 export class YarnCacheBuilder implements Builder {
   async build(ctx: BuildContext): Promise<BuildResult> {

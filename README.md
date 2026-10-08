@@ -63,6 +63,23 @@ The project remains the application context. Production focus does not remove
 unrelated source files or guarantee a minimal image. Without `WORKSPACE`, the
 same build, production focus and launch sequence applies to the root workspace.
 
+## Image Targets For Workflows
+
+The `buildpacks/image-targets` GitHub action selects image workspaces before a
+workflow invokes Pack. Pin it to a published `buildpack-root-<version>` tag and
+check out the caller repository with full Git history. The action needs Node 24
+and the repository-managed Yarn executable. Its required `base` input is the
+exact comparison commit; optional `include` or `exclude` inputs use Yarn's own
+workspace glob selection across all workspaces. The action returns a `matrix`
+output containing `{ workspace, imageName }` pairs, without building or
+publishing an image. A missing eligible image fails selection.
+
+With no explicit filter, Yarn selects changed workspaces and the action includes
+their dependents. A root workspace change selects all image workspaces. The
+production `start` script is the shared eligibility condition for the action
+and the Yarn workspace buildpack. Image names use the existing scoped package
+normalization (`@scope/name` becomes `scope-name`).
+
 ## Images
 
 | Image                                 | Use it for                                            |

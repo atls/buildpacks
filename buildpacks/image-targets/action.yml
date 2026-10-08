@@ -1,0 +1,28 @@
+name: Image targets
+description: Resolve buildable Yarn workspaces for the ATLS image publisher
+inputs:
+  base:
+    description: Exact Git comparison commit for the default changed-workspace mode
+    required: true
+  include:
+    description: Comma-separated workspace names or globs to include from all workspaces
+    required: false
+    default: ''
+  exclude:
+    description: Comma-separated workspace names or globs to exclude from all workspaces
+    required: false
+    default: ''
+outputs:
+  matrix:
+    description: JSON array of workspace and imageName pairs
+    value: ${{ steps.select.outputs.matrix }}
+runs:
+  using: composite
+  steps:
+    - id: select
+      shell: bash
+      env:
+        BASE_SHA: ${{ inputs.base }}
+        INCLUDE: ${{ inputs.include }}
+        EXCLUDE: ${{ inputs.exclude }}
+      run: node "$GITHUB_ACTION_PATH/select.js"
