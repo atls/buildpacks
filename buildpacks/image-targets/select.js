@@ -11,10 +11,6 @@ const root = process.env.GITHUB_WORKSPACE || process.cwd()
 const base = process.env.BASE_SHA
 const execute = promisify(execFile)
 
-if (!base) {
-  throw new Error('Missing comparison SHA')
-}
-
 const include = (process.env.INCLUDE || '')
   .split(',')
   .map((value) => value.trim())
@@ -26,6 +22,12 @@ const exclude = (process.env.EXCLUDE || '')
 
 if (include.length > 0 && exclude.length > 0) {
   throw new Error('include and exclude cannot be combined')
+}
+
+const allMode = include.length > 0 || exclude.length > 0
+
+if (!allMode && (!base || /^0+$/.test(base))) {
+  throw new Error('Changed-workspace selection requires a nonzero comparison SHA')
 }
 
 const listWorkspaces = async (...options) => {
@@ -41,7 +43,6 @@ const listWorkspaces = async (...options) => {
 }
 
 const workspaces = await listWorkspaces('--verbose')
-const allMode = include.length > 0 || exclude.length > 0
 const changedLocations = allMode
   ? []
   : (await listWorkspaces(`--since=${base}`)).map(({ location }) => location)

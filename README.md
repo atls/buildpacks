@@ -66,11 +66,12 @@ same build, production focus and launch sequence applies to the root workspace.
 ## Image Targets For Workflows
 
 The `buildpacks/image-targets` GitHub action selects image workspaces before a
-workflow invokes Pack. Pin it to a published `buildpack-root-<version>` tag and
-check out the caller repository with full Git history. The action needs Node 24
-and the repository-managed Yarn executable. Its required `base` input is the
-exact comparison commit; optional `include` or `exclude` inputs use Yarn's own
-workspace glob selection across all workspaces. The action returns a `matrix`
+workflow invokes Pack. Pin it to a published `buildpack-root-<version>` tag.
+The action needs Node 24 and the repository-managed Yarn executable. For the
+default changed-workspace selection, check out the caller with full Git history
+and pass an exact, nonzero comparison commit as `base`. With `include` or
+`exclude`, `base` may be omitted; Yarn selects matching workspaces from all
+workspaces. The action returns a `matrix`
 output containing `{ workspace, imageName }` pairs, without building or
 publishing an image. A missing eligible image fails selection.
 

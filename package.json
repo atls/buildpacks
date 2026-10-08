@@ -17,9 +17,6 @@
     "*.{ts,tsx}": "yarn typecheck",
     "*.{test,spec}.{js,ts,tsx}": "yarn test unit"
   },
-  "resolutions": {
-    "clipanion": "4.0.0-rc.2"
-  },
   "devDependencies": {
     "@atls/raijin": "1.1.1",
     "@semantic-release/commit-analyzer": "13.0.1",
