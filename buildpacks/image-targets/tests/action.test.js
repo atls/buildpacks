@@ -15,8 +15,14 @@ const yarnPath = join(repositoryRoot, '.yarn/releases/yarn.js')
 test('action selects changed dependents and delegates include/exclude globs to Yarn', async (context) => {
   const directory = await mkdtemp(join(tmpdir(), 'atls-image-targets-fixture-'))
   const root = join(directory, 'project')
+  const inheritedIndex = join(directory, 'inherited.index')
+
+  await writeFile(inheritedIndex, 'fixture must not write here')
+
   const fixtureEnvironment = Object.fromEntries(
-    Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_'))
+    Object.entries({ ...process.env, GIT_INDEX_FILE: inheritedIndex }).filter(
+      ([name]) => !name.startsWith('GIT_')
+    )
   )
   const git = (args) =>
     execute('git', args, {
@@ -121,4 +127,5 @@ test('action selects changed dependents and delegates include/exclude globs to Y
   await assert.rejects(select({ include: '@demo/*', exclude: '@demo/site' }), {
     message: /include and exclude cannot be combined/,
   })
+  assert.equal(await readFile(inheritedIndex, 'utf8'), 'fixture must not write here')
 })
