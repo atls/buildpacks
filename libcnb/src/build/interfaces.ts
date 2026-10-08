@@ -1,18 +1,8 @@
 type BuildMetadataArray =
-  | Array<boolean>
-  | Array<Date>
-  | Array<BuildMetadata>
-  | Array<number>
-  | Array<string>
+  Array<boolean> | Array<Date> | Array<BuildMetadata> | Array<number> | Array<string>
 
 type BuildMetadataValue =
-  | Array<BuildMetadataArray>
-  | Date
-  | BuildMetadata
-  | BuildMetadataArray
-  | boolean
-  | number
-  | string
+  Array<BuildMetadataArray> | Date | BuildMetadata | BuildMetadataArray | boolean | number | string
 
 interface BuildMetadata {
   [key: string]: BuildMetadataValue

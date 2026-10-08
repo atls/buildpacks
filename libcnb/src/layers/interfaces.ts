@@ -1,18 +1,8 @@
 type LayerMetadataArray =
-  | Array<boolean>
-  | Array<Date>
-  | Array<LayerMetadata>
-  | Array<number>
-  | Array<string>
+  Array<boolean> | Array<Date> | Array<LayerMetadata> | Array<number> | Array<string>
 
 type LayerMetadataValue =
-  | Array<LayerMetadataArray>
-  | Date
-  | LayerMetadata
-  | LayerMetadataArray
-  | boolean
-  | number
-  | string
+  Array<LayerMetadataArray> | Date | LayerMetadata | LayerMetadataArray | boolean | number | string
 
 interface LayerMetadata {
   [key: string]: LayerMetadataValue

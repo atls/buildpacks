@@ -16,7 +16,7 @@ export const resolveImageTargets = ({
   }
 
   if (!allMode) {
-    for (let previousSize = -1; previousSize !== selected.size; ) {
+    for (let previousSize = -1; previousSize !== selected.size;) {
       previousSize = selected.size
 
       for (const workspace of workspaces) {

@@ -1,8 +1,5 @@
 export type CnbErrorReason =
-  | 'invalid-config'
-  | 'invalid-environment'
-  | 'io-failure'
-  | 'unsupported-phase'
+  'invalid-config' | 'invalid-environment' | 'io-failure' | 'unsupported-phase'
 
 export class CnbError extends Error {
   constructor(

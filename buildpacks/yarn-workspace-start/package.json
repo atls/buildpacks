@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@atls/libcnb": "workspace:*",
-    "@types/node": "20.12.3",
+    "@types/node": "24.19.1",
     "@yarnpkg/core": "4.0.3",
     "@yarnpkg/fslib": "3.0.2",
     "execa": "5.1.1"
