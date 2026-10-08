@@ -26,6 +26,12 @@
     "types": ["node"],
     "jsx": "react"
   },
-  "include": ["project.types.d.ts", "release.config.js", "buildpacks/**/*", "libcnb/**/*"],
+  "include": [
+    "project.types.d.ts",
+    "release.config.js",
+    "scripts/**/*.js",
+    "buildpacks/**/*",
+    "libcnb/**/*"
+  ],
   "exclude": ["**/dist/**"]
 }

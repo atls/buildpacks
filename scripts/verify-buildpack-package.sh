@@ -71,6 +71,16 @@ if [[ -d "${source_dir}/bin" ]] && grep -RqsF "../dist/index" "${source_dir}/bin
     echo "packaged dist/index.js is missing" >&2
     exit 1
   fi
+
+  if node "${buildpack_root}/dist/index.js" > "${tmp_dir}/runtime.log" 2>&1; then
+    echo "packaged entry unexpectedly completed without a CNB phase" >&2
+    exit 1
+  fi
+
+  if ! grep -qF 'UnsupportedPhaseError: Unsupported phase index.js' "${tmp_dir}/runtime.log"; then
+    cat "${tmp_dir}/runtime.log" >&2
+    exit 1
+  fi
 fi
 
 if [[ -f "${source_dir}/package.json" ]]; then
