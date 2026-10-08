@@ -8,6 +8,15 @@
     "buildpacks/*",
     "libcnb"
   ],
+  "lint-staged": {
+    "*.{json,md,yml,yaml}": "yarn format",
+    "*.{js,jsx,ts,tsx}": [
+      "yarn format",
+      "yarn lint"
+    ],
+    "*.{ts,tsx}": "yarn typecheck",
+    "*.{test,spec}.{js,ts,tsx}": "yarn test unit"
+  },
   "resolutions": {
     "clipanion": "4.0.0-rc.2"
   },
