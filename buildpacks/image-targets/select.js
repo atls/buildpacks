@@ -1,9 +1,7 @@
 import { execFile } from 'node:child_process'
-import { appendFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { appendFile, readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
-import { fileURLToPath } from 'node:url'
 
 import { resolveImageTargets } from './src/targets.js'
 
@@ -49,28 +47,39 @@ const changedLocations = allMode
 let explicitLocations
 
 if (allMode) {
-  const temporaryDirectory = await mkdtemp(join(tmpdir(), 'atls-image-targets-'))
-  const output = join(temporaryDirectory, 'locations.txt')
-  const recorder = join(dirname(fileURLToPath(import.meta.url)), 'record.js')
+  const flags = [
+    ...include.flatMap((glob) => ['--include', glob]),
+    ...exclude.flatMap((glob) => ['--exclude', glob]),
+  ]
+  const { stdout } = await execute(
+    'yarn',
+    ['workspaces', 'foreach', '--all', '--dry-run', ...flags, 'exec', 'node'],
+    { cwd: root, encoding: 'utf8' }
+  )
+  const [heading, ...selection] = stdout.trimEnd().split('\n')
 
-  try {
-    await writeFile(output, '')
-
-    const flags = [
-      ...include.flatMap((glob) => ['--include', glob]),
-      ...exclude.flatMap((glob) => ['--exclude', glob]),
-    ]
-
-    await execute('yarn', ['workspaces', 'foreach', '--all', ...flags, 'exec', 'node', recorder], {
-      cwd: root,
-      env: { ...process.env, IMAGE_TARGETS_ROOT: root, IMAGE_TARGETS_FILE: output },
-      encoding: 'utf8',
-    })
-
-    explicitLocations = (await readFile(output, 'utf8')).split('\n').filter(Boolean)
-  } finally {
-    await rm(temporaryDirectory, { recursive: true, force: true })
+  if (heading !== 'Option --all is set; selecting all workspaces') {
+    throw new Error('Unexpected Yarn workspace selection output')
   }
+
+  const knownLocations = new Set(workspaces.map(({ location }) => location))
+  const excludedLocations = new Set()
+
+  for (const line of selection) {
+    const match = line.match(
+      /^Excluding (.+) because it (?:doesn't match the --include filter|matches the --exclude filter)$/
+    )
+
+    if (!match || !knownLocations.has(match[1])) {
+      throw new Error('Unexpected Yarn workspace selection output')
+    }
+
+    excludedLocations.add(match[1])
+  }
+
+  explicitLocations = workspaces
+    .map(({ location }) => location)
+    .filter((location) => !excludedLocations.has(location))
 }
 const manifests = new Map(
   await Promise.all(
