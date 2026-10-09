@@ -95,6 +95,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@atls/buildpack-publish-image@workspace:buildpacks/publish-image":
+  version: 0.0.0-use.local
+  resolution: "@atls/buildpack-publish-image@workspace:buildpacks/publish-image"
+  languageName: unknown
+  linkType: soft
+
 "@atls/buildpack-yarn-cache@workspace:buildpacks/yarn-cache":
   version: 0.0.0-use.local
   resolution: "@atls/buildpack-yarn-cache@workspace:buildpacks/yarn-cache"
