@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { access, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
@@ -40,7 +40,10 @@ test('action selects changed dependents and delegates include/exclude globs to Y
     )
   )
 
-  await writeFile(join(root, '.yarnrc.yml'), `yarnPath: ${JSON.stringify(yarnPath)}\n`)
+  await writeFile(
+    join(root, '.yarnrc.yml'),
+    `yarnPath: ${JSON.stringify(yarnPath)}\nnodeLinker: node-modules\n`
+  )
   await writeFile(
     join(root, 'package.json'),
     JSON.stringify({
@@ -71,6 +74,9 @@ test('action selects changed dependents and delegates include/exclude globs to Y
     cwd: root,
     env: { ...fixtureEnvironment, YARN_ENABLE_IMMUTABLE_INSTALLS: 'false' },
   })
+  await rm(join(root, 'node_modules'), { recursive: true, force: true })
+  await rm(join(root, '.yarn', 'install-state.gz'), { force: true })
+  await assert.rejects(access(join(root, 'node_modules', '.yarn-state.yml')), { code: 'ENOENT' })
   await git(['init', '-b', 'master'])
   await git(['add', '.'])
   await git([
@@ -117,6 +123,9 @@ test('action selects changed dependents and delegates include/exclude globs to Y
   assert.deepEqual(await select({ baseSha: '', include: '@demo/*' }), [
     { workspace: '@demo/app', imageName: 'demo-app' },
     { workspace: '@demo/site', imageName: 'demo-site' },
+  ])
+  assert.deepEqual(await select({ baseSha: '', include: 'packages/app' }), [
+    { workspace: '@demo/app', imageName: 'demo-app' },
   ])
   await assert.rejects(select({ baseSha: '' }), {
     message: /requires a nonzero comparison SHA/,

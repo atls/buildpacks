@@ -71,7 +71,7 @@ The action needs Node 24 and the repository-managed Yarn executable. For the
 default changed-workspace selection, check out the caller with full Git history
 and pass an exact, nonzero comparison commit as `base`. With `include` or
 `exclude`, `base` may be omitted; Yarn selects matching workspaces from all
-workspaces. The action returns a `matrix`
+workspaces without running a workspace command or installing dependencies. The action returns a `matrix`
 output containing `{ workspace, imageName }` pairs, without building or
 publishing an image. A missing eligible image fails selection.
 
