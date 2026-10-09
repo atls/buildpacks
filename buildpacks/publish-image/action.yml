@@ -1,0 +1,24 @@
+name: Publish workspace image
+description: Build and publish a Yarn workspace image with Pack
+inputs:
+  image:
+    description: Versioned image reference
+    required: true
+  latestImage:
+    description: Latest image reference
+    required: true
+  workspace:
+    description: Exact Yarn workspace name
+    required: true
+  builder:
+    description: Pack builder image
+    required: true
+  buildpack:
+    description: Pack buildpack image
+    required: true
+  buildEnv:
+    description: Optional newline-separated build-time environment
+    required: false
+runs:
+  using: node24
+  main: publish.js

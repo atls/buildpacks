@@ -19,6 +19,10 @@ const RAW_RUNTIME_STATE =
       "reference": "workspace:buildpacks/image-targets"\
     },\
     {\
+      "name": "@atls/buildpack-publish-image",\
+      "reference": "workspace:buildpacks/publish-image"\
+    },\
+    {\
       "name": "@atls/buildpack-yarn-cache",\
       "reference": "workspace:buildpacks/yarn-cache"\
     },\
@@ -36,6 +40,7 @@ const RAW_RUNTIME_STATE =
   "pnpZipBackend": "libzip",\
   "fallbackExclusionList": [\
     ["@atls/buildpack-image-targets", ["workspace:buildpacks/image-targets"]],\
+    ["@atls/buildpack-publish-image", ["workspace:buildpacks/publish-image"]],\
     ["@atls/buildpack-yarn-cache", ["workspace:buildpacks/yarn-cache"]],\
     ["@atls/buildpack-yarn-workspace-start", ["workspace:buildpacks/yarn-workspace-start"]],\
     ["@atls/libcnb", ["workspace:libcnb"]],\
@@ -168,6 +173,15 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./buildpacks/image-targets/",\
         "packageDependencies": [\
           ["@atls/buildpack-image-targets", "workspace:buildpacks/image-targets"]\
+        ],\
+        "linkType": "SOFT"\
+      }]\
+    ]],\
+    ["@atls/buildpack-publish-image", [\
+      ["workspace:buildpacks/publish-image", {\
+        "packageLocation": "./buildpacks/publish-image/",\
+        "packageDependencies": [\
+          ["@atls/buildpack-publish-image", "workspace:buildpacks/publish-image"]\
         ],\
         "linkType": "SOFT"\
       }]\

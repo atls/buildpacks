@@ -81,6 +81,21 @@ production `start` script is the shared eligibility condition for the action
 and the Yarn workspace buildpack. Image names use the existing scoped package
 normalization (`@scope/name` becomes `scope-name`).
 
+## Publish A Workspace Image From GitHub Actions
+
+The `buildpacks/publish-image` action runs Pack for one selected workspace.
+Use `docker/metadata-action` to produce the versioned and `latest` image
+references, `docker/login-action` to authenticate, and
+`buildpacks/github-actions/setup-pack` to install Pack before calling it.
+The action accepts those two image references, the workspace name, builder,
+and buildpack. It publishes both tags using the same Pack build.
+
+Optional `buildEnv` contains newline-separated `KEY=value` entries. The
+action writes it to a private temporary file, passes that file to Pack with
+`--env-file`, and removes it after Pack exits. These values are build-time
+inputs, not image runtime environment variables. Pass `SKILLS_NPM_TOKEN`
+through the action step environment when private Yarn dependencies require it.
+
 ## Images
 
 | Image                                 | Use it for                                            |
