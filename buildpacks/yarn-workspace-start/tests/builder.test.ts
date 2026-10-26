@@ -306,3 +306,93 @@ test('YarnWorkspaceStartBuilder builds and launches the selected workspace witho
     await rm(rootDir, { recursive: true, force: true })
   }
 })
+
+test('YarnWorkspaceStartBuilder retains a root runtime for each production service', async () => {
+  const { applicationDir, context, rootDir } = await createContext()
+  const serviceNames = ['@proof/api', '@proof/web']
+  const runtimeDirectory = join(applicationDir, 'packages/raijin')
+
+  try {
+    await mkdir(runtimeDirectory, { recursive: true })
+    await writeFile(
+      join(applicationDir, 'package.json'),
+      JSON.stringify({
+        name: 'proof',
+        private: true,
+        type: 'module',
+        workspaces: ['packages/*', 'services/*'],
+        dependencies: { '@atls/raijin': 'workspace:*' },
+        scripts: { 'verify-raijin': 'node -e "console.log(require.resolve(\'@atls/raijin\'))"' },
+      })
+    )
+    await writeFile(
+      join(runtimeDirectory, 'package.json'),
+      JSON.stringify({
+        name: '@atls/raijin',
+        private: true,
+        exports: './index.js',
+        bin: { 'raijin-hooks': 'bin/hooks.js' },
+      })
+    )
+    await mkdir(join(runtimeDirectory, 'bin'))
+    await writeFile(join(runtimeDirectory, 'index.js'), "export const runtime = 'raijin'\n")
+    await writeFile(join(runtimeDirectory, 'bin/hooks.js'), 'process.exit(0)\n')
+    await copyFile(
+      new URL('../../../.yarn/releases/yarn.js', import.meta.url),
+      join(applicationDir, 'yarn.js')
+    )
+    await writeFile(join(applicationDir, '.yarnrc.yml'), 'yarnPath: ./yarn.js\n')
+
+    await Promise.all(
+      serviceNames.map(async (serviceName) => {
+        const serviceDirectory = join(applicationDir, 'services', serviceName.split('/')[1])
+
+        await mkdir(serviceDirectory, { recursive: true })
+        await writeFile(
+          join(serviceDirectory, 'package.json'),
+          JSON.stringify({
+            name: serviceName,
+            private: true,
+            type: 'module',
+            scripts: { build: 'node build.js', start: 'node server.js' },
+          })
+        )
+        await writeFile(
+          join(serviceDirectory, 'build.js'),
+          [
+            "import { writeFile } from 'node:fs/promises'",
+            `await writeFile('built.js', ${JSON.stringify(serviceName)})`,
+          ].join('\n')
+        )
+      })
+    )
+
+    await execa(process.execPath, [join(applicationDir, 'yarn.js'), 'install', '--no-immutable'], {
+      cwd: applicationDir,
+    })
+
+    const verifyService = async (serviceName: string): Promise<void> => {
+      const serviceDirectory = join(applicationDir, 'services', serviceName.split('/')[1])
+
+      await new YarnWorkspaceStartBuilder().build({
+        ...context,
+        platform: { ...context.platform, env: new Map([['WORKSPACE', serviceName]]) },
+      })
+
+      assert.equal(await readFile(join(serviceDirectory, 'built.js'), 'utf-8'), serviceName)
+
+      const { stdout } = await execa(
+        process.execPath,
+        [join(applicationDir, 'yarn.js'), 'run', 'verify-raijin'],
+        { cwd: applicationDir }
+      )
+
+      assert.match(stdout, /packages\/raijin\/index\.js$/)
+    }
+
+    await verifyService(serviceNames[0])
+    await verifyService(serviceNames[1])
+  } finally {
+    await rm(rootDir, { recursive: true, force: true })
+  }
+})
