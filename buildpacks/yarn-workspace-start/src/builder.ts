@@ -41,7 +41,16 @@ export class YarnWorkspaceStartBuilder implements Builder {
       await execa(process.execPath, [runtime, 'run', 'build'], options)
     }
 
-    await execa(process.execPath, [runtime, 'workspaces', 'focus', '--production'], options)
+    const focusWorkspaces = new Set(
+      [project.topLevelWorkspace.anchoredLocator, workspace.anchoredLocator].map((locator) =>
+        structUtils.stringifyIdent(locator))
+    )
+
+    await execa(
+      process.execPath,
+      [runtime, 'workspaces', 'focus', '--production', ...focusWorkspaces],
+      { ...options, cwd: applicationDir }
+    )
 
     const nodeOptionsLayer = await ctx.layers.get('node-options', false, false, true)
 
