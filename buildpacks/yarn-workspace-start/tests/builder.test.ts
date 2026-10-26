@@ -317,7 +317,6 @@ test('YarnWorkspaceStartBuilder retains a root runtime for each production servi
     await writeFile(
       join(applicationDir, 'package.json'),
       JSON.stringify({
-        name: 'proof',
         private: true,
         type: 'module',
         workspaces: ['packages/*', 'services/*'],

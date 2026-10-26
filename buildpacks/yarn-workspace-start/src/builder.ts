@@ -42,9 +42,8 @@ export class YarnWorkspaceStartBuilder implements Builder {
     }
 
     const focusWorkspaces = new Set(
-      [project.topLevelWorkspace.manifest.name, workspace.manifest.name]
-        .filter((name): name is NonNullable<typeof name> => name !== null)
-        .map((name) => structUtils.stringifyIdent(name))
+      [project.topLevelWorkspace.anchoredLocator, workspace.anchoredLocator].map((locator) =>
+        structUtils.stringifyIdent(locator))
     )
 
     await execa(
