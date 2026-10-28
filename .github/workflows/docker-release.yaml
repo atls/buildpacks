@@ -8,7 +8,7 @@ on:
     paths:
       - '.yarn/**'
       - '.yarnrc.yml'
-      - 'builders/**'
+      - 'builders/base/**'
       - 'buildpacks/**'
       - 'docker-bake.hcl'
       - 'extensions/**'
