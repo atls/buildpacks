@@ -1,6 +1,7 @@
 ARG UBUNTU_IMAGE=ubuntu.azurecr.io/ubuntu:26.04
 FROM ${UBUNTU_IMAGE}
 
+# Use Heroku's stack setup for the CNB run image.
 RUN --mount=from=heroku,source=heroku-26,target=/build /build/setup.sh
 
 USER heroku
