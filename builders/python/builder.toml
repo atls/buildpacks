@@ -8,7 +8,7 @@ image = "${BUILD_IMAGE}"
 
 [run]
 [[run.images]]
-image = "${RUN_IMAGE}"
+image = "ghcr.io/atls/builder-python-run:latest"
 
 [[buildpacks]]
 id = "heroku/python"
