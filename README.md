@@ -40,10 +40,10 @@ Use the Python builder for a project with pyproject.toml, uv.lock, and
 web: python app.py
 ```
 
-Build the application with Pack:
+Build the application with Pack, trusting the builder to use its embedded lifecycle:
 
 ```bash
-pack build my-app --builder ghcr.io/atls/builder-python:latest
+pack build my-app --builder ghcr.io/atls/builder-python:latest --trust-builder
 ```
 
 The builder uses the Heroku Python buildpack and Heroku's supported Ubuntu stack.
