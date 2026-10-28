@@ -1,7 +1,7 @@
 # ATLS Buildpacks
 
-Buildpacks, builders and stack images for Node.js applications that use Yarn
-workspaces.
+Buildpacks and builders for Node.js applications that use Yarn workspaces and
+Python applications that use uv.
 
 The images are published in GitHub Container Registry. They are public and can
 be used with pack, CI jobs, or any tool that accepts Cloud Native Buildpacks
@@ -30,6 +30,23 @@ pack build my-app \
 
 The builder provides the Node stack and CNB lifecycle. The buildpack prepares a
 Yarn workspace application for build and launch.
+
+## Build A Python Application
+
+Use the Python builder for a project with pyproject.toml, uv.lock, and
+.python-version. Set the launch command in a Procfile:
+
+```text
+web: python app.py
+```
+
+Build the application with Pack:
+
+```bash
+pack build my-app --builder ghcr.io/atls/builder-python:latest
+```
+
+The builder uses the Heroku Python buildpack and Heroku's supported Ubuntu stack.
 
 ## Select An Application Workspace
 
@@ -101,6 +118,7 @@ through the action step environment when private Yarn dependencies require it.
 | Image                                 | Use it for                                            |
 | ------------------------------------- | ----------------------------------------------------- |
 | ghcr.io/atls/builder-base             | Building application images with the ATLS Node stack. |
+| ghcr.io/atls/builder-python           | Building Python application images with uv.           |
 | ghcr.io/atls/buildpack-yarn-workspace | Building Yarn workspace applications.                 |
 | ghcr.io/atls/stack-node               | Stack base, build and run images used by the builder. |
 
