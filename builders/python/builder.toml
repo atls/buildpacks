@@ -1,0 +1,25 @@
+description = "ATLS Python builder for uv applications"
+
+[lifecycle]
+version = "0.21.26"
+
+[build]
+image = "${BUILD_IMAGE}"
+
+[run]
+[[run.images]]
+image = "${RUN_IMAGE}"
+
+[[buildpacks]]
+id = "heroku/python"
+uri = "${PYTHON_BUILDPACK_URI}"
+
+[[buildpacks]]
+id = "heroku/procfile"
+uri = "${PROCFILE_BUILDPACK_URI}"
+
+[[order]]
+[[order.group]]
+id = "heroku/python"
+[[order.group]]
+id = "heroku/procfile"
