@@ -31,14 +31,12 @@ jobs:
 
       - name: Resolve Heroku sources
         id: sources
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
-          heroku_base_images_sha="$(gh api repos/heroku/base-images/commits/main --jq .sha)"
-          python_release_tag="$(gh api repos/heroku/buildpacks-python/releases/latest --jq .tag_name)"
-          procfile_release_tag="$(gh api repos/heroku/buildpacks-procfile/releases/latest --jq .tag_name)"
+          heroku_base_images_sha="$(curl --fail --silent --show-error --location --retry 5 https://api.github.com/repos/heroku/base-images/commits/main | jq -er .sha)"
+          python_release_tag="$(curl --fail --silent --show-error --location --retry 5 https://api.github.com/repos/heroku/buildpacks-python/releases/latest | jq -er .tag_name)"
+          procfile_release_tag="$(curl --fail --silent --show-error --location --retry 5 https://api.github.com/repos/heroku/buildpacks-procfile/releases/latest | jq -er .tag_name)"
 
           {
             echo "heroku_base_images_sha=${heroku_base_images_sha}"
@@ -126,7 +124,6 @@ jobs:
       - name: Download official Heroku buildpacks
         env:
           ARCHITECTURE: ${{ matrix.architecture }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PROCFILE_RELEASE_TAG: ${{ needs.publish-run-image.outputs.procfile_release_tag }}
           PYTHON_RELEASE_TAG: ${{ needs.publish-run-image.outputs.python_release_tag }}
         run: |
@@ -137,7 +134,7 @@ jobs:
             release_tag="$2"
             asset_name="$3"
             output="$4"
-            release="$(gh api "repos/${repository}/releases/tags/${release_tag}")"
+            release="$(curl --fail --silent --show-error --location --retry 5 "https://api.github.com/repos/${repository}/releases/tags/${release_tag}")"
             metadata="$(jq -er --arg name "${asset_name}" '.assets[] | select(.name == $name) | [.browser_download_url, .digest] | @tsv' <<< "${release}")"
             IFS=$'\t' read -r url digest <<< "${metadata}"
 
