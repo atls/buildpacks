@@ -13,17 +13,38 @@ permissions:
   contents: read
 
 jobs:
-  publish:
+  publish-run-image:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    outputs:
+      heroku_base_images_sha: ${{ steps.sources.outputs.heroku_base_images_sha }}
+      procfile_release_tag: ${{ steps.sources.outputs.procfile_release_tag }}
+      python_release_tag: ${{ steps.sources.outputs.python_release_tag }}
     steps:
       - name: Checkout merged source
         uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Resolve Heroku sources
+        id: sources
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          heroku_base_images_sha="$(gh api repos/heroku/base-images/commits/main --jq .sha)"
+          python_release_tag="$(gh api repos/heroku/buildpacks-python/releases/latest --jq .tag_name)"
+          procfile_release_tag="$(gh api repos/heroku/buildpacks-procfile/releases/latest --jq .tag_name)"
+
+          {
+            echo "heroku_base_images_sha=${heroku_base_images_sha}"
+            echo "python_release_tag=${python_release_tag}"
+            echo "procfile_release_tag=${procfile_release_tag}"
+          } >> "${GITHUB_OUTPUT}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4.4.0
@@ -38,11 +59,180 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish Python builder
+      - name: Publish CNB run image
         uses: docker/bake-action@v7.4.0
         with:
           files: builders/python/docker-bake.hcl
-          targets: builder-python
+          targets: builder-python-run
           push: true
           vars: |
-            TAGS=ghcr.io/atls/builder-python:latest
+            HEROKU_BASE_IMAGES_CONTEXT=https://github.com/heroku/base-images.git#${{ steps.sources.outputs.heroku_base_images_sha }}
+            RUN_IMAGE_TAGS=ghcr.io/atls/builder-python-run:latest
+
+      - name: Verify CNB run image architectures
+        run: |
+          manifest="$(docker buildx imagetools inspect ghcr.io/atls/builder-python-run:latest --raw)"
+          jq -e '
+            [.manifests[].platform | "\(.os)/\(.architecture)"] as $platforms |
+            ("linux/amd64" as $amd64 | $platforms | index($amd64) != null) and
+            ("linux/arm64" as $arm64 | $platforms | index($arm64) != null)
+          ' <<< "${manifest}" > /dev/null
+
+  build-builder:
+    needs: publish-run-image
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: amd64
+            runner: ubuntu-latest
+          - architecture: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Checkout merged source
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4.4.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build CNB build image
+        uses: docker/bake-action@v7.4.0
+        with:
+          files: builders/python/docker-bake.hcl
+          targets: builder-python-build
+          load: true
+          vars: |
+            BUILD_IMAGE_TAGS=ghcr.io/atls/builder-python-build:local
+            HEROKU_BASE_IMAGES_CONTEXT=https://github.com/heroku/base-images.git#${{ needs.publish-run-image.outputs.heroku_base_images_sha }}
+            PLATFORMS=linux/${{ matrix.architecture }}
+            RUN_IMAGE_CONTEXT=docker-image://ghcr.io/atls/builder-python-run:latest
+
+      - name: Set up Pack
+        uses: buildpacks/github-actions/setup-pack@v6.1.1
+
+      - name: Download official Heroku buildpacks
+        env:
+          ARCHITECTURE: ${{ matrix.architecture }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROCFILE_RELEASE_TAG: ${{ needs.publish-run-image.outputs.procfile_release_tag }}
+          PYTHON_RELEASE_TAG: ${{ needs.publish-run-image.outputs.python_release_tag }}
+        run: |
+          set -euo pipefail
+
+          download_release_asset() {
+            repository="$1"
+            release_tag="$2"
+            asset_name="$3"
+            output="$4"
+            release="$(gh api "repos/${repository}/releases/tags/${release_tag}")"
+            metadata="$(jq -er --arg name "${asset_name}" '.assets[] | select(.name == $name) | [.browser_download_url, .digest] | @tsv' <<< "${release}")"
+            IFS=$'\t' read -r url digest <<< "${metadata}"
+
+            case "${digest}" in
+              sha256:*) ;;
+              *) echo "::error::No SHA-256 digest published for ${repository}/${asset_name}"; return 1 ;;
+            esac
+
+            curl --fail --location --retry 5 "${url}" --output "${output}"
+            printf '%s  %s\n' "${digest#sha256:}" "${output}" | sha256sum --check
+          }
+
+          download_release_asset \
+            heroku/buildpacks-python \
+            "${PYTHON_RELEASE_TAG}" \
+            "heroku_python_linux-${ARCHITECTURE}.cnb" \
+            "${RUNNER_TEMP}/heroku-python.cnb"
+          download_release_asset \
+            heroku/buildpacks-procfile \
+            "${PROCFILE_RELEASE_TAG}" \
+            "heroku_procfile_linux-${ARCHITECTURE}.cnb" \
+            "${RUNNER_TEMP}/heroku-procfile.cnb"
+
+      - name: Create builder configuration
+        env:
+          BUILD_IMAGE: ghcr.io/atls/builder-python-build:local
+          PYTHON_BUILDPACK_URI: file://${{ runner.temp }}/heroku-python.cnb
+          PROCFILE_BUILDPACK_URI: file://${{ runner.temp }}/heroku-procfile.cnb
+        run: |
+          envsubst < builders/python/builder.toml > "${RUNNER_TEMP}/builder.toml"
+
+      - name: Create builder image
+        env:
+          ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          pack builder create ghcr.io/atls/builder-python:local \
+            --config "${RUNNER_TEMP}/builder.toml" \
+            --pull-policy if-not-present \
+            --target "linux/${ARCHITECTURE}"
+
+      - name: Export builder image
+        env:
+          ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes skopeo
+          skopeo copy \
+            docker-daemon:ghcr.io/atls/builder-python:local \
+            "oci-archive:${RUNNER_TEMP}/builder-python-${ARCHITECTURE}.tar:builder-python:local"
+
+      - name: Upload builder image
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: builder-python-${{ matrix.architecture }}
+          path: ${{ runner.temp }}/builder-python-${{ matrix.architecture }}.tar
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  publish-builder:
+    needs: build-builder
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download architecture images
+        uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: builder-python-*
+          path: ${{ runner.temp }}/builder-images
+          merge-multiple: true
+
+      - name: Assemble multi-architecture builder
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes podman skopeo
+          printf '%s' "${GITHUB_TOKEN}" | podman login ghcr.io \
+            --username "${GITHUB_ACTOR}" \
+            --password-stdin
+
+          podman manifest create ghcr.io/atls/builder-python:latest
+          podman manifest add ghcr.io/atls/builder-python:latest \
+            "oci-archive:${RUNNER_TEMP}/builder-images/builder-python-amd64.tar:builder-python:local"
+          podman manifest add ghcr.io/atls/builder-python:latest \
+            "oci-archive:${RUNNER_TEMP}/builder-images/builder-python-arm64.tar:builder-python:local"
+          podman manifest push --all ghcr.io/atls/builder-python:latest \
+            docker://ghcr.io/atls/builder-python:latest
+
+          manifest="$(skopeo inspect --raw docker://ghcr.io/atls/builder-python:latest)"
+          jq -e '
+            [.manifests[].platform | "\(.os)/\(.architecture)"] as $platforms |
+            ("linux/amd64" as $amd64 | $platforms | index($amd64) != null) and
+            ("linux/arm64" as $arm64 | $platforms | index($arm64) != null)
+          ' <<< "${manifest}" > /dev/null
