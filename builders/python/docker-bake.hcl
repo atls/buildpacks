@@ -5,7 +5,7 @@ variable "TAGS" {
 
 variable "PLATFORMS" {
   type    = list(string)
-  default = ["linux/amd64"]
+  default = ["linux/amd64", "linux/arm64"]
 }
 
 variable "UPSTREAM_BUILDER" {
