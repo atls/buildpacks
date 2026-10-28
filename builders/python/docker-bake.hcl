@@ -22,7 +22,7 @@ variable "RUN_IMAGE_TAGS" {
 }
 
 variable "RUN_IMAGE_CONTEXT" {
-  default = "target:builder-python-run"
+  default = "docker-image://ghcr.io/atls/builder-python-run:latest"
 }
 
 target "builder-python-run" {
